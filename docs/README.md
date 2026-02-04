@@ -3,8 +3,9 @@ layout: home
 permalink: index.html
 
 # Please update this with your repository name and project title
-repository-name: eYY-co2060-project-template
-title: Project Template
+repository-name: e23-co2060-MPhil-PhD-Lifecycle-Management-System
+title: MPhil & PhD Lifecycle Management System
+
 ---
 
 [comment]: # "This is the standard layout for the project, but you can clean this and use your own template, and add more information required for your own project"
@@ -24,9 +25,10 @@ A HTML template integrated with the given GitHub repository templates, based on 
 ---
 
 ## Team
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
--  eNumber, Name, [email](mailto:name@email.com)
+-  E / 23 / 442, D.K.G.P.C.B. Wijerathne, [email](mailto:e23442@eng.pdn.ac.lk)
+-  E / 23 / 178, S.N.R. Kodituwakku, [email](mailto:e23178@eng.pdn.ac.lk)
+-  E / 23 / 118, D.A.A. Gunawardana, [email](mailto:e23118@eng.pdn.ac.lk)
+-  E / 23 / 023, M.N.P.V. Aththanayake, [email](mailto:e23023@eng.pdn.ac.lk)
 
 <!-- Image (photo/drawing of the final hardware) should be here -->
 
@@ -44,29 +46,70 @@ A HTML template integrated with the given GitHub repository templates, based on 
 
 ## Introduction
 
-Description of the real world problem and solution, impact
+Managing MPhil and PhD students involves long-term, multi-stage processes such as registration, supervision, progress monitoring, ethics approvals, and thesis examination. In many faculties, these processes are handled using fragmented documents, spreadsheets, and email communication, leading to inefficiencies, poor visibility, and compliance risks.
 
+The MPhil & PhD Lifecycle Management System addresses this problem by providing a centralized, web-based platform to manage postgraduate research students throughout their entire academic lifecycle. The system improves transparency, reduces administrative workload, and ensures consistent compliance with university regulations, benefiting students, supervisors, coordinators, and faculty administrators.
 
 ## Solution Architecture
 
-High level diagram + description
+The system follows a centralized web application architecture, potentially built on ERPNext, to ensure scalability, security, and long-term data integrity.
+
+At a high level, the architecture consists of:
+
+- A web-based user interface for all stakeholder roles
+- A backend application layer handling business logic and workflows
+- A secure database for long-term academic records and documents
+- Role-based access control and audit logging mechanisms
+- Notification and automation services for milestone tracking
+
+The architecture ensures clear separation of concerns, secure document storage, and reliable tracking of multi-year postgraduate data.
 
 ## Software Designs
 
-Detailed designs with many sub-sections
+The system is designed using modular and role-based principles.
+
+User Roles
+
+- PG Student: Submissions, progress updates, document uploads
+- Supervisor: Reviews, approvals, progress monitoring
+- PG Coordinator: Oversight, scheduling, compliance checks
+- Faculty Admin: System management, reporting, governance
+
+Core Modules
+
+- Student Registration & Supervisor Assignment
+- Research Proposal Submission & Approval Workflow
+- Progress Review Scheduling and Reporting
+- Ethics Approval Tracking
+- Thesis Submission and Examination Management
+- Document Management with Version Control
+- Dashboards and Reporting
+- Audit Trails and Approval History
+
+Each module enforces validation rules, workflow states, and approval hierarchies to maintain data integrity and institutional compliance.
 
 ## Testing
 
-Testing done on software : detailed + summarized results
+Testing was conducted at multiple levels to ensure reliability and correctness:
+
+- Unit Testing: Validation of individual modules and workflows
+- Integration Testing: Verification of interactions between lifecycle stages
+- Role-Based Access Testing: Ensuring correct permissions and data isolation
+- User Acceptance Testing (UAT): Feedback from academic stakeholders
+- Workflow Testing: End-to-end lifecycle scenarios across multiple years
+
+Test results confirmed correct workflow enforcement, secure access control, accurate status transitions, and reliable notification handling.
 
 ## Conclusion
 
-What was achieved, future developments, commercialization plans
+This project successfully delivers a centralized and transparent solution for managing the complete MPhil and PhD research lifecycle at faculty level. It significantly reduces administrative overhead, improves coordination, and enhances regulatory compliance.
+
+Future developments include university-wide deployment, advanced analytics for research performance, integration with institutional systems, and support for commercialization as a configurable postgraduate research management platform for higher education institutions.
 
 ## Links
 
-- [Project Repository](https://github.com/cepdnaclk/{{ page.repository-name }}){:target="_blank"}
-- [Project Page](https://cepdnaclk.github.io/{{ page.repository-name}}){:target="_blank"}
+- [Project Repository](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System)
+- [Project Page](https://cepdnaclk.github.io/e23-co2060-MPhil-PhD-Lifecycle-Management-System/)
 - [Department of Computer Engineering](http://www.ce.pdn.ac.lk/)
 - [University of Peradeniya](https://eng.pdn.ac.lk/)
 
