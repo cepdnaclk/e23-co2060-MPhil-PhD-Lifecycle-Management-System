@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "REV-.YYYY.-.####",
+ "creation": "2026-02-22 00:08:32.048477",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "review_date",
+  "research_student",
+  "supervisor",
+  "review_period",
+  "status",
+  "evaluation_section",
+  "feedback"
+ ],
+ "fields": [
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Review Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "research_student",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Research Student",
+   "options": "Research Student",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Supervisor",
+   "options": "Research Supervisor",
+   "reqd": 1
+  },
+  {
+   "fieldname": "review_period",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Review Period",
+   "options": "6 Months\n12 Months\n18 Months",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nSatisfactory\nUnsatisfactory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evaluation_section",
+   "fieldtype": "Section Break",
+   "label": "Evaluation"
+  },
+  {
+   "fieldname": "feedback",
+   "fieldtype": "Text Editor",
+   "label": "Feedback"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-22 00:14:08.341229",
+ "modified_by": "Administrator",
+ "module": "Phd Management",
+ "name": "Progress Review",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

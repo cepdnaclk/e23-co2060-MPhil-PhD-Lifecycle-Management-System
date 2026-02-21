@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "THS-.YYYY.-.####",
+ "creation": "2026-02-22 00:27:19.545259",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "research_student",
+  "supervisor",
+  "thesis_title",
+  "submission_date",
+  "status",
+  "column_break_column",
+  "thesis_document",
+  "turnitin_score"
+ ],
+ "fields": [
+  {
+   "fieldname": "research_student",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Research Student",
+   "options": "Research Student",
+   "reqd": 1
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Supervisor",
+   "options": "Research Supervisor",
+   "reqd": 1
+  },
+  {
+   "fieldname": "thesis_title",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Thesis Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "submission_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Submission Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nUnder Examination",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_column",
+   "fieldtype": "Column Break",
+   "label": "Column Break"
+  },
+  {
+   "fieldname": "thesis_document",
+   "fieldtype": "Attach",
+   "label": "Thesis Document"
+  },
+  {
+   "fieldname": "turnitin_score",
+   "fieldtype": "Percent",
+   "label": "Turnitin Score"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-22 00:31:01.659388",
+ "modified_by": "Administrator",
+ "module": "Phd Management",
+ "name": "Thesis Submission",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

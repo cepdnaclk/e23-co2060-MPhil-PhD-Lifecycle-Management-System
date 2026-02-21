@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Format: STU-{####}",
+ "creation": "2026-02-17 11:54:08.934416",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "first_name",
+  "last_name",
+  "email",
+  "program",
+  "status",
+  "enrolment_date",
+  "supervisor",
+  "research_milestones_section",
+  "proposal_defense",
+  "proposal_status",
+  "column_break_column",
+  "thesis_submission",
+  "viva_voce_date",
+  "faculty"
+ ],
+ "fields": [
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "First Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "program",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Program",
+   "options": "Mphil\nPhD",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nOn Leave\nCompleted",
+   "reqd": 1
+  },
+  {
+   "fieldname": "enrolment_date",
+   "fieldtype": "Date",
+   "label": "Enrolment Date"
+  },
+  {
+   "fieldname": "supervisor",
+   "fieldtype": "Link",
+   "label": "Supervisor",
+   "options": "Research Supervisor"
+  },
+  {
+   "fieldname": "research_milestones_section",
+   "fieldtype": "Section Break",
+   "label": "Research Milestones"
+  },
+  {
+   "fieldname": "proposal_defense",
+   "fieldtype": "Date",
+   "label": "Proposal Defense"
+  },
+  {
+   "fieldname": "proposal_status",
+   "fieldtype": "Select",
+   "label": "Proposal Status",
+   "options": "Pending\nApproved\nRevision Required"
+  },
+  {
+   "fieldname": "column_break_column",
+   "fieldtype": "Column Break",
+   "label": "Column Break"
+  },
+  {
+   "fieldname": "thesis_submission",
+   "fieldtype": "Date",
+   "label": "Thesis Submission"
+  },
+  {
+   "fieldname": "viva_voce_date",
+   "fieldtype": "Date",
+   "label": "Viva Voce Date"
+  },
+  {
+   "fieldname": "faculty",
+   "fieldtype": "Link",
+   "label": "Faculty",
+   "options": "Faculty"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-22 00:03:38.211376",
+ "modified_by": "Administrator",
+ "module": "Phd Management",
+ "name": "Research Student",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
