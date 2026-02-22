@@ -22,7 +22,8 @@
    "in_list_view": 1,
    "label": "Research Student",
    "options": "Research Student",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "supervisor",
@@ -30,7 +31,8 @@
    "in_list_view": 1,
    "label": "Supervisor",
    "options": "Research Supervisor",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "thesis_title",
@@ -55,8 +57,7 @@
   },
   {
    "fieldname": "column_break_column",
-   "fieldtype": "Column Break",
-   "label": "Column Break"
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "thesis_document",
@@ -72,7 +73,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-22 00:31:01.659388",
+ "modified": "2026-02-23 00:44:28.744872",
  "modified_by": "Administrator",
  "module": "Phd Management",
  "name": "Thesis Submission",

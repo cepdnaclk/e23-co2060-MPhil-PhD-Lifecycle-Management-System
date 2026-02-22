@@ -28,7 +28,8 @@
    "in_list_view": 1,
    "label": "Research Student",
    "options": "Research Student",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "supervisor",
@@ -36,7 +37,8 @@
    "in_list_view": 1,
    "label": "Supervisor",
    "options": "Research Supervisor",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "review_period",
@@ -67,7 +69,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-22 00:14:08.341229",
+ "modified": "2026-02-22 20:26:38.106491",
  "modified_by": "Administrator",
  "module": "Phd Management",
  "name": "Progress Review",

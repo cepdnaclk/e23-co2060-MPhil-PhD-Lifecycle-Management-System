@@ -14,6 +14,7 @@ class ResearchStudent(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		at_risk: DF.Check
 		email: DF.Data
 		enrolment_date: DF.Date | None
 		faculty: DF.Link | None

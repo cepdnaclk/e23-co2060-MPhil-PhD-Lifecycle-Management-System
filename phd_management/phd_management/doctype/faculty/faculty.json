@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Field: FAC-{####}",
+ "autoname": "field:faculty_name",
  "creation": "2026-02-21 23:52:44.339389",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -53,11 +53,11 @@
    "link_fieldname": "faculty"
   }
  ],
- "modified": "2026-02-22 00:06:44.164240",
+ "modified": "2026-02-22 22:14:44.762278",
  "modified_by": "Administrator",
  "module": "Phd Management",
  "name": "Faculty",
- "naming_rule": "Expression",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

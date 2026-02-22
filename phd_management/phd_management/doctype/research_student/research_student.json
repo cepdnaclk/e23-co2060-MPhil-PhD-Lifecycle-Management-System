@@ -19,7 +19,8 @@
   "column_break_column",
   "thesis_submission",
   "viva_voce_date",
-  "faculty"
+  "faculty",
+  "at_risk"
  ],
  "fields": [
   {
@@ -67,7 +68,8 @@
    "fieldname": "supervisor",
    "fieldtype": "Link",
    "label": "Supervisor",
-   "options": "Research Supervisor"
+   "options": "Research Supervisor",
+   "search_index": 1
   },
   {
    "fieldname": "research_milestones_section",
@@ -87,8 +89,7 @@
   },
   {
    "fieldname": "column_break_column",
-   "fieldtype": "Column Break",
-   "label": "Column Break"
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "thesis_submission",
@@ -104,13 +105,35 @@
    "fieldname": "faculty",
    "fieldtype": "Link",
    "label": "Faculty",
-   "options": "Faculty"
+   "options": "Faculty",
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "at_risk",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "At Risk",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-02-22 00:03:38.211376",
+ "links": [
+  {
+   "group": "Progress Review",
+   "link_doctype": "Progress Review",
+   "link_fieldname": "research_student"
+  },
+  {
+   "group": "Thesis Submissions",
+   "link_doctype": "Thesis Submission",
+   "link_fieldname": "research_student"
+  }
+ ],
+ "modified": "2026-02-23 01:17:30.504507",
  "modified_by": "Administrator",
  "module": "Phd Management",
  "name": "Research Student",
