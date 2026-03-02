@@ -1,0 +1,37 @@
+{
+    "team": [
+        {
+            "name": "D.K.G.P.C.B. Wijerathne",
+            "email": "e23442@eng.pdn.ac.lk",
+            "eNumber": "E/23/442"
+        },
+        {
+            "name": "S.N.R. Kodituwakku",
+            "email": "e23178@eng.pdn.ac.lk",
+            "eNumber": "E/23/178"
+        },
+        {
+            "name": "D.A.A. Gunawardana",
+            "email": "e23118@eng.pdn.ac.lk",
+            "eNumber": "E/23/118"
+        },
+        {
+            "name": "M.N.P.V. Aththanayake",
+            "email": "e23023@eng.pdn.ac.lk",
+            "eNumber": "E/23/023"
+        }
+    ],
+    "supervisors": [
+        {
+            "name": "Dr. Upul Jayasinghe",
+            "email": "upuljm@eng.pdn.ac.lk"
+        },
+        {
+            "name": "Shehan Dewnith",
+            "email": "e21005@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": ["Web", "Software Systems", "CO2060"],
+    "image":"cover_page.jpg",
+    "thumbnail":"thumbnail.jpg"
+}
