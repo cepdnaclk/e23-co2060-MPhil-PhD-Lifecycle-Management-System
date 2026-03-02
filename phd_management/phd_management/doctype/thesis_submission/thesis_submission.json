@@ -13,7 +13,8 @@
   "status",
   "column_break_column",
   "thesis_document",
-  "turnitin_score"
+  "turnitin_score",
+  "viva_date"
  ],
  "fields": [
   {
@@ -52,7 +53,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nSubmitted\nUnder Examination",
+   "options": "Draft\nSubmitted\nUnder Examination\nCompleted\nInactive",
    "reqd": 1
   },
   {
@@ -68,13 +69,19 @@
    "fieldname": "turnitin_score",
    "fieldtype": "Percent",
    "label": "Turnitin Score"
+  },
+  {
+   "depends_on": "eval:doc.status == \"Under Examination\";",
+   "fieldname": "viva_date",
+   "fieldtype": "Date",
+   "label": "Viva Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-23 00:44:28.744872",
- "modified_by": "Administrator",
+ "modified": "2026-03-02 21:22:02.084754",
+ "modified_by": "wijerathnedkgpcb@gmail.com",
  "module": "Phd Management",
  "name": "Thesis Submission",
  "naming_rule": "Expression",

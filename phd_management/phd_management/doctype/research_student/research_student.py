@@ -28,4 +28,5 @@ class ResearchStudent(Document):
 		thesis_submission: DF.Date | None
 		viva_voce_date: DF.Date | None
 	# end: auto-generated types
+
 	pass
