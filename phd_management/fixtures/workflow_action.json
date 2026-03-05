@@ -1,0 +1,20 @@
+[
+ {
+  "completed_by": null,
+  "completed_by_role": null,
+  "docstatus": 0,
+  "doctype": "Workflow Action",
+  "modified": "2026-03-04 08:21:03.930424",
+  "name": "b7feglqja7",
+  "permitted_roles": [
+   {
+    "role": "Student"
+   }
+  ],
+  "reference_doctype": "Thesis Submission",
+  "reference_name": "THS-2026-0012",
+  "status": "Open",
+  "user": null,
+  "workflow_state": "Draft"
+ }
+]
