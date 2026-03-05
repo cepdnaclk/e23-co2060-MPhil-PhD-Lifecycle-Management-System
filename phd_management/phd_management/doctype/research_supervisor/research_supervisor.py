@@ -21,4 +21,5 @@ class ResearchSupervisor(Document):
 		faculty: DF.Link | None
 		full_name: DF.Data
 	# end: auto-generated types
+
 	pass

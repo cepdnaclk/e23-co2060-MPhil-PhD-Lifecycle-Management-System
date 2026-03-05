@@ -19,4 +19,5 @@ class Faculty(Document):
 		faculty_code: DF.Data
 		faculty_name: DF.Data
 	# end: auto-generated types
+
 	pass

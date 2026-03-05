@@ -53,7 +53,7 @@
    "link_fieldname": "faculty"
   }
  ],
- "modified": "2026-02-22 22:14:44.762278",
+ "modified": "2026-03-04 07:12:34.644010",
  "modified_by": "Administrator",
  "module": "Phd Management",
  "name": "Faculty",
@@ -75,6 +75,7 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "faculty_code, contact_email",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
