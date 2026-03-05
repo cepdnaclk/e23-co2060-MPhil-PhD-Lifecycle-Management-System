@@ -1,7 +1,7 @@
 [
  {
   "address": null,
-  "app_logo": "/files/University_of_Peradeniya_crest.png",
+  "app_logo": "/assets/phd_management/images/logo.png",
   "app_name": "PG Lifecycle Management",
   "auto_account_deletion": 72,
   "banner_html": null,
@@ -29,7 +29,7 @@
   "home_page": "",
   "indexing_authorization_code": null,
   "indexing_refresh_token": null,
-  "modified": "2026-03-05 22:04:39.806216",
+  "modified": "2026-03-05 23:00:21.003653",
   "name": "Website Settings",
   "navbar_search": 0,
   "navbar_template": null,
