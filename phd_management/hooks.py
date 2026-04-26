@@ -4,6 +4,7 @@ app_publisher = "DevOps"
 app_description = "PhD Student Lifecycle Manager"
 app_email = "e23178@eng.pdn.ac.lk"
 app_license = "mit"
+app_logo_url = "/assets/pg_management/images/logo.png"
 
 # Apps
 # ------------------
