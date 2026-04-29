@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'ADMINISTRATOR';
+    }
+
+    function isOwner(studentId) {
+      return isAuthenticated() && request.auth.token.userId == studentId;
+    }
+
+    function withinFileSizeLimit() {
+      return request.resource.size <= 50 * 1024 * 1024;
+    }
+
+    match /proposals/{studentId}/{version}/{fileName} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if false;
+    }
+
+    match /theses/{studentId}/{fileName} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if false;
+    }
+
+    match /progress-reports/{studentId}/{reportId}/{fileName} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if false;
+    }
+
+    match /corrections/{studentId}/{thesisId}/{fileName} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
