@@ -97,22 +97,22 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
           Thesis Submission
         </p>
         <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-white">
+            <h1 className="text-3xl font-semibold text-black">
               Submit final thesis
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
+            <p className="mt-2 max-w-3xl text-base leading-6 text-black">
               Upload the final PDF manuscript for examination. Resubmissions
               create a new document version while keeping prior files visible.
             </p>
           </div>
           {thesis ? (
-            <span className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-semibold text-black">
+            <span className="rounded-full border border-gray-300 bg-transparent px-3 py-1 text-base font-semibold text-black">
               {thesis.status.replaceAll("_", " ")}
             </span>
           ) : null}
@@ -120,12 +120,12 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       </section>
 
       {error ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {error}
         </div>
       ) : null}
       {message ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {message}
         </div>
       ) : null}
@@ -133,37 +133,37 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] border border-gray-200 bg-white/70 p-6"
+          className="rounded-[2rem] border border-gray-200 bg-transparent p-6"
         >
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-black">
             {thesis ? "Submit a thesis revision" : "Create thesis submission"}
           </h2>
           <div className="mt-5 grid gap-4">
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Thesis title</span>
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 required
               />
             </label>
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Abstract</span>
               <textarea
                 value={abstract}
                 onChange={(event) => setAbstract(event.target.value)}
-                className="min-h-40 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="min-h-40 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 required
               />
             </label>
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Thesis PDF</span>
               <input
                 type="file"
                 accept="application/pdf"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
+                className="block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
                 required
               />
             </label>
@@ -171,47 +171,47 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-6 rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:opacity-60"
+            className="mt-6 rounded-2xl bg-black px-5 py-3 text-base font-semibold text-black transition hover:bg-black disabled:opacity-60"
           >
             {isSubmitting ? "Submitting..." : thesis ? "Submit revision" : "Submit thesis"}
           </button>
         </form>
 
-        <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-white">Thesis record</h2>
+        <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6">
+          <h2 className="text-xl font-semibold text-black">Thesis record</h2>
           {!thesis ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-sm text-black">
+            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base text-black">
               No thesis has been submitted yet.
             </p>
           ) : (
             <div className="mt-4 space-y-4">
-              <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/70 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-black0">
+              <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                <p className="text-base uppercase tracking-[0.18em] text-gray-400">
                   Thesis ID
                 </p>
-                <p className="mt-1 break-all text-sm text-black">{thesis.id}</p>
-                <h3 className="mt-4 text-lg font-semibold text-white">{thesis.title}</h3>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-black">
+                <p className="mt-1 break-all text-base text-black">{thesis.id}</p>
+                <h3 className="mt-4 text-lg font-semibold text-black">{thesis.title}</h3>
+                <p className="mt-2 whitespace-pre-wrap text-base leading-6 text-black">
                   {thesis.abstract}
                 </p>
               </div>
               {thesis.documents.map((document) => (
                 <article
                   key={document.id}
-                  className="rounded-[1.5rem] border border-gray-200 bg-gray-50/70 p-4"
+                  className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-white">{document.fileName}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-black0">
+                      <p className="font-semibold text-black">{document.fileName}</p>
+                      <p className="mt-1 text-base uppercase tracking-[0.18em] text-gray-400">
                         Version {document.version}
                       </p>
                     </div>
-                    <span className="rounded-full border border-gray-300 px-3 py-1 text-xs text-black">
+                    <span className="rounded-full border border-gray-300 px-3 py-1 text-base text-black">
                       {document.isCurrentVersion ? "Current" : "Previous"}
                     </span>
                   </div>
-                  <p className="mt-3 break-all text-xs text-black">
+                  <p className="mt-3 break-all text-base text-black">
                     {document.storagePath}
                   </p>
                 </article>

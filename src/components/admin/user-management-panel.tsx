@@ -193,118 +193,133 @@ export function UserManagementPanel() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white/70 p-6 shadow-2xl shadow-slate-950/40 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
-            Administrator User Management
-          </p>
-          <h1 className="text-3xl font-semibold text-white">Manage system accounts</h1>
-          <p className="max-w-2xl text-sm text-black">
-            Create and deactivate students, supervisors, examiners, and administrators.
-          </p>
-        </div>
+    <div className="space-y-12">
+      <header className="pb-10 border-b-2 border-gray-200">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-4">
+            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
+              Administration
+            </p>
+            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
+              User Accounts
+            </h2>
+            <p className="max-w-2xl text-xl leading-relaxed text-black/80 font-medium">
+              Manage system access for students, supervisors, examiners, and staff.
+            </p>
+          </div>
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <select
-            value={selectedRole}
-            onChange={(event) =>
-              setSelectedRole(event.target.value as "ALL" | AdminManagedRole)
-            }
-            className="rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-black outline-none focus:border-gray-300"
-          >
-            <option value="ALL">All roles</option>
-            <option value="STUDENT">Students</option>
-            <option value="SUPERVISOR">Supervisors</option>
-            <option value="EXAMINER">Examiners</option>
-            <option value="ADMINISTRATOR">Administrators</option>
-          </select>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <select
+              value={selectedRole}
+              onChange={(event) =>
+                setSelectedRole(event.target.value as "ALL" | AdminManagedRole)
+              }
+              className="rounded-[0.75em] border-2 border-black bg-transparent px-4 py-3 text-base font-bold text-black outline-none"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="STUDENT">Students</option>
+              <option value="SUPERVISOR">Supervisors</option>
+              <option value="EXAMINER">Examiners</option>
+              <option value="ADMINISTRATOR">Administrators</option>
+            </select>
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-black"
-          >
-            Create New User
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="group inline-block text-base font-bold bg-black rounded-[0.75em] cursor-pointer"
+            >
+              <span className="block box-border border-2 border-black rounded-[0.75em] px-[1.5em] py-[0.75em] bg-black text-white -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                Create New User
+              </span>
+            </button>
+          </div>
         </div>
+      </header>
+
+      <div className="flex items-center gap-4">
+        <p className="text-sm font-black uppercase tracking-widest text-black/40">
+          {visibleRoleHint}
+        </p>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
-      <p className="text-sm text-black">{visibleRoleHint}</p>
-
       {errorMessage ? (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {errorMessage}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
           {successMessage}
         </div>
       ) : null}
 
-      <div className="hidden overflow-hidden rounded-3xl border border-gray-200 bg-white/70 md:block">
-        <table className="min-w-full divide-y divide-slate-800 text-sm">
-          <thead className="bg-gray-50/80 text-black">
+      <div className="hidden overflow-hidden rounded-[24px] border border-gray-200 bg-transparent md:block">
+        <table className="min-w-full divide-y divide-gray-300 text-base">
+          <thead className="text-left text-black">
             <tr>
-              <th className="px-5 py-4 text-left font-medium">Name</th>
-              <th className="px-5 py-4 text-left font-medium">Role</th>
-              <th className="px-5 py-4 text-left font-medium">Details (Dept / Program)</th>
-              <th className="px-5 py-4 text-left font-medium">Status</th>
-              <th className="px-5 py-4 text-left font-medium">Action</th>
+              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">User</th>
+              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Role</th>
+              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Context</th>
+              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Status</th>
+              <th className="px-6 py-5 font-black uppercase tracking-widest text-[14px] text-black/40">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800 text-black">
+          <tbody className="divide-y divide-gray-300 text-black">
             {isLoading ? (
               <tr>
-                <td className="px-5 py-6 text-black" colSpan={5}>
-                  Loading accounts...
+                <td className="px-6 py-12 text-center font-bold text-black/40" colSpan={5}>
+                  Loading user records...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td className="px-5 py-6 text-black" colSpan={5}>
-                  No administrator-managed users found for this filter.
+                <td className="px-6 py-12 text-center font-bold text-black/40" colSpan={5}>
+                  No matching user accounts found.
                 </td>
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.id} className="align-top">
-                  <td className="px-5 py-4">
-                    <div className="font-medium text-white">{user.displayName}</div>
-                    <div className="text-black">{user.email}</div>
+                <tr key={user.id} className="align-top hover:bg-black/5 transition-colors">
+                  <td className="px-6 py-6">
+                    <div className="font-black text-lg">{user.displayName}</div>
+                    <div className="text-black/60 font-medium">{user.email}</div>
                   </td>
-                  <td className="px-5 py-4">{user.role}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
+                    <span className="inline-block px-3 py-1 border-2 border-black rounded-lg text-[13px] font-black uppercase tracking-wider">
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-6 font-black">
                     {user.role === "STUDENT" ? (
-                      <div>{user.programType ?? "Not set"} Program</div>
+                      <div className="text-lg">{user.programType ?? "N/A"} Candidate</div>
                     ) : (
                       <>
-                        <div>{user.department ?? "Not set"}</div>
+                        <div className="text-lg">{user.department ?? "No Department"}</div>
                         {user.specialization ? (
-                          <div className="text-black">{user.specialization}</div>
+                          <div className="text-sm text-black/70">{user.specialization}</div>
                         ) : null}
                       </>
                     )}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
                     <span
-                      className={
+                      className={`inline-block rounded-full border-2 px-3 py-1 text-[13px] font-black uppercase tracking-widest ${
                         user.isActive
-                          ? "rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-black"
-                          : "rounded-full bg-gray-200/70 px-3 py-1 text-xs font-medium text-black"
-                      }
+                          ? "border-black text-black"
+                          : "border-gray-300 text-gray-300"
+                      }`}
                     >
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-6">
                     <button
                       type="button"
                       disabled={!user.isActive}
                       onClick={() => void handleDeactivate(user.id)}
-                      className="rounded-2xl border border-gray-300 px-3 py-2 text-xs font-semibold text-black transition hover:border-gray-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       Deactivate
                     </button>
@@ -317,95 +332,61 @@ export function UserManagementPanel() {
       </div>
 
       <div className="space-y-4 md:hidden">
-        {isLoading ? (
-          <div className="rounded-[1.75rem] border border-gray-200 bg-white/70 p-4 text-sm text-black">
-            Loading accounts...
-          </div>
-        ) : users.length === 0 ? (
-          <div className="rounded-[1.75rem] border border-gray-200 bg-white/70 p-4 text-sm text-black">
-            No administrator-managed users found for this filter.
-          </div>
-        ) : (
-          users.map((user) => (
-            <article
-              key={user.id}
-              className="rounded-[1.75rem] border border-gray-200 bg-white/70 p-4 shadow-lg"
+        {users.map((user) => (
+          <article
+            key={user.id}
+            className="rounded-[24px] border border-gray-200 bg-transparent p-6"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xl font-black text-black tracking-tight">
+                  {user.displayName}
+                </p>
+                <p className="text-sm font-medium text-black/60">
+                  {user.email}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-lg border-2 border-black px-2 py-1 text-[12px] font-black uppercase">
+                {user.role}
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={!user.isActive}
+              onClick={() => void handleDeactivate(user.id)}
+              className="mt-6 w-full rounded-xl border-2 border-black py-3 text-xs font-black uppercase tracking-widest transition hover:bg-black hover:text-white disabled:opacity-20"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="break-words text-base font-semibold text-white">
-                    {user.displayName}
-                  </p>
-                  <p className="mt-1 break-all text-sm text-black">
-                    {user.email}
-                  </p>
-                </div>
-                <span className="rounded-full border border-gray-300 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-black">
-                  {user.role}
-                </span>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-black">
-                <p>
-                  <span className="text-black0">Details:</span>{" "}
-                  {user.role === "STUDENT"
-                    ? `${user.programType ?? "Not set"} Program`
-                    : user.department ?? "Not set"}
-                </p>
-                {user.specialization ? (
-                  <p>
-                    <span className="text-black0">Specialization:</span>{" "}
-                    {user.specialization}
-                  </p>
-                ) : null}
-                <p>
-                  <span className="text-black0">Status:</span>{" "}
-                  <span
-                    className={
-                      user.isActive
-                        ? "text-black"
-                        : "text-black"
-                    }
-                  >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </span>
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={!user.isActive}
-                onClick={() => void handleDeactivate(user.id)}
-                className="mt-4 w-full rounded-2xl border border-gray-300 px-3 py-3 text-sm font-semibold text-black transition hover:border-gray-300 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Deactivate
-              </button>
-            </article>
-          ))
-        )}
+              Deactivate Account
+            </button>
+          </article>
+        ))}
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/75 px-4">
-          <div className="w-full max-w-xl rounded-3xl border border-gray-200 bg-white p-6 shadow-2xl shadow-slate-950/60">
-            <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="w-full max-w-xl rounded-[30px] border-4 border-black bg-white p-8 shadow-[15px_15px_0px_black]">
+            <div className="mb-8 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-white">Create New User</h2>
-                <p className="mt-2 text-sm text-black">
-                  Select the role and fill out the details appropriately.
+                <h2 className="text-4xl font-black tracking-tighter text-black">Create User</h2>
+                <p className="mt-2 text-lg font-medium text-black/60">
+                  Provision a new system account.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full border border-gray-300 px-3 py-1 text-sm text-black"
+                className="rounded-full border-2 border-black p-2 hover:bg-black hover:text-white transition-colors"
               >
-                Close
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            <form className="space-y-4" onSubmit={handleCreateUser}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-sm text-black">
-                  <span>Email</span>
+            <form className="space-y-6" onSubmit={handleCreateUser}>
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Email Address</span>
                   <input
                     value={formValues.email}
                     onChange={(event) =>
@@ -414,13 +395,13 @@ export function UserManagementPanel() {
                         email: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
-                    placeholder="name@eng.pdn.ac.lk"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none focus:bg-gray-50"
+                    placeholder="name@pdn.ac.lk"
                   />
                 </label>
 
-                <label className="space-y-2 text-sm text-black">
-                  <span>Display name</span>
+                <label className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Full Name</span>
                   <input
                     value={formValues.displayName}
                     onChange={(event) =>
@@ -429,15 +410,15 @@ export function UserManagementPanel() {
                         displayName: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
-                    placeholder="Dr. Jane Perera"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none focus:bg-gray-50"
+                    placeholder="Enter name"
                   />
                 </label>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-sm text-black">
-                  <span>Role</span>
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">System Role</span>
                   <select
                     value={formValues.role}
                     onChange={(event) =>
@@ -446,7 +427,7 @@ export function UserManagementPanel() {
                         role: event.target.value as AdminManagedRole,
                       }))
                     }
-                    className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
                   >
                     <option value="STUDENT">Student</option>
                     <option value="SUPERVISOR">Supervisor</option>
@@ -456,8 +437,8 @@ export function UserManagementPanel() {
                 </label>
 
                 {formValues.role === "STUDENT" ? (
-                  <label className="space-y-2 text-sm text-black">
-                    <span>Program Type</span>
+                  <label className="space-y-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Program</span>
                     <select
                       value={formValues.programType}
                       onChange={(event) =>
@@ -466,7 +447,7 @@ export function UserManagementPanel() {
                           programType: event.target.value,
                         }))
                       }
-                      className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
                     >
                       <option value="MPHIL">MPhil</option>
                       <option value="PHD">PhD</option>
@@ -475,8 +456,8 @@ export function UserManagementPanel() {
                     </select>
                   </label>
                 ) : (
-                  <label className="space-y-2 text-sm text-black">
-                    <span>Department</span>
+                  <label className="space-y-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-black/40 ml-1">Department</span>
                     <input
                       value={formValues.department}
                       onChange={(event) =>
@@ -485,50 +466,35 @@ export function UserManagementPanel() {
                           department: event.target.value,
                         }))
                       }
-                      className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
-                      placeholder="Computer Engineering"
+                      className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-black font-bold outline-none"
+                      placeholder="e.g. Computer Engineering"
                     />
                   </label>
                 )}
               </div>
 
-              {formValues.role !== "STUDENT" && formValues.role !== "ADMINISTRATOR" ? (
-                <label className="space-y-2 text-sm text-black">
-                  <span>Specialization</span>
-                  <input
-                    value={formValues.specialization}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        specialization: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
-                    placeholder="Distributed Systems"
-                  />
-                </label>
-              ) : null}
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-2xl border border-gray-300 px-4 py-3 text-sm font-medium text-black"
+                  className="px-6 py-4 text-base font-black uppercase tracking-widest text-black/40 hover:text-black transition-colors"
                 >
-                  Cancel
+                  Discard
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
+                  className="group inline-block text-base font-bold bg-black rounded-[0.75em] cursor-pointer"
                 >
-                  {isSubmitting ? "Creating..." : "Create account"}
+                  <span className="block box-border border-2 border-black rounded-[0.75em] px-8 py-4 bg-black text-white -translate-y-[0.2em] transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                    {isSubmitting ? "Creating..." : "Confirm Creation"}
+                  </span>
                 </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }

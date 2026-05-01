@@ -74,23 +74,23 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent p-6">
+        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
           Viva Voce
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-white">Schedule vivas</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
+        <h1 className="mt-3 text-3xl font-semibold text-black">Schedule vivas</h1>
+        <p className="mt-2 max-w-3xl text-base leading-6 text-black">
           Schedule or update viva details for theses currently under examination.
         </p>
       </section>
 
       {error ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {error}
         </div>
       ) : null}
       {message ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {message}
         </div>
       ) : null}
@@ -98,16 +98,16 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
       <section className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] border border-gray-200 bg-white/70 p-6"
+          className="rounded-[2rem] border border-gray-200 bg-transparent p-6"
         >
-          <h2 className="text-xl font-semibold text-white">Viva details</h2>
+          <h2 className="text-xl font-semibold text-black">Viva details</h2>
           <div className="mt-5 grid gap-4">
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Thesis</span>
               <select
                 value={thesisId}
                 onChange={(event) => setThesisId(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
               >
                 {theses.map((thesis) => (
                   <option key={thesis.id} value={thesis.id}>
@@ -116,22 +116,22 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                 ))}
               </select>
             </label>
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Venue</span>
               <input
                 value={venue}
                 onChange={(event) => setVenue(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 required
               />
             </label>
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Date and time</span>
               <input
                 type="datetime-local"
                 value={scheduledDate}
                 onChange={(event) => setScheduledDate(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 required
               />
             </label>
@@ -139,7 +139,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
           <button
             type="submit"
             disabled={isSubmitting || !thesisId}
-            className="mt-6 rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:opacity-60"
+            className="mt-6 rounded-2xl bg-black px-5 py-3 text-base font-semibold text-black transition hover:bg-black disabled:opacity-60"
           >
             {isSubmitting ? "Scheduling..." : "Schedule viva"}
           </button>
@@ -147,27 +147,27 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
         <section className="space-y-4">
           {theses.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white/70 p-8 text-sm text-black">
+            <div className="rounded-[2rem] border border-dashed border-gray-300 bg-transparent p-8 text-base text-black">
               No theses are currently under examination.
             </div>
           ) : (
             theses.map((thesis) => (
               <article
                 key={thesis.id}
-                className="rounded-[2rem] border border-gray-200 bg-white/70 p-5"
+                className="rounded-[2rem] border border-gray-200 bg-transparent p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{thesis.title}</h3>
-                    <p className="mt-1 text-sm text-black">
+                    <h3 className="text-lg font-semibold text-black">{thesis.title}</h3>
+                    <p className="mt-1 text-base text-black">
                       {thesis.student.user.displayName} - {thesis.student.user.email}
                     </p>
                   </div>
-                  <span className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-semibold text-black">
+                  <span className="rounded-full border border-gray-300 bg-transparent px-3 py-1 text-base font-semibold text-black">
                     {thesis.viva ? "Scheduled" : "Not scheduled"}
                   </span>
                 </div>
-                <p className="mt-4 text-sm text-black">
+                <p className="mt-4 text-base text-black">
                   Examiners:{" "}
                   {thesis.examinerAssignments.length > 0
                     ? thesis.examinerAssignments
@@ -176,7 +176,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                     : "None assigned"}
                 </p>
                 {thesis.viva ? (
-                  <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50/70 px-4 py-3 text-sm text-black">
+                  <div className="mt-4 rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-base text-black">
                     {new Date(thesis.viva.scheduledDate).toLocaleString()} at{" "}
                     {thesis.viva.venue}
                     {thesis.viva.outcome ? ` - ${thesis.viva.outcome}` : ""}

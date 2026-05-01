@@ -52,13 +52,13 @@ export function ProgressReportSubmissionForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-6">
       {errorMessage && (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {errorMessage}
         </div>
       )}
 
       <div className="space-y-2">
-        <label htmlFor="periodLabel" className="text-sm font-medium text-black">
+        <label htmlFor="periodLabel" className="text-base font-medium text-black">
           Reporting Period (e.g., Jan-Jun 2024)
         </label>
         <input
@@ -68,12 +68,12 @@ export function ProgressReportSubmissionForm() {
           value={periodLabel}
           onChange={(e) => setPeriodLabel(e.target.value)}
           placeholder="Enter the time period this report covers"
-          className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-black outline-none transition focus:border-gray-300"
+          className="w-full rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-black outline-none transition focus:border-gray-300"
         />
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="narrative" className="text-sm font-medium text-black">
+        <label htmlFor="narrative" className="text-base font-medium text-black">
           Narrative Report
         </label>
         <textarea
@@ -83,9 +83,9 @@ export function ProgressReportSubmissionForm() {
           value={narrative}
           onChange={(e) => setNarrative(e.target.value)}
           placeholder="Provide a detailed update on your research progress, challenges, and next steps (min 100 characters)..."
-          className="w-full rounded-2xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-black outline-none transition focus:border-gray-300"
+          className="w-full rounded-2xl border border-gray-200 bg-transparent px-4 py-3 text-black outline-none transition focus:border-gray-300"
         />
-        <p className="text-right text-xs text-black0">
+        <p className="text-right text-base text-gray-400">
           {narrative.length} characters (min 100)
         </p>
       </div>
@@ -94,14 +94,14 @@ export function ProgressReportSubmissionForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-2xl border border-gray-300 px-6 py-3 text-sm font-semibold text-black transition hover:bg-gray-50"
+          className="rounded-2xl border border-gray-300 px-6 py-3 text-base font-semibold text-black transition hover:bg-transparent"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSubmitting || narrative.length < 100 || !periodLabel}
-          className="rounded-2xl bg-black px-8 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-2xl bg-black px-8 py-3 text-base font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Submitting..." : "Submit Report"}
         </button>

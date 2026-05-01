@@ -47,9 +47,9 @@ function StageCard({
         value.completionPercentage,
       )}`}
     >
-      <p className="text-xs uppercase tracking-[0.18em]">{label}</p>
+      <p className="text-base uppercase tracking-[0.18em]">{label}</p>
       <p className="mt-3 text-3xl font-semibold">{value.completionPercentage}%</p>
-      <p className="mt-3 text-sm">
+      <p className="mt-3 text-base">
         Submitted: {value.totalSubmittedVersions} · Approved: {value.approvedVersions}
       </p>
     </article>
@@ -83,39 +83,39 @@ export function StudentProgressDashboard({
 }) {
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/75 p-5 shadow-xl sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent/75 p-5 shadow-none sm:p-7">
+        <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
           Student Progress
         </p>
-        <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold text-black sm:text-4xl">
           Lifecycle dashboard for {progress.student.displayName}
         </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-black">
+        <p className="mt-3 max-w-3xl text-base leading-6 text-black">
           Track milestone readiness across proposal, ethics, data collection, and
           thesis phases with sequential lifecycle gating.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Current milestone
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {progress.currentMilestone}
             </p>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Estimated completion
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {formatDateLabel(progress.estimatedCompletionDate)}
             </p>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Document approvals
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {progress.counts.approvedDocumentVersions}/
               {progress.counts.totalDocumentVersions}
             </p>
@@ -133,17 +133,17 @@ export function StudentProgressDashboard({
         <StageCard label="Thesis" value={progress.stageProgress.thesis} />
       </section>
 
-      <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 sm:p-7">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent p-5 sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-black">
+            <p className="text-base font-semibold uppercase tracking-[0.2em] text-black">
               Progress Stepper
             </p>
-            <h3 className="mt-2 text-2xl font-semibold text-white">
+            <h3 className="mt-2 text-2xl font-semibold text-black">
               Sequential milestone tracking
             </h3>
           </div>
-          <p className="text-sm text-black">
+          <p className="text-base text-black">
             Examiner feedback stays hidden until results are officially released.
           </p>
         </div>
@@ -156,21 +156,21 @@ export function StudentProgressDashboard({
                 step.state,
               )}`}
             >
-              <p className="text-xs uppercase tracking-[0.18em]">
+              <p className="text-base uppercase tracking-[0.18em]">
                 Step {index + 1}
               </p>
               <h4 className="mt-2 text-lg font-semibold">{step.label}</h4>
-              <p className="mt-2 text-sm leading-6">{step.description}</p>
+              <p className="mt-2 text-base leading-6">{step.description}</p>
             </article>
           ))}
         </div>
 
         {progress.examinerFeedbackReleased ? (
-          <div className="mt-5 rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+          <div className="mt-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
             Examination result released. The thesis lifecycle has been finalized.
           </div>
         ) : (
-          <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-sm text-black">
+          <div className="mt-5 rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-3 text-base text-black">
             Examiner feedback will appear here once an administrator officially releases the result.
           </div>
         )}

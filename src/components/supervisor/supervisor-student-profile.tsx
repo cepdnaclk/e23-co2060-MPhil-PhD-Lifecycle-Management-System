@@ -89,7 +89,7 @@ export function SupervisorStudentProfile({
 
   if (isLoading) {
     return (
-      <div className="rounded-[2rem] border border-gray-200 bg-white/70 p-6 text-sm text-black">
+      <div className="rounded-[2rem] border border-gray-200 bg-transparent p-6 text-base text-black">
         Loading student profile...
       </div>
     );
@@ -97,7 +97,7 @@ export function SupervisorStudentProfile({
 
   if (errorMessage || !student) {
     return (
-      <div className="rounded-[2rem] border border-gray-300 bg-gray-100 px-5 py-4 text-sm text-black">
+      <div className="rounded-[2rem] border border-gray-300 bg-transparent px-5 py-4 text-base text-black">
         {errorMessage ?? "Student profile could not be loaded."}
       </div>
     );
@@ -105,39 +105,39 @@ export function SupervisorStudentProfile({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/75 p-5 shadow-xl sm:p-7">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent/75 p-5 shadow-none sm:p-7">
         <Link
           href="/dashboard/supervisor/students"
-          className="text-sm font-medium text-black transition hover:text-black"
+          className="text-base font-medium text-black transition hover:text-black"
         >
           Back to My Students
         </Link>
-        <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+        <h2 className="mt-4 text-3xl font-semibold text-black sm:text-4xl">
           {student.user.displayName}
         </h2>
-        <p className="mt-2 text-sm text-black">{student.user.email}</p>
+        <p className="mt-2 text-base text-black">{student.user.email}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Programme
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {student.programType}
             </p>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Academic status
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {student.academicStatus}
             </p>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-black0">
+          <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4">
+            <p className="text-base uppercase tracking-[0.18em] text-gray-400">
               Enrolled
             </p>
-            <p className="mt-2 text-lg font-semibold text-white">
+            <p className="mt-2 text-lg font-semibold text-black">
               {formatDateLabel(student.enrollmentDate)}
             </p>
           </div>
@@ -146,15 +146,15 @@ export function SupervisorStudentProfile({
 
       <section
         id="research-proposals"
-        className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 sm:p-7"
+        className="rounded-[2rem] border border-gray-200 bg-transparent p-5 sm:p-7"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-black">
+        <p className="text-base font-semibold uppercase tracking-[0.2em] text-black">
           Research Proposals
         </p>
-        <h3 className="mt-3 text-2xl font-semibold text-white">
+        <h3 className="mt-3 text-2xl font-semibold text-black">
           Proposal history access
         </h3>
-        <p className="mt-3 text-sm leading-6 text-black">
+        <p className="mt-3 text-base leading-6 text-black">
           Use this student profile as your anchor point before opening proposal
           workflow actions and historical review pages tied to the assigned student.
         </p>
@@ -162,15 +162,15 @@ export function SupervisorStudentProfile({
 
       <section
         id="progress-reports"
-        className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 sm:p-7"
+        className="rounded-[2rem] border border-gray-200 bg-transparent p-5 sm:p-7"
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-black">
+        <p className="text-base font-semibold uppercase tracking-[0.2em] text-black">
           Progress Reports
         </p>
-        <h3 className="mt-3 text-2xl font-semibold text-white">
+        <h3 className="mt-3 text-2xl font-semibold text-black">
           Progress reporting context
         </h3>
-        <p className="mt-3 text-sm leading-6 text-black">
+        <p className="mt-3 text-base leading-6 text-black">
           This workspace keeps the assigned student context visible while you review
           their academic progress and coordinate future reporting follow-up.
         </p>

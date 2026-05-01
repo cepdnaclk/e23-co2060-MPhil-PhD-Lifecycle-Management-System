@@ -152,23 +152,23 @@ export function SupervisorAssignmentPanel() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-white">Loading assignments...</div>;
+  if (isLoading) return <div className="p-8 text-black">Loading assignments...</div>;
 
   return (
     <div className="space-y-8">
-      <div className="rounded-3xl border border-gray-200 bg-white/70 p-6 shadow-2xl">
-        <h1 className="text-3xl font-semibold text-white">Supervisor Assignments</h1>
+      <div className="rounded-3xl border border-gray-200 bg-transparent p-6 shadow-none">
+        <h1 className="text-3xl font-semibold text-black">Supervisor Assignments</h1>
         <p className="mt-2 text-black">Manage student-supervisor pairings and primary oversight roles.</p>
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 p-4 text-sm text-black">
+        <div className="rounded-2xl border border-gray-300 bg-transparent p-4 text-base text-black">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 p-4 text-sm text-black">
+        <div className="rounded-2xl border border-gray-300 bg-transparent p-4 text-base text-black">
           {success}
         </div>
       )}
@@ -176,9 +176,9 @@ export function SupervisorAssignmentPanel() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Student List */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-3xl border border-gray-200 bg-white/70 overflow-hidden">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
-              <thead className="bg-gray-50/80 text-black">
+          <div className="rounded-3xl border border-gray-200 bg-transparent overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-800 text-base">
+              <thead className="bg-transparent text-black">
                 <tr>
                   <th className="px-5 py-4 text-left font-medium">Student</th>
                   <th className="px-5 py-4 text-left font-medium">Supervisors</th>
@@ -187,19 +187,19 @@ export function SupervisorAssignmentPanel() {
               </thead>
               <tbody className="divide-y divide-slate-800 text-black">
                 {students.map((student) => (
-                  <tr key={student.id} className={selectedStudentId === student.id ? "bg-gray-100" : ""}>
+                  <tr key={student.id} className={selectedStudentId === student.id ? "bg-transparent" : ""}>
                     <td className="px-5 py-4">
-                      <div className="font-medium text-white">{student.user.displayName}</div>
+                      <div className="font-medium text-black">{student.user.displayName}</div>
                       <div className="text-black">{student.user.email}</div>
-                      <div className="mt-1 text-xs text-black">{student.programType} - {student.academicStatus}</div>
+                      <div className="mt-1 text-base text-black">{student.programType} - {student.academicStatus}</div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="space-y-2">
                         {student.supervisorAssignments.length === 0 ? (
-                          <span className="text-black0 italic">No supervisors assigned</span>
+                          <span className="text-gray-400 italic">No supervisors assigned</span>
                         ) : (
                           student.supervisorAssignments.map((a) => (
-                            <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-gray-50/50 p-2">
+                            <div key={a.id} className="flex items-center justify-between gap-2 rounded-lg bg-transparent p-2">
                               <div>
                                 <div className="font-medium">{a.supervisor.user.displayName}</div>
                                 <div className="text-[10px] uppercase tracking-wider text-black">
@@ -222,7 +222,7 @@ export function SupervisorAssignmentPanel() {
                     <td className="px-5 py-4">
                       <button
                         onClick={() => setSelectedStudentId(student.id)}
-                        className="rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-xs font-semibold text-white hover:border-gray-300 transition"
+                        className="rounded-xl border border-gray-300 bg-transparent px-3 py-2 text-base font-semibold text-black hover:border-gray-300 transition"
                       >
                         Add Supervisor
                       </button>
@@ -236,8 +236,8 @@ export function SupervisorAssignmentPanel() {
 
         {/* Assignment Form */}
         <div className="space-y-4">
-          <div className="sticky top-6 rounded-3xl border border-gray-200 bg-white/70 p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-white mb-4">
+          <div className="sticky top-6 rounded-3xl border border-gray-200 bg-transparent p-6 shadow-none">
+            <h2 className="text-xl font-semibold text-black mb-4">
               {selectedStudentId 
                 ? `Assign to ${students.find(s => s.id === selectedStudentId)?.user.displayName}` 
                 : "Select a student to assign"}
@@ -245,12 +245,12 @@ export function SupervisorAssignmentPanel() {
 
             <form onSubmit={handleAssign} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm text-black">Supervisor</label>
+                <label className="text-base text-black">Supervisor</label>
                 <select
                   disabled={!selectedStudentId}
                   value={selectedSupervisorId}
                   onChange={(e) => setSelectedSupervisorId(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300 disabled:opacity-50"
+                  className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300 disabled:opacity-50"
                 >
                   <option value="">Select a supervisor...</option>
                   {supervisors.map((s: any) => (
@@ -266,9 +266,9 @@ export function SupervisorAssignmentPanel() {
                   disabled={!selectedStudentId}
                   checked={isPrimary}
                   onChange={(e) => setIsPrimary(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 bg-gray-50 text-black focus:ring-sky-500"
+                  className="h-4 w-4 rounded border-gray-300 bg-transparent text-black focus:ring-sky-500"
                 />
-                <label htmlFor="isPrimary" className="text-sm text-black cursor-pointer">
+                <label htmlFor="isPrimary" className="text-base text-black cursor-pointer">
                   Assign as Primary Supervisor
                 </label>
               </div>
@@ -277,7 +277,7 @@ export function SupervisorAssignmentPanel() {
                 <button
                   type="submit"
                   disabled={!selectedStudentId || !selectedSupervisorId || isSubmitting}
-                  className="flex-1 rounded-2xl bg-black py-3 text-sm font-semibold text-black transition hover:bg-black disabled:opacity-50"
+                  className="flex-1 rounded-2xl bg-black py-3 text-base font-semibold text-black transition hover:bg-black disabled:opacity-50"
                 >
                   {isSubmitting ? "Assigning..." : "Add Assignment"}
                 </button>
@@ -288,14 +288,14 @@ export function SupervisorAssignmentPanel() {
                     setSelectedSupervisorId("");
                     setIsPrimary(false);
                   }}
-                  className="px-4 rounded-2xl border border-gray-300 text-sm font-medium text-white hover:bg-gray-50"
+                  className="px-4 rounded-2xl border border-gray-300 text-base font-medium text-black hover:bg-transparent"
                 >
                   Reset
                 </button>
               </div>
             </form>
 
-            <div className="mt-6 p-4 rounded-2xl bg-gray-100 border border-gray-300 text-xs text-black">
+            <div className="mt-6 p-4 rounded-2xl bg-transparent border border-gray-300 text-base text-black">
               <p className="font-semibold mb-1">Assignment Rules:</p>
               <ul className="list-disc list-inside space-y-1 opacity-80">
                 <li>Max 3 supervisors total per student.</li>

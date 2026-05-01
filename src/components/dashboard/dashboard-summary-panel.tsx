@@ -25,25 +25,25 @@ function DashboardKpi({
   card: DashboardKpiCard;
 }) {
   return (
-    <article className="flex flex-col rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:border-black h-full">
+    <article className="group flex flex-col rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black h-full cursor-default">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div className="min-h-[2.8em] flex-1">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-gray-400 leading-tight">
+          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-gray-400 leading-tight transition-colors group-hover:text-gray-400">
             {card.title}
           </p>
         </div>
         <span
-          className={`shrink-0 rounded-full border-2 px-3 py-1 text-[12px] font-black uppercase tracking-wider ${getStatusBadgeClassName(card.statusTone)}`}
+          className={`shrink-0 rounded-full border-2 px-3 py-1 text-[12px] font-black uppercase tracking-wider transition-colors group-hover:border-white group-hover:text-white ${getStatusBadgeClassName(card.statusTone)}`}
         >
           {card.statusLabel}
         </span>
       </div>
       
-      <p className="text-5xl font-black text-black tracking-tighter sm:text-6xl">
+      <p className="text-5xl font-black text-black tracking-tighter sm:text-6xl transition-colors group-hover:text-white">
         {card.value}
       </p>
       
-      <p className="mt-4 text-sm leading-relaxed text-black/70 font-medium">
+      <p className="mt-4 text-sm leading-relaxed text-black/70 font-medium transition-colors group-hover:text-white/80">
         {card.description}
       </p>
     </article>
@@ -60,10 +60,10 @@ function QuickActionCard({
       href={action.href}
       className="group flex flex-col justify-center min-h-[120px] rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
     >
-      <p className="text-xl font-bold text-black transition group-hover:text-white">
+      <p className="text-xl font-black text-black tracking-tight transition-colors group-hover:text-white">
         {action.label}
       </p>
-      <p className="mt-2 text-base leading-snug text-black/70 transition group-hover:text-gray-400">
+      <p className="mt-2 text-base leading-snug text-black/70 font-medium transition-colors group-hover:text-white/70">
         {action.description}
       </p>
     </Link>
@@ -73,10 +73,10 @@ function QuickActionCard({
 export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
   return (
     <section
-      className="rounded-[30px] border-2 border-dashed border-gray-300 bg-white/40 px-6 py-16 text-center"
+      className="rounded-[30px] border-2 border-dashed border-gray-300 bg-transparent/40 px-6 py-16 text-center"
       data-testid="dashboard-empty-state"
     >
-      <p className="text-sm font-bold uppercase tracking-[0.24em] text-black/40">
+      <p className="text-base font-bold uppercase tracking-[0.24em] text-black/40">
         {roleLabel}
       </p>
       <h2 className="mt-6 text-4xl font-black text-black tracking-tight">Nothing to show yet</h2>

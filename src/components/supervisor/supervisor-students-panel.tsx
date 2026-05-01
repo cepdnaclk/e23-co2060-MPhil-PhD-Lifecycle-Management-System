@@ -168,36 +168,36 @@ export function SupervisorStudentsPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/75 p-5 shadow-xl sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.26em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent/75 p-5 shadow-none sm:p-7">
+        <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
           Supervisor Workspace
         </p>
-        <h2 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold text-black sm:text-4xl">
           My Students
         </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-black">
+        <p className="mt-3 max-w-3xl text-base leading-6 text-black">
           Review assigned postgraduate researchers, spot lapsed registrations, and
           jump directly to each student&apos;s profile, proposal history, and progress
           reporting context.
         </p>
       </section>
 
-      <section className="grid gap-3 rounded-[2rem] border border-gray-200 bg-white/70 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-        <label className="space-y-2 text-sm text-black">
+      <section className="grid gap-3 rounded-[2rem] border border-gray-200 bg-transparent p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+        <label className="space-y-2 text-base text-black">
           <span>Program Type</span>
           <select
             value={programFilter}
             onChange={(event) =>
               setProgramFilter(event.target.value as typeof programFilter)
             }
-            className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+            className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
           >
             <option value="ALL">All programmes</option>
             <option value="MPHIL">MPhil</option>
             <option value="PHD">PhD</option>
           </select>
         </label>
-        <label className="space-y-2 text-sm text-black">
+        <label className="space-y-2 text-base text-black">
           <span>Registration Status</span>
           <select
             value={registrationFilter}
@@ -206,46 +206,46 @@ export function SupervisorStudentsPanel({
                 event.target.value as typeof registrationFilter,
               )
             }
-            className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+            className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
           >
             <option value="ALL">All registrations</option>
             <option value="ACTIVE">Active</option>
             <option value="LAPSED">Lapsed</option>
           </select>
         </label>
-        <div className="rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4 text-sm text-black">
-          <p className="text-xs uppercase tracking-[0.2em] text-black0">
+        <div className="rounded-2xl border border-gray-200 bg-transparent/60 px-4 py-4 text-base text-black">
+          <p className="text-base uppercase tracking-[0.2em] text-gray-400">
             Filtered students
           </p>
-          <p className="mt-2 text-2xl font-semibold text-white">
+          <p className="mt-2 text-2xl font-semibold text-black">
             {filteredStudents.length}
           </p>
         </div>
       </section>
 
       {errorMessage ? (
-        <div className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {errorMessage}
         </div>
       ) : null}
 
       {isLoading ? (
-        <div className="rounded-[2rem] border border-gray-200 bg-white/70 p-6 text-sm text-black">
+        <div className="rounded-[2rem] border border-gray-200 bg-transparent p-6 text-base text-black">
           Loading assigned students...
         </div>
       ) : null}
 
       {!isLoading && filteredStudents.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white/50 px-5 py-8 text-sm text-black">
+        <div className="rounded-[2rem] border border-dashed border-gray-300 bg-transparent/50 px-5 py-8 text-base text-black">
           No assigned students matched the current filters.
         </div>
       ) : null}
 
       {!isLoading && filteredStudents.length > 0 ? (
         <>
-          <div className="hidden overflow-hidden rounded-[2rem] border border-gray-200 bg-white/70 sm:block">
-            <table className="min-w-full divide-y divide-slate-800 text-sm">
-              <thead className="bg-gray-50/70 text-left text-black">
+          <div className="hidden overflow-hidden rounded-[2rem] border border-gray-200 bg-transparent sm:block">
+            <table className="min-w-full divide-y divide-slate-800 text-base">
+              <thead className="bg-transparent text-left text-black">
                 <tr>
                   <th className="px-5 py-4 font-medium">Student</th>
                   <th className="px-5 py-4 font-medium">Programme</th>
@@ -266,12 +266,12 @@ export function SupervisorStudentsPanel({
                       <td className="px-5 py-5">
                         <Link
                           href={`/dashboard/supervisor/students/${entry.student.id}`}
-                          className="text-base font-semibold text-white transition hover:text-black"
+                          className="text-base font-semibold text-black transition hover:text-black"
                         >
                           {entry.student.displayName}
                         </Link>
                         <p className="mt-1 text-black">{entry.student.email}</p>
-                        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-black0">
+                        <p className="mt-2 text-base uppercase tracking-[0.18em] text-gray-400">
                           {entry.isPrimary ? "Primary supervisor" : "Co-supervisor"} ·
                           Assigned {formatDateLabel(entry.assignedAt)}
                         </p>
@@ -282,26 +282,26 @@ export function SupervisorStudentsPanel({
                       <td className="px-5 py-5">
                         <span
                           data-testid={`registration-badge-${entry.student.id}`}
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getRegistrationBadgeClassName(
+                          className={`inline-flex rounded-full px-3 py-1 text-base font-semibold uppercase tracking-[0.18em] ${getRegistrationBadgeClassName(
                             registrationLabel,
                           )}`}
                         >
                           {registrationLabel}
                         </span>
-                        <p className="mt-2 text-xs text-black0">
+                        <p className="mt-2 text-base text-gray-400">
                           Expires{" "}
                           {formatDateLabel(entry.currentRegistration?.expirationDate)}
                         </p>
                       </td>
                       <td className="px-5 py-5">
                         <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${getProposalBadgeClassName(
+                          className={`inline-flex rounded-full px-3 py-1 text-base font-semibold uppercase tracking-[0.18em] ${getProposalBadgeClassName(
                             entry.latestProposal?.status ?? null,
                           )}`}
                         >
                           {proposalLabel}
                         </span>
-                        <p className="mt-2 text-xs text-black0">
+                        <p className="mt-2 text-base text-gray-400">
                           {entry.latestProposal
                             ? `${entry.latestProposal.title} · updated ${formatDateLabel(entry.latestProposal.updatedAt)}`
                             : "No proposal submitted yet."}
@@ -317,13 +317,13 @@ export function SupervisorStudentsPanel({
                           </Link>
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}#research-proposals`}
-                            className="text-black transition hover:text-white"
+                            className="text-black transition hover:text-black"
                           >
                             Research proposal history
                           </Link>
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}#progress-reports`}
-                            className="text-black transition hover:text-white"
+                            className="text-black transition hover:text-black"
                           >
                             Progress report history
                           </Link>
@@ -346,17 +346,17 @@ export function SupervisorStudentsPanel({
               return (
                 <article
                   key={entry.assignmentId}
-                  className="rounded-[1.75rem] border border-gray-200 bg-white/70 p-4 shadow-lg"
+                  className="rounded-[1.75rem] border border-gray-200 bg-transparent p-4 shadow-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link
                         href={`/dashboard/supervisor/students/${entry.student.id}`}
-                        className="text-lg font-semibold text-white transition hover:text-black"
+                        className="text-lg font-semibold text-black transition hover:text-black"
                       >
                         {entry.student.displayName}
                       </Link>
-                      <p className="mt-1 break-all text-sm text-black">
+                      <p className="mt-1 break-all text-base text-black">
                         {entry.student.email}
                       </p>
                     </div>
@@ -383,17 +383,17 @@ export function SupervisorStudentsPanel({
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm text-black">
+                  <div className="mt-4 space-y-2 text-base text-black">
                     <p>
-                      <span className="text-black0">Assigned:</span>{" "}
+                      <span className="text-gray-400">Assigned:</span>{" "}
                       {formatDateLabel(entry.assignedAt)}
                     </p>
                     <p>
-                      <span className="text-black0">Registration expires:</span>{" "}
+                      <span className="text-gray-400">Registration expires:</span>{" "}
                       {formatDateLabel(entry.currentRegistration?.expirationDate)}
                     </p>
                     <p>
-                      <span className="text-black0">Proposal:</span>{" "}
+                      <span className="text-gray-400">Proposal:</span>{" "}
                       {entry.latestProposal?.title ?? "No proposal submitted yet."}
                     </p>
                   </div>
@@ -401,19 +401,19 @@ export function SupervisorStudentsPanel({
                   <div className="mt-5 grid gap-2">
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}`}
-                      className="rounded-2xl bg-black px-4 py-3 text-center text-sm font-semibold text-black"
+                      className="rounded-2xl bg-black px-4 py-3 text-center text-base font-semibold text-black"
                     >
                       Open profile
                     </Link>
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}#research-proposals`}
-                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-sm font-medium text-black"
+                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-base font-medium text-black"
                     >
                       Proposal history
                     </Link>
                     <Link
                       href={`/dashboard/supervisor/students/${entry.student.id}#progress-reports`}
-                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-sm font-medium text-black"
+                      className="rounded-2xl border border-gray-300 px-4 py-3 text-center text-base font-medium text-black"
                     >
                       Progress reports
                     </Link>

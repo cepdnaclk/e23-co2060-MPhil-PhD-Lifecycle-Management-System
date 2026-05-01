@@ -309,14 +309,14 @@ export function ProposalEvaluationPanel() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/70 px-5 py-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent px-5 py-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:px-6">
+        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
           {userRole === "ADMINISTRATOR" ? "Admin Review" : "Supervisor Evaluation"}
         </p>
-        <h1 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">
+        <h1 className="mt-3 text-2xl font-semibold text-black sm:text-3xl">
           {userRole === "ADMINISTRATOR" ? "Approve research proposals" : "Evaluate a proposal under review"}
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
+        <p className="mt-2 max-w-3xl text-base leading-6 text-black">
           {userRole === "ADMINISTRATOR" 
             ? "Review pending proposals from all students and provide final approval or request revisions."
             : "Load a proposal by ID, inspect existing evaluation history, and submit a single supervisor evaluation."}
@@ -324,24 +324,24 @@ export function ProposalEvaluationPanel() {
       </section>
 
       {errorMessage ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {errorMessage}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {successMessage}
         </div>
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
-            <h2 className="text-xl font-semibold text-white">
+          <section className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
+            <h2 className="text-xl font-semibold text-black">
               {userRole === "ADMINISTRATOR" ? "All pending proposals" : "Assigned student proposals"}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-black">
+            <p className="mt-2 text-base leading-6 text-black">
               {userRole === "ADMINISTRATOR" 
                 ? "Select a submission from the list below to review its history and status."
                 : "Quickly select a proposal from your assigned students to start evaluating."}
@@ -350,11 +350,11 @@ export function ProposalEvaluationPanel() {
             <div className="mt-5 space-y-3">
               {isListLoading ? (
                 <div className="animate-pulse space-y-3">
-                  <div className="h-20 rounded-2xl bg-gray-50" />
-                  <div className="h-20 rounded-2xl bg-gray-50" />
+                  <div className="h-20 rounded-2xl bg-transparent" />
+                  <div className="h-20 rounded-2xl bg-transparent" />
                 </div>
               ) : proposalsToReview.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-black0">
+                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-base text-gray-400">
                   {userRole === "ADMINISTRATOR" 
                     ? "No proposals are currently pending review."
                     : "No assigned students with active proposals found."}
@@ -366,20 +366,20 @@ export function ProposalEvaluationPanel() {
                     onClick={() => loadProposalById(item.id)}
                     className={`group w-full rounded-2xl border p-4 text-left transition ${
                       proposalId === item.id
-                        ? "border-gray-300 bg-gray-100"
-                        : "border-gray-200 bg-gray-50/50 hover:border-gray-300 hover:bg-gray-50"
+                        ? "border-gray-300 bg-transparent"
+                        : "border-gray-200 bg-transparent hover:border-gray-300 hover:bg-transparent"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="font-semibold text-white group-hover:text-black">
+                        <p className="font-semibold text-black group-hover:text-black">
                           {item.student.displayName}
                         </p>
-                        <p className="mt-1 truncate text-xs text-black">
+                        <p className="mt-1 truncate text-base text-black">
                           {item.title}
                         </p>
                       </div>
-                      <span className="rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-black">
+                      <span className="rounded-full border border-gray-300 bg-transparent px-2 py-0.5 text-[10px] font-semibold text-black">
                         V{item.currentVersion} • {item.status.replaceAll("_", " ")}
                       </span>
                     </div>
@@ -391,25 +391,25 @@ export function ProposalEvaluationPanel() {
 
           <form
             onSubmit={handleLookup}
-            className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
+            className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
           >
-            <h2 className="text-xl font-semibold text-white">Load proposal</h2>
-            <p className="mt-2 text-sm leading-6 text-black">
+            <h2 className="text-xl font-semibold text-black">Load proposal</h2>
+            <p className="mt-2 text-base leading-6 text-black">
               Enter the proposal ID to load its evaluation history and status.
             </p>
-            <label className="mt-5 block space-y-2 text-sm text-black">
+            <label className="mt-5 block space-y-2 text-base text-black">
               <span>Proposal ID</span>
               <input
                 value={proposalId}
                 onChange={(event) => setProposalId(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="proposal_abc123"
               />
             </label>
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-5 rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isLoading ? "Loading..." : "Load evaluations"}
             </button>
@@ -417,19 +417,19 @@ export function ProposalEvaluationPanel() {
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
+            className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
           >
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-xl font-semibold text-black">
               {userRole === "ADMINISTRATOR" ? "Finalize decision" : "Submit evaluation"}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-black">
+            <p className="mt-2 text-base leading-6 text-black">
               The proposal must already be in the <span className="font-semibold text-black">UNDER_REVIEW</span> state
               {userRole !== "ADMINISTRATOR" && ", and you must be assigned to the student"}.
             </p>
 
             <div className="mt-5 grid gap-4">
               {userRole !== "ADMINISTRATOR" && (
-                <label className="space-y-2 text-sm text-black">
+                <label className="space-y-2 text-base text-black">
                   <span>Score (0-100)</span>
                   <input
                     value={numericalScore}
@@ -437,18 +437,18 @@ export function ProposalEvaluationPanel() {
                     type="number"
                     min={0}
                     max={100}
-                    className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                    className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                     placeholder="85"
                   />
                 </label>
               )}
 
-              <label className="space-y-2 text-sm text-black">
+              <label className="space-y-2 text-base text-black">
                 <span>{userRole === "ADMINISTRATOR" ? "Decision notes / Feedback" : "Feedback"}</span>
                 <textarea
                   value={feedback}
                   onChange={(event) => setFeedback(event.target.value)}
-                  className="min-h-44 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                  className="min-h-44 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                   placeholder={userRole === "ADMINISTRATOR" 
                     ? "Explain your approval or rejection decision..." 
                     : "Provide at least 50 characters of evaluation feedback..."}
@@ -461,7 +461,7 @@ export function ProposalEvaluationPanel() {
                 <button
                   type="submit"
                   disabled={isSubmitting || isRejecting || isApproving}
-                  className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-2xl bg-black px-4 py-3 text-base font-semibold text-black transition hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? "Submitting..." : "Submit evaluation"}
                 </button>
@@ -472,7 +472,7 @@ export function ProposalEvaluationPanel() {
                     type="button"
                     onClick={handleReject}
                     disabled={isSubmitting || isRejecting || isApproving}
-                    className="rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isRejecting ? "Rejecting..." : "Reject and request revisions"}
                   </button>
@@ -480,7 +480,7 @@ export function ProposalEvaluationPanel() {
                     type="button"
                     onClick={handleApprove}
                     disabled={isSubmitting || isRejecting || isApproving}
-                    className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
+                    className="rounded-2xl bg-black px-4 py-3 text-base font-semibold text-black transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isApproving ? "Approving..." : "Approve Proposal"}
                   </button>
@@ -490,47 +490,47 @@ export function ProposalEvaluationPanel() {
           </form>
         </div>
 
-        <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
-          <h2 className="text-xl font-semibold text-white">Evaluation history</h2>
-          <p className="mt-2 text-sm leading-6 text-black">
+        <section className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
+          <h2 className="text-xl font-semibold text-black">Evaluation history</h2>
+          <p className="mt-2 text-base leading-6 text-black">
             Existing evaluations and the current aggregate score for admin review.
           </p>
 
           {!result ? (
-            <div className="mt-6 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-sm text-black">
+            <div className="mt-6 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base text-black">
               Load a proposal to see its evaluation history.
             </div>
           ) : (
             <div className="mt-6 space-y-5">
-              <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-black0">
+              <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                <p className="text-base uppercase tracking-[0.18em] text-gray-400">
                   Proposal
                 </p>
-                <h3 className="mt-2 text-lg font-semibold text-white">
+                <h3 className="mt-2 text-lg font-semibold text-black">
                   {result.proposal.title}
                 </h3>
-                <p className="mt-2 text-sm text-black">
+                <p className="mt-2 text-base text-black">
                   Student: {result.proposal.student.displayName}
                 </p>
-                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-black0">
+                <p className="mt-1 text-base uppercase tracking-[0.16em] text-gray-400">
                   Status: {result.proposal.status.replaceAll("_", " ")}
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-black0">
+                <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                  <p className="text-base uppercase tracking-[0.18em] text-gray-400">
                     Aggregate Score
                   </p>
-                  <p className="mt-2 text-3xl font-semibold text-white">
+                  <p className="mt-2 text-3xl font-semibold text-black">
                     {result.aggregate.averageScore ?? "N/A"}
                   </p>
                 </div>
-                <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-black0">
+                <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                  <p className="text-base uppercase tracking-[0.18em] text-gray-400">
                     Evaluation Count
                   </p>
-                  <p className="mt-2 text-3xl font-semibold text-white">
+                  <p className="mt-2 text-3xl font-semibold text-black">
                     {result.aggregate.evaluationCount}
                   </p>
                 </div>
@@ -538,29 +538,29 @@ export function ProposalEvaluationPanel() {
 
               <div className="space-y-3">
                 {result.evaluations.length === 0 ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-sm text-black">
+                  <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-base text-black">
                     No evaluations submitted yet.
                   </div>
                 ) : (
                   result.evaluations.map((evaluation) => (
                     <article
                       key={evaluation.id}
-                      className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 px-4 py-4"
+                      className="rounded-[1.5rem] border border-gray-200 bg-transparent px-4 py-4"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="font-semibold text-white">
+                          <p className="font-semibold text-black">
                             {evaluation.evaluator.displayName}
                           </p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-black0">
+                          <p className="mt-1 text-base uppercase tracking-[0.16em] text-gray-400">
                             Submitted {formatDateLabel(evaluation.submissionDate)}
                           </p>
                         </div>
-                        <span className="rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-semibold text-black">
+                        <span className="rounded-full border border-gray-300 bg-transparent px-3 py-1 text-base font-semibold text-black">
                           {evaluation.numericalScore}/100
                         </span>
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-black">
+                      <p className="mt-3 whitespace-pre-wrap text-base leading-6 text-black">
                         {evaluation.feedback}
                       </p>
                     </article>

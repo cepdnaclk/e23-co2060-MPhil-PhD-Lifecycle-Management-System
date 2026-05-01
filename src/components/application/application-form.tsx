@@ -188,7 +188,7 @@ export function ApplicationForm() {
   return (
     <div className="mx-auto max-w-5xl rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-10 space-y-8">
       <section className="pb-6 border-b border-gray-300">
-        <p className="text-sm font-semibold uppercase tracking-[0.26em] text-black">
+        <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
           Postgraduate Admissions
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-black sm:text-4xl">
@@ -216,7 +216,7 @@ export function ApplicationForm() {
                     : "border-gray-300 bg-transparent text-gray-500"
               }`}
             >
-              <p className="text-sm uppercase tracking-[0.2em]">
+              <p className="text-base uppercase tracking-[0.2em]">
                 Step {index + 1}
               </p>
               <p className="mt-2 font-semibold">{label}</p>
@@ -227,7 +227,7 @@ export function ApplicationForm() {
 
       <form className="pt-2" onSubmit={handleSubmit}>
         <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-black">
+          <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
             Current step
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-black">
@@ -236,13 +236,13 @@ export function ApplicationForm() {
         </div>
 
         {errorMessage ? (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black">
+          <div className="mb-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-medium text-black">
             {errorMessage}
           </div>
         ) : null}
 
         {successMessage ? (
-          <div className="mb-5 rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-base font-medium text-black">
+          <div className="mb-5 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base font-medium text-black">
             {successMessage}
           </div>
         ) : null}
@@ -254,7 +254,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.applicantName}
                 onChange={(event) => updateField("applicantName", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="Applicant full name"
               />
             </label>
@@ -263,7 +263,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.applicantEmail}
                 onChange={(event) => updateField("applicantEmail", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="name@example.com"
                 type="email"
               />
@@ -273,7 +273,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.applicantPhone}
                 onChange={(event) => updateField("applicantPhone", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="+94 7X XXX XXXX"
               />
             </label>
@@ -287,7 +287,7 @@ export function ApplicationForm() {
               <select
                 value={formValues.programType}
                 onChange={(event) => updateField("programType", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
               >
                 {applicationProgramTypes.map((programType) => (
                   <option key={programType} value={programType}>
@@ -301,7 +301,7 @@ export function ApplicationForm() {
               <input
                 value={formValues.researchArea}
                 onChange={(event) => updateField("researchArea", event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="Machine Learning for Education"
               />
             </label>
@@ -312,7 +312,7 @@ export function ApplicationForm() {
                 onChange={(event) =>
                   updateField("statementOfPurpose", event.target.value)
                 }
-                className="min-h-40 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="min-h-40 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="Describe your motivation, proposed area, and fit for the programme."
               />
             </label>
@@ -321,7 +321,7 @@ export function ApplicationForm() {
 
         {step === 2 ? (
           <div className="space-y-4">
-            <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/70 p-4">
+            <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
               <p className="text-base font-medium text-black">
                 Upload supporting documents
               </p>
@@ -329,7 +329,7 @@ export function ApplicationForm() {
                 PDF only. Maximum file size: 10MB per document.
               </p>
               <input
-                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-white"
+                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
                 type="file"
                 accept="application/pdf"
                 onChange={handleDocumentUpload}
@@ -349,10 +349,10 @@ export function ApplicationForm() {
                 documents.map((document) => (
                   <div
                     key={document.storagePath}
-                    className="rounded-[1.5rem] border border-gray-200 bg-gray-50/70 px-4 py-4"
+                    className="rounded-[1.5rem] border border-gray-200 bg-transparent px-4 py-4"
                   >
                     <p className="font-medium text-black">{document.fileName}</p>
-                    <p className="mt-1 text-sm uppercase tracking-[0.18em] text-black">
+                    <p className="mt-1 text-base uppercase tracking-[0.18em] text-black">
                       {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB • PDF
                     </p>
                   </div>
@@ -363,7 +363,7 @@ export function ApplicationForm() {
         ) : null}
 
         {step === 3 ? (
-          <div className="space-y-4 rounded-[1.5rem] border border-gray-200 bg-gray-50/70 p-4">
+          <div className="space-y-4 rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
             <div>
               <p className="text-base font-medium text-black">{formValues.applicantName}</p>
               <p className="text-base text-black">{formValues.applicantEmail}</p>
@@ -371,20 +371,20 @@ export function ApplicationForm() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-sm uppercase tracking-[0.18em] text-black">
+                <p className="text-base uppercase tracking-[0.18em] text-black">
                   Programme
                 </p>
                 <p className="mt-1 text-base text-black">{formValues.programType}</p>
               </div>
               <div>
-                <p className="text-sm uppercase tracking-[0.18em] text-black">
+                <p className="text-base uppercase tracking-[0.18em] text-black">
                   Research area
                 </p>
                 <p className="mt-1 text-base text-black">{formValues.researchArea}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.18em] text-black">
+              <p className="text-base uppercase tracking-[0.18em] text-black">
                 Statement
               </p>
               <p className="mt-1 whitespace-pre-wrap text-base leading-6 text-black">
@@ -392,7 +392,7 @@ export function ApplicationForm() {
               </p>
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.18em] text-black">
+              <p className="text-base uppercase tracking-[0.18em] text-black">
                 Supporting PDFs
               </p>
               <ul className="mt-2 space-y-2 text-base text-black">

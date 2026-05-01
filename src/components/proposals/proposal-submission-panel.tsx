@@ -235,16 +235,16 @@ export function ProposalSubmissionPanel() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-gray-200 bg-white/70 px-5 py-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-black">
+      <section className="rounded-[2rem] border border-gray-200 bg-transparent px-5 py-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:px-6">
+        <p className="text-base font-semibold uppercase tracking-[0.24em] text-black">
           Research Proposal
         </p>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-white sm:text-3xl">
+            <h1 className="text-2xl font-semibold text-black sm:text-3xl">
               Proposal submission and version history
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-black">
+            <p className="mt-2 max-w-3xl text-base leading-6 text-black">
               Upload your initial proposal as a PDF, or submit a revised version
               only after a rejection. Every version remains visible in the
               repository history.
@@ -252,7 +252,7 @@ export function ProposalSubmissionPanel() {
           </div>
           {proposal ? (
             <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusTone(proposal.status)}`}
+              className={`inline-flex rounded-full px-3 py-1 text-base font-semibold ${getStatusTone(proposal.status)}`}
             >
               {proposal.status.replaceAll("_", " ")}
             </span>
@@ -261,13 +261,13 @@ export function ProposalSubmissionPanel() {
       </section>
 
       {errorMessage ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {errorMessage}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+        <div className="rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
           {successMessage}
         </div>
       ) : null}
@@ -275,24 +275,24 @@ export function ProposalSubmissionPanel() {
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <form
           onSubmit={handleSubmit}
-          className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
+          className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-black">
                 {proposal ? "Submit a revised proposal" : "Submit your proposal"}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-black">
+              <p className="mt-2 text-base leading-6 text-black">
                 Upload a PDF up to 50MB. The newest file becomes the current
                 version while earlier versions stay in the database.
               </p>
             </div>
             {proposal ? (
-              <div className="rounded-2xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-right">
-                <p className="text-xs uppercase tracking-[0.16em] text-black0">
+              <div className="rounded-2xl border border-gray-200 bg-transparent px-3 py-2 text-right">
+                <p className="text-base uppercase tracking-[0.16em] text-gray-400">
                   Current version
                 </p>
-                <p className="mt-1 text-lg font-semibold text-white">
+                <p className="mt-1 text-lg font-semibold text-black">
                   V{proposal.currentVersion}
                 </p>
               </div>
@@ -300,37 +300,37 @@ export function ProposalSubmissionPanel() {
           </div>
 
           {!overview?.canSubmitNewVersion && overview?.submissionBlockedReason ? (
-            <div className="mt-5 rounded-[1.5rem] border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+            <div className="mt-5 rounded-[1.5rem] border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
               {overview.submissionBlockedReason}
             </div>
           ) : null}
 
           <div className="mt-6 grid gap-4">
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Proposal title</span>
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="Explainable AI for postgraduate supervision workflows"
                 disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
               />
             </label>
 
-            <label className="space-y-2 text-sm text-black">
+            <label className="space-y-2 text-base text-black">
               <span>Abstract</span>
               <textarea
                 value={abstract}
                 onChange={(event) => setAbstract(event.target.value)}
-                className="min-h-44 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-black outline-none focus:border-gray-300"
+                className="min-h-44 w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-black outline-none focus:border-gray-300"
                 placeholder="Summarize your proposed problem, methodology, and expected contribution."
                 disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
               />
             </label>
 
-            <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 p-4">
-              <p className="text-sm font-medium text-white">Upload proposal PDF</p>
-              <p className="mt-2 text-sm text-black">
+            <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+              <p className="text-base font-medium text-black">Upload proposal PDF</p>
+              <p className="mt-2 text-base text-black">
                 Only PDF documents are accepted. Maximum size: 50MB.
               </p>
               <input
@@ -338,13 +338,13 @@ export function ProposalSubmissionPanel() {
                 accept="application/pdf"
                 onChange={handleFileUpload}
                 disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
-                className="mt-4 block w-full text-sm text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
+                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-2xl file:border-0 file:bg-black file:px-4 file:py-3 file:font-semibold file:text-black"
               />
               {isUploading ? (
-                <p className="mt-3 text-sm text-black">Uploading proposal PDF...</p>
+                <p className="mt-3 text-base text-black">Uploading proposal PDF...</p>
               ) : null}
               {uploadedDocument ? (
-                <div className="mt-4 rounded-2xl border border-gray-300 bg-gray-100 px-4 py-3 text-sm text-black">
+                <div className="mt-4 rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base text-black">
                   {uploadedDocument.fileName} ready for submission.
                 </div>
               ) : null}
@@ -352,7 +352,7 @@ export function ProposalSubmissionPanel() {
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-black">
+            <p className="text-base text-black">
               {proposal
                 ? "Resubmissions create a new document version and keep all prior versions intact."
                 : "Your first submission creates version 1 and opens the proposal review workflow."}
@@ -365,18 +365,18 @@ export function ProposalSubmissionPanel() {
                 isUploading ||
                 !overview?.canSubmitNewVersion
               }
-              className="rounded-2xl bg-black px-4 py-3 text-sm font-semibold text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-2xl bg-black px-4 py-3 text-base font-semibold text-black transition hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? "Submitting..." : proposal ? "Submit revised proposal" : "Submit proposal"}
             </button>
           </div>
         </form>
 
-        <section className="rounded-[2rem] border border-gray-200 bg-white/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
+        <section className="rounded-[2rem] border border-gray-200 bg-transparent p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-white">Proposal history</h2>
-              <p className="mt-2 text-sm leading-6 text-black">
+              <h2 className="text-xl font-semibold text-black">Proposal history</h2>
+              <p className="mt-2 text-base leading-6 text-black">
                 Review the latest status and every stored file version.
               </p>
             </div>
@@ -384,32 +384,32 @@ export function ProposalSubmissionPanel() {
               type="button"
               onClick={() => void refreshOverview()}
               disabled={isLoading}
-              className="rounded-2xl border border-gray-300 px-4 py-2 text-sm font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl border border-gray-300 px-4 py-2 text-base font-semibold text-black transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Refresh
             </button>
           </div>
 
           {isLoading ? (
-            <div className="mt-6 rounded-[1.5rem] border border-gray-200 bg-gray-50/70 px-4 py-6 text-sm text-black">
+            <div className="mt-6 rounded-[1.5rem] border border-gray-200 bg-transparent px-4 py-6 text-base text-black">
               Loading proposal workspace...
             </div>
           ) : !proposal ? (
-            <div className="mt-6 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-sm text-black">
+            <div className="mt-6 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base text-black">
               No proposal has been submitted yet.
             </div>
           ) : (
             <div className="mt-6 space-y-5">
-              <div className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-black0">
+              <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                <p className="text-base uppercase tracking-[0.18em] text-gray-400">
                   Current proposal
                 </p>
-                <h3 className="mt-2 text-lg font-semibold text-white">{proposal.title}</h3>
-                <p className="mt-1 text-xs font-mono text-black">ID: {proposal.id}</p>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-black">
+                <h3 className="mt-2 text-lg font-semibold text-black">{proposal.title}</h3>
+                <p className="mt-1 text-base font-mono text-black">ID: {proposal.id}</p>
+                <p className="mt-3 whitespace-pre-wrap text-base leading-6 text-black">
                   {proposal.abstract}
                 </p>
-                <p className="mt-4 text-xs uppercase tracking-[0.18em] text-black0">
+                <p className="mt-4 text-base uppercase tracking-[0.18em] text-gray-400">
                   Updated {formatDateLabel(proposal.updatedAt)}
                 </p>
               </div>
@@ -418,29 +418,29 @@ export function ProposalSubmissionPanel() {
                 {proposal.documents.map((document) => (
                   <article
                     key={document.id}
-                    className="rounded-[1.5rem] border border-gray-200 bg-gray-50/80 px-4 py-4"
+                    className="rounded-[1.5rem] border border-gray-200 bg-transparent px-4 py-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold text-white">{document.fileName}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-black0">
+                        <p className="font-semibold text-black">{document.fileName}</p>
+                        <p className="mt-1 text-base uppercase tracking-[0.18em] text-gray-400">
                           Version {document.version} • {document.mimeType}
                         </p>
                       </div>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        className={`rounded-full px-3 py-1 text-base font-semibold ${
                           document.isCurrentVersion
-                            ? "border border-gray-300 bg-gray-100 text-black"
-                            : "border border-gray-300 bg-gray-100 text-black"
+                            ? "border border-gray-300 bg-transparent text-black"
+                            : "border border-gray-300 bg-transparent text-black"
                         }`}
                       >
                         {document.isCurrentVersion ? "Current" : "Previous"}
                       </span>
                     </div>
-                    <p className="mt-3 break-all text-xs leading-5 text-black">
+                    <p className="mt-3 break-all text-base leading-5 text-black">
                       {document.storagePath}
                     </p>
-                    <p className="mt-2 text-xs uppercase tracking-[0.16em] text-black0">
+                    <p className="mt-2 text-base uppercase tracking-[0.16em] text-gray-400">
                       Stored {formatDateLabel(document.createdAt)}
                     </p>
                   </article>
