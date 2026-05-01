@@ -253,14 +253,18 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
       throw new AdminUserManagementError("User creation did not complete.", 500);
     }
 
-    void notifyWelcomeAccountCreated({
-      recipientUserId: createdUser.id,
-      to: createdUser.email,
-      recipientName: createdUser.displayName,
-      roleLabel: createdUser.role,
-      temporaryPassword,
-      loginUrl: buildLoginUrl(),
-    });
+    try {
+      void notifyWelcomeAccountCreated({
+        recipientUserId: createdUser.id,
+        to: createdUser.email,
+        recipientName: createdUser.displayName,
+        roleLabel: createdUser.role,
+        temporaryPassword,
+        loginUrl: buildLoginUrl(),
+      });
+    } catch (emailError) {
+      console.error("Failed to trigger welcome email notification:", emailError);
+    }
 
     return {
       user: createdUser,

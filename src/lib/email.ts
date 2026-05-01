@@ -31,16 +31,14 @@ let cachedTransporter:
   | ReturnType<typeof nodemailer.createTransport>
   | undefined;
 
-function getRequiredSmtpConfig() {
+function getSmtpConfig() {
   const host = process.env.SMTP_HOST;
   const port = process.env.SMTP_PORT;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
 
   if (!host || !port || !user || !pass) {
-    throw new Error(
-      "Missing SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.",
-    );
+    return null;
   }
 
   return {
@@ -57,7 +55,11 @@ export function getEmailTransporter() {
     return cachedTransporter;
   }
 
-  const config = getRequiredSmtpConfig();
+  const config = getSmtpConfig();
+
+  if (!config) {
+    return null;
+  }
 
   cachedTransporter = nodemailer.createTransport({
     host: config.host,
@@ -101,6 +103,20 @@ async function writeNotificationLog(
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const transporter = getEmailTransporter();
+
+  if (!transporter) {
+    const error =
+      "Email not sent: Missing SMTP configuration (SMTP_HOST, SMTP_PORT, etc.).";
+    console.warn(error);
+
+    await writeNotificationLog(input, NotificationDeliveryStatus.FAILED, error);
+
+    return {
+      success: false,
+      error,
+    };
+  }
+
   const fromAddress = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "";
 
   try {
