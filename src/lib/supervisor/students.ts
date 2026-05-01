@@ -59,6 +59,7 @@ type SupervisorStudentAssignmentRecord = {
       id: string;
       title: string;
       status: string;
+      currentVersion: number;
       updatedAt: Date;
     }>;
   };
@@ -133,6 +134,7 @@ function mapSupervisorStudentRecord(record: SupervisorStudentAssignmentRecord) {
           id: latestProposal.id,
           title: latestProposal.title,
           status: latestProposal.status,
+          currentVersion: latestProposal.currentVersion,
           updatedAt: latestProposal.updatedAt,
         }
       : null,
@@ -194,6 +196,7 @@ export async function getSupervisorAssignedStudents(
               id: true,
               title: true,
               status: true,
+              currentVersion: true,
               updatedAt: true,
             },
           },

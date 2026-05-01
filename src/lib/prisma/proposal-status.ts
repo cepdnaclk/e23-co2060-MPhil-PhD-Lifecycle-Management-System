@@ -1,7 +1,10 @@
 import { ProposalStatus, UserRole } from "@prisma/client";
 
 const validTransitions: Record<ProposalStatus, ProposalStatus[]> = {
-  [ProposalStatus.SUBMITTED]: [ProposalStatus.UNDER_REVIEW],
+  [ProposalStatus.SUBMITTED]: [
+    ProposalStatus.UNDER_REVIEW,
+    ProposalStatus.REJECTED,
+  ],
   [ProposalStatus.UNDER_REVIEW]: [
     ProposalStatus.APPROVED,
     ProposalStatus.REJECTED,

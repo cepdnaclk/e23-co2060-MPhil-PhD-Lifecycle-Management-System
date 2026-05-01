@@ -165,11 +165,15 @@ export function StudentProgressDashboard({
           ))}
         </div>
 
-        {!progress.examinerFeedbackReleased ? (
+        {progress.examinerFeedbackReleased ? (
+          <div className="mt-5 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            Examination result released. The thesis lifecycle has been finalized.
+          </div>
+        ) : (
           <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-300">
             Examiner feedback will appear here once an administrator officially releases the result.
           </div>
-        ) : null}
+        )}
       </section>
     </div>
   );

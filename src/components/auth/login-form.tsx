@@ -64,7 +64,7 @@ export function LoginForm() {
 
   const timeoutMessage = useMemo(() => {
     return searchParams.get("reason") === "timeout"
-      ? "Your session expired after 30 minutes of inactivity. Please sign in again."
+      ? "Session Timedout"
       : null;
   }, [searchParams]);
 

@@ -71,6 +71,12 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/student/progress-reports/submit",
         },
         {
+          id: "view-progress-reports",
+          label: "View Progress History",
+          description: "See all your past narrative reports and their sign-off status.",
+          href: "/dashboard/student/progress-reports",
+        },
+        {
           id: "view-proposal-status",
           label: "View Proposal Status",
           description: "Check the current review state of your proposal submission.",
@@ -80,7 +86,13 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "manage-thesis-documents",
           label: "Manage Thesis Documents",
           description: "Track thesis files, versions, and correction requests.",
-          href: "/dashboard/student",
+          href: "/dashboard/student/theses/submit",
+        },
+        {
+          id: "upload-thesis-corrections",
+          label: "Upload Thesis Corrections",
+          description: "Submit corrected thesis documents after viva feedback.",
+          href: "/dashboard/student/theses/corrections",
         },
       ];
     case "supervisor":
@@ -95,7 +107,7 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "sign-progress-reports",
           label: "Sign Progress Reports",
           description: "Complete pending supervisor sign-offs for student reports.",
-          href: "/dashboard/supervisor",
+          href: "/dashboard/supervisor/progress-reports/sign",
         },
         {
           id: "open-student-roster",
@@ -110,13 +122,13 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "review-theses",
           label: "Review Theses",
           description: "Open active thesis examinations and review documents.",
-          href: "/dashboard/examiner",
+          href: "/dashboard/examiner/vivas",
         },
         {
           id: "check-viva-schedule",
           label: "Check Viva Schedule",
           description: "See upcoming vivas and associated examination workload.",
-          href: "/dashboard/examiner",
+          href: "/dashboard/examiner/vivas",
         },
         {
           id: "track-corrections",
@@ -140,10 +152,28 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/admin/applications",
         },
         {
+          id: "approve-proposals",
+          label: "Review & Approve Proposals",
+          description: "Finalize research plans by reviewing supervisor evaluations.",
+          href: "/dashboard/admin/proposals/evaluate",
+        },
+        {
           id: "manage-assignments",
           label: "Manage Assignments",
           description: "Assign supervisors and examiners to postgraduate students.",
-          href: "/dashboard/admin/assignments/supervisors",
+          href: "/dashboard/admin/assignments/examiners",
+        },
+        {
+          id: "schedule-vivas",
+          label: "Schedule Vivas",
+          description: "Set viva dates and venues for theses under examination.",
+          href: "/dashboard/admin/vivas/schedule",
+        },
+        {
+          id: "finalize-theses",
+          label: "Finalize Theses",
+          description: "Approve corrections and archive completed thesis records.",
+          href: "/dashboard/admin/theses",
         },
         {
           id: "audit-notifications",

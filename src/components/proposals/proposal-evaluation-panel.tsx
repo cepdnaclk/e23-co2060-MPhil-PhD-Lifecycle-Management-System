@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 type EvaluationPayload = {
@@ -46,15 +46,80 @@ export function ProposalEvaluationPanel() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [proposalsToReview, setProposalsToReview] = useState<any[]>([]);
+  const [isListLoading, setIsListLoading] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  async function handleLookup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const payload = await response.json();
+          setUserRole(payload.role);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user role:", error);
+      }
+    }
+    fetchUserRole();
+  }, []);
+
+  useEffect(() => {
+    if (!userRole) return;
+
+    async function fetchProposals() {
+      setIsListLoading(true);
+      try {
+        const endpoint =
+          userRole === "ADMINISTRATOR"
+            ? "/api/admin/proposals"
+            : "/api/supervisor/students";
+
+        const response = await fetch(endpoint, {
+          credentials: "include",
+        });
+        const payload = await response.json();
+
+        if (response.ok) {
+          if (userRole === "ADMINISTRATOR") {
+            setProposalsToReview(payload.proposals || []);
+          } else {
+            // Normalize supervisor students to match proposal list format
+            const normalized = (payload.students || [])
+              .filter((item: any) => item.latestProposal)
+              .map((item: any) => ({
+                id: item.latestProposal.id,
+                title: item.latestProposal.title,
+                status: item.latestProposal.status,
+                currentVersion: item.latestProposal.currentVersion,
+                student: {
+                  id: item.student.id,
+                  displayName: item.student.displayName,
+                },
+              }));
+            setProposalsToReview(normalized);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load proposals for review:", error);
+      } finally {
+        setIsListLoading(false);
+      }
+    }
+    fetchProposals();
+  }, [userRole]);
+
+  async function loadProposalById(id: string) {
+    setProposalId(id);
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/proposals/${proposalId}/evaluations`, {
+      const response = await fetch(`/api/proposals/${id}/evaluations`, {
         credentials: "include",
       });
       
@@ -83,6 +148,11 @@ export function ProposalEvaluationPanel() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function handleLookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await loadProposalById(proposalId);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -142,18 +212,114 @@ export function ProposalEvaluationPanel() {
     }
   }
 
+  async function handleReject() {
+    if (!proposalId) return;
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!feedback.trim() || feedback.length < 50) {
+      setErrorMessage(
+        "Provide at least 50 characters of feedback explaining the rejection before requesting revisions.",
+      );
+      return;
+    }
+
+    setIsRejecting(true);
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          status: "REJECTED",
+          feedback,
+        }),
+      });
+      const payload = (await response.json()) as {
+        proposal?: unknown;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to reject the proposal.");
+      }
+
+      setSuccessMessage(
+        "Proposal rejected successfully. The student has been notified to submit a revised version.",
+      );
+      setNumericalScore("");
+      setFeedback("");
+
+      await loadProposalById(proposalId);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to reject the proposal.",
+      );
+    } finally {
+      setIsRejecting(false);
+    }
+  }
+
+  async function handleApprove() {
+    if (!proposalId) return;
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    setIsApproving(true);
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          status: "APPROVED",
+          feedback: feedback || "Proposal approved after review.",
+        }),
+      });
+      const payload = (await response.json()) as {
+        proposal?: unknown;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to approve the proposal.");
+      }
+
+      setSuccessMessage(
+        "Proposal approved successfully. The student research plan has been unlocked.",
+      );
+      setNumericalScore("");
+      setFeedback("");
+
+      await loadProposalById(proposalId);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to approve the proposal.",
+      );
+    } finally {
+      setIsApproving(false);
+    }
+  }
+
   return (
     <main className="space-y-6">
       <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 px-5 py-6 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:px-6">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-          Supervisor Evaluation
+          {userRole === "ADMINISTRATOR" ? "Admin Review" : "Supervisor Evaluation"}
         </p>
         <h1 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">
-          Evaluate a proposal under review
+          {userRole === "ADMINISTRATOR" ? "Approve research proposals" : "Evaluate a proposal under review"}
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Load a proposal by ID, inspect existing evaluation history, and submit a
-          single supervisor evaluation with a 0-100 score and detailed feedback.
+          {userRole === "ADMINISTRATOR" 
+            ? "Review pending proposals from all students and provide final approval or request revisions."
+            : "Load a proposal by ID, inspect existing evaluation history, and submit a single supervisor evaluation."}
         </p>
       </section>
 
@@ -171,6 +337,58 @@ export function ProposalEvaluationPanel() {
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-6">
+          <section className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6">
+            <h2 className="text-xl font-semibold text-white">
+              {userRole === "ADMINISTRATOR" ? "All pending proposals" : "Assigned student proposals"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {userRole === "ADMINISTRATOR" 
+                ? "Select a submission from the list below to review its history and status."
+                : "Quickly select a proposal from your assigned students to start evaluating."}
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {isListLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-20 rounded-2xl bg-slate-900" />
+                  <div className="h-20 rounded-2xl bg-slate-900" />
+                </div>
+              ) : proposalsToReview.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+                  {userRole === "ADMINISTRATOR" 
+                    ? "No proposals are currently pending review."
+                    : "No assigned students with active proposals found."}
+                </div>
+              ) : (
+                proposalsToReview.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => loadProposalById(item.id)}
+                    className={`group w-full rounded-2xl border p-4 text-left transition ${
+                      proposalId === item.id
+                        ? "border-sky-400 bg-sky-500/10"
+                        : "border-slate-800 bg-slate-900/50 hover:border-slate-600 hover:bg-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white group-hover:text-sky-200">
+                          {item.student.displayName}
+                        </p>
+                        <p className="mt-1 truncate text-xs text-slate-400">
+                          {item.title}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-200">
+                        V{item.currentVersion} • {item.status.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+
           <form
             onSubmit={handleLookup}
             className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
@@ -201,43 +419,74 @@ export function ProposalEvaluationPanel() {
             onSubmit={handleSubmit}
             className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5 shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-6"
           >
-            <h2 className="text-xl font-semibold text-white">Submit evaluation</h2>
+            <h2 className="text-xl font-semibold text-white">
+              {userRole === "ADMINISTRATOR" ? "Finalize decision" : "Submit evaluation"}
+            </h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              The proposal must already be in the <span className="font-semibold text-slate-200">UNDER_REVIEW</span> state, and you must be assigned to the student.
+              The proposal must already be in the <span className="font-semibold text-slate-200">UNDER_REVIEW</span> state
+              {userRole !== "ADMINISTRATOR" && ", and you must be assigned to the student"}.
             </p>
 
             <div className="mt-5 grid gap-4">
-              <label className="space-y-2 text-sm text-slate-200">
-                <span>Score (0-100)</span>
-                <input
-                  value={numericalScore}
-                  onChange={(event) => setNumericalScore(event.target.value)}
-                  type="number"
-                  min={0}
-                  max={100}
-                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                  placeholder="85"
-                />
-              </label>
+              {userRole !== "ADMINISTRATOR" && (
+                <label className="space-y-2 text-sm text-slate-200">
+                  <span>Score (0-100)</span>
+                  <input
+                    value={numericalScore}
+                    onChange={(event) => setNumericalScore(event.target.value)}
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
+                    placeholder="85"
+                  />
+                </label>
+              )}
 
               <label className="space-y-2 text-sm text-slate-200">
-                <span>Feedback</span>
+                <span>{userRole === "ADMINISTRATOR" ? "Decision notes / Feedback" : "Feedback"}</span>
                 <textarea
                   value={feedback}
                   onChange={(event) => setFeedback(event.target.value)}
                   className="min-h-44 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-sky-400"
-                  placeholder="Provide at least 50 characters of evaluation feedback, covering strengths, gaps, and next improvements."
+                  placeholder={userRole === "ADMINISTRATOR" 
+                    ? "Explain your approval or rejection decision..." 
+                    : "Provide at least 50 characters of evaluation feedback..."}
                 />
               </label>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-5 rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isSubmitting ? "Submitting..." : "Submit evaluation"}
-            </button>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+              {userRole !== "ADMINISTRATOR" && (
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isRejecting || isApproving}
+                  className="rounded-2xl bg-amber-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit evaluation"}
+                </button>
+              )}
+              {userRole === "ADMINISTRATOR" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleReject}
+                    disabled={isSubmitting || isRejecting || isApproving}
+                    className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isRejecting ? "Rejecting..." : "Reject and request revisions"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApprove}
+                    disabled={isSubmitting || isRejecting || isApproving}
+                    className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isApproving ? "Approving..." : "Approve Proposal"}
+                  </button>
+                </>
+              )}
+            </div>
           </form>
         </div>
 

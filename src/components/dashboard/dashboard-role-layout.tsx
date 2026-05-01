@@ -41,10 +41,10 @@ export function DashboardRoleLayout({
                   Submit Proposal
                 </Link>
                 <Link
-                  href="/dashboard/student/progress-reports/submit"
+                  href="/dashboard/student/progress-reports"
                   className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
                 >
-                  Submit Progress Report
+                  Progress Reports
                 </Link>
                 <Link
                   href="/dashboard/student/progress"
@@ -52,22 +52,76 @@ export function DashboardRoleLayout({
                 >
                   Progress Dashboard
                 </Link>
+                <Link
+                  href="/dashboard/student/theses/submit"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Submit Thesis
+                </Link>
+                <Link
+                  href="/dashboard/student/theses/corrections"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Thesis Corrections
+                </Link>
               </>
             ) : null}
             {role === "supervisor" ? (
-              <Link
-                href="/dashboard/supervisor/students"
-                className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
-              >
-                My Students
-              </Link>
+              <>
+                <Link
+                  href="/dashboard/supervisor/students"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  My Students
+                </Link>
+                <Link
+                  href="/dashboard/supervisor/progress-reports/sign"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Sign Progress Reports
+                </Link>
+              </>
             ) : null}
             {role === "admin" ? (
+              <>
+                <Link
+                  href="/dashboard/admin/users"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Manage Users
+                </Link>
+                <Link
+                  href="/dashboard/admin/assignments/supervisors"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Supervisor Assignments
+                </Link>
+                <Link
+                  href="/dashboard/admin/assignments/examiners"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Examiner Assignments
+                </Link>
+                <Link
+                  href="/dashboard/admin/vivas/schedule"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Schedule Vivas
+                </Link>
+                <Link
+                  href="/dashboard/admin/theses"
+                  className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
+                >
+                  Finalize Theses
+                </Link>
+              </>
+            ) : null}
+            {role === "examiner" ? (
               <Link
-                href="/dashboard/admin/users"
+                href="/dashboard/examiner/vivas"
                 className="block rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm font-medium text-slate-200 transition hover:border-sky-400 hover:text-white"
               >
-                Manage Users
+                Assigned Vivas
               </Link>
             ) : null}
           </nav>

@@ -518,7 +518,7 @@ export async function updateResearchProposalStatus(
 
   if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new ProposalSubmissionError(
-      "Only administrators can update proposal status.",
+      "Only administrators can update the proposal status. Supervisors must submit evaluations instead.",
       403,
     );
   }
@@ -578,6 +578,22 @@ export async function updateResearchProposalStatus(
 
   if (!proposal) {
     throw new ProposalSubmissionError("Research proposal not found.", 404);
+  }
+
+  if (auth.role === UserRole.SUPERVISOR) {
+    const isAssigned = await prisma.supervisorAssignment.findFirst({
+      where: {
+        studentId: proposal.studentId,
+        supervisorUserId: auth.userId,
+      },
+    });
+
+    if (!isAssigned) {
+      throw new ProposalSubmissionError(
+        "You can only update proposals for students assigned to you.",
+        403,
+      );
+    }
   }
 
   try {

@@ -408,8 +408,16 @@ function toApprovedDocumentSnapshot(
 
 export function determineCurrentMilestone(input: {
   proposalStatus: ProposalStatus | null;
+  thesisStatus?: ThesisStatus | null;
   documents: StudentDocumentRecord[];
 }) {
+  if (
+    input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
+    input.thesisStatus === ThesisStatus.CLOSED
+  ) {
+    return "examiner-feedback" as ProgressMilestoneId;
+  }
+
   let approvedProgressIndex = 0;
 
   const approvedMilestones = input.documents
@@ -427,14 +435,14 @@ export function determineCurrentMilestone(input: {
     return approvedMilestones[0].milestoneId;
   }
 
+  if (input.proposalStatus === ProposalStatus.APPROVED) {
+    return "proposal-approval" as ProgressMilestoneId;
+  }
+
   if (
     input.documents.some((document) => document.documentType === DocumentType.PROPOSAL)
   ) {
     return "proposal-submission" as ProgressMilestoneId;
-  }
-
-  if (input.proposalStatus === ProposalStatus.APPROVED) {
-    return "proposal-approval" as ProgressMilestoneId;
   }
 
   return "proposal-submission" as ProgressMilestoneId;
@@ -506,15 +514,19 @@ export function buildProgressStepper(input: {
     ...milestone,
     visible: true,
     state:
-      currentIndex === -1
-        ? index === 0
-          ? "current"
-          : "upcoming"
-        : index < currentIndex
+      input.examinerFeedbackReleased && milestone.id === "examiner-feedback"
+        ? "complete"
+        : input.examinerFeedbackReleased && currentIndex !== -1 && index < currentIndex
           ? "complete"
-          : index === currentIndex
-            ? "current"
-            : "upcoming",
+          : currentIndex === -1
+            ? index === 0
+              ? "current"
+              : "upcoming"
+            : index < currentIndex
+              ? "complete"
+              : index === currentIndex
+                ? "current"
+                : "upcoming",
   })) satisfies ProgressStepperStep[];
 }
 
@@ -548,11 +560,13 @@ export async function getStudentProgressById(
 
   const latestProposal = student.researchProposals[0] ?? null;
   const latestThesis = student.theses[0] ?? null;
-  const examinerFeedbackReleased =
-    latestThesis?.corrections.some(
-      (correction) => correction.isApproved && correction.approvedById !== null,
-    ) ??
-    false;
+  const examinerFeedbackReleased = latestThesis
+    ? latestThesis.status === ThesisStatus.FINAL_ARCHIVE ||
+      latestThesis.status === ThesisStatus.CLOSED ||
+      latestThesis.corrections.some(
+        (correction) => correction.isApproved && correction.approvedById !== null,
+      )
+    : false;
 
   const stageProgress = calculateStageCompletionPercentages({
     proposalStatus: latestProposal?.status ?? null,
@@ -561,6 +575,7 @@ export async function getStudentProgressById(
   });
   const currentMilestone = determineCurrentMilestone({
     proposalStatus: latestProposal?.status ?? null,
+    thesisStatus: latestThesis?.status ?? null,
     documents,
   });
 

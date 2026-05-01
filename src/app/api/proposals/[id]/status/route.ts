@@ -34,5 +34,5 @@ export const PATCH = withAuth<RouteParams>(
       );
     }
   },
-  [UserRole.ADMINISTRATOR],
+  [UserRole.ADMINISTRATOR, UserRole.SUPERVISOR],
 );

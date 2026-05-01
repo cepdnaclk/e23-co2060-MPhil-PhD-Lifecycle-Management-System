@@ -39,4 +39,38 @@ describe("DashboardSummaryPanel", () => {
     expect(getStatusBadgeClassName("info")).toContain("text-sky-100");
     expect(getStatusBadgeClassName("neutral")).toContain("text-slate-200");
   });
+
+  it("renders quick actions as links to their configured destination", () => {
+    const summary: DashboardSummary = {
+      role: "supervisor",
+      roleLabel: "Supervisor",
+      title: "Supervision overview",
+      subtitle: "Track pending work",
+      cards: [
+        {
+          id: "unsigned-reports",
+          title: "Unsigned Reports",
+          value: "1",
+          description: "Reports waiting for sign-off.",
+          statusLabel: "Pending sign-off",
+          statusTone: "warning",
+        },
+      ],
+      quickActions: [
+        {
+          id: "sign-progress-reports",
+          label: "Sign Progress Reports",
+          description: "Complete pending supervisor sign-offs for student reports.",
+          href: "/dashboard/supervisor/progress-reports/sign",
+        },
+      ],
+      lastUpdatedIso: new Date().toISOString(),
+    };
+
+    render(<DashboardSummaryPanel summary={summary} />);
+
+    expect(
+      screen.getByRole("link", { name: /Sign Progress Reports/ }),
+    ).toHaveAttribute("href", "/dashboard/supervisor/progress-reports/sign");
+  });
 });

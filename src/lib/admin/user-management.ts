@@ -41,6 +41,7 @@ export type AdminUserListItem = {
   programType?: string | null;
   studentId?: string | null;
   supervisorId?: string | null;
+  examinerId?: string | null;
 };
 
 export class AdminUserManagementError extends Error {
@@ -197,6 +198,7 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
     programType: user.student?.programType ?? null,
     studentId: user.student?.id ?? null,
     supervisorId: user.supervisor?.id ?? null,
+    examinerId: user.examiner?.id ?? null,
   }));
 }
 

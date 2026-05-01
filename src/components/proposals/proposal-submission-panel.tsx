@@ -405,6 +405,7 @@ export function ProposalSubmissionPanel() {
                   Current proposal
                 </p>
                 <h3 className="mt-2 text-lg font-semibold text-white">{proposal.title}</h3>
+                <p className="mt-1 text-xs font-mono text-sky-300">ID: {proposal.id}</p>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
                   {proposal.abstract}
                 </p>
