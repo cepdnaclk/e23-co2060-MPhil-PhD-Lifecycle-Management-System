@@ -142,6 +142,7 @@ Open the app at `http://localhost:3000`.
 - Sentry is configured to avoid logging default PII and to redact cookies and authorization headers before capture.
 - Playwright end-to-end tests should be run separately from Vitest.
 - The README status reflects the code and automated test coverage in this branch relative to the product backlog source.
+- GitHub Pages can only serve static files for this repository. The application itself requires a Node-capable host because it uses Next.js route handlers, server-side authentication, Prisma, and external services.
 
 ## Branch
 
