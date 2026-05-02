@@ -6,19 +6,30 @@ import type {
 function getStepStateClassName(state: ProgressStepperStep["state"]) {
   switch (state) {
     case "complete":
-      return "border-emerald-500 bg-[#e0e0e0] shadow-[0_0_20px_rgba(16,185,129,0.15),inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]";
+      return "border-emerald-500 bg-emerald-50";
     case "current":
-      return "border-black bg-black text-white shadow-[8px_8px_16px_#bebebe]";
+      return "border-sky-500 bg-sky-50";
     default:
-      return "border-gray-300 bg-[#e0e0e0] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] opacity-60";
+      return "border-gray-300 bg-stone-50";
+  }
+}
+
+function getStepBadgeClassName(state: ProgressStepperStep["state"]) {
+  switch (state) {
+    case "complete":
+      return "border-emerald-600 bg-emerald-100 text-emerald-900";
+    case "current":
+      return "border-sky-600 bg-sky-100 text-sky-900";
+    default:
+      return "border-gray-400 bg-stone-100 text-stone-700";
   }
 }
 
 function getStageCardClassName(percentage: number) {
   if (percentage >= 100) {
-    return "border-emerald-500 bg-[#e0e0e0] shadow-[0_0_25px_rgba(16,185,129,0.15),8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]";
+    return "border-2 border-black bg-white";
   }
-  return "border-gray-300 bg-[#e0e0e0] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]";
+  return "border-gray-300 bg-white";
 }
 
 function formatDateLabel(value: string | Date) {
@@ -37,30 +48,33 @@ function StageCard({
   value: StageProgressSummary;
 }) {
   const isComplete = value.completionPercentage >= 100;
-  
+
   return (
     <article
-      className={`group relative overflow-hidden rounded-[32px] border p-8 transition-all hover:translate-y-[-4px] ${getStageCardClassName(
+      className={`group relative overflow-hidden rounded-[24px] border p-6 transition-all hover:bg-black ${getStageCardClassName(
         value.completionPercentage,
       )}`}
     >
       <div className="flex items-center justify-between">
-        <p className={`text-xs font-black uppercase tracking-[0.3em] ${isComplete ? 'text-emerald-600' : 'text-black/40'}`}>
+        <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
           {label}
         </p>
-        {isComplete && (
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]">
-            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-        )}
+        <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
+          {isComplete ? "Complete" : "In Progress"}
+        </span>
       </div>
-      <p className="mt-4 text-6xl font-black tracking-tighter text-black">
+      <p className="mt-4 text-5xl font-black tracking-tighter text-black transition-colors group-hover:text-white sm:text-6xl">
         {value.completionPercentage}%
       </p>
-      <p className="mt-6 text-sm font-bold leading-relaxed text-black/60">
-        <span className="text-black">{value.approvedVersions}</span> approved · <span className="text-black">{value.totalSubmittedVersions}</span> submissions
+      <p className="mt-4 text-base font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
+        <span className="font-black text-black transition-colors group-hover:text-white">
+          {value.approvedVersions}
+        </span>{" "}
+        approved ·{" "}
+        <span className="font-black text-black transition-colors group-hover:text-white">
+          {value.totalSubmittedVersions}
+        </span>{" "}
+        submissions
       </p>
     </article>
   );
@@ -93,7 +107,7 @@ export function StudentProgressDashboard({
 }) {
   return (
     <div className="space-y-12">
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
@@ -110,27 +124,27 @@ export function StudentProgressDashboard({
       </header>
 
       <section className="grid gap-6 sm:grid-cols-3">
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Current Milestone
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {progress.currentMilestone}
           </p>
         </div>
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Estimated Completion
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {formatDateLabel(progress.estimatedCompletionDate)}
           </p>
         </div>
-        <div className="rounded-[30px] border border-gray-300 bg-[#e0e0e0] px-8 py-6 shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
+          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
             Document Approvals
           </p>
-          <p className="mt-2 text-2xl font-black text-black">
+          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
             {progress.counts.approvedDocumentVersions} / {progress.counts.totalDocumentVersions}
           </p>
         </div>
@@ -146,46 +160,49 @@ export function StudentProgressDashboard({
         <StageCard label="Thesis" value={progress.stageProgress.thesis} />
       </section>
 
-      <section className="rounded-[48px] bg-[#e0e0e0] p-1 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff]">
-        <div className="p-8 sm:p-12">
+      <section className="rounded-[24px] border border-gray-300 bg-white p-6 sm:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-black/40">
+              <p className="text-base font-black uppercase tracking-[0.2em] text-black/40">
                 Lifecycle Stepper
               </p>
-              <h3 className="text-4xl font-black tracking-tight text-black">
+              <h3 className="text-3xl font-black tracking-tight text-black">
                 Sequential milestone tracking
               </h3>
             </div>
-            <div className="rounded-full border border-gray-300 bg-white/50 px-5 py-2 text-xs font-black uppercase tracking-widest text-black/60 shadow-sm">
+            <div className="rounded-full border-2 border-black bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black">
               Confidential Review Phase
             </div>
           </div>
 
-          <div className="mt-12 grid gap-6 lg:grid-cols-2">
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {progress.stepper.map((step, index) => {
               const isComplete = step.state === "complete";
+              const isCurrent = step.state === "current";
+
               return (
                 <article
                   key={step.id}
-                  className={`group relative rounded-[32px] border p-8 transition-all ${getStepStateClassName(
+                  className={`group relative rounded-[24px] border p-6 transition-all hover:-translate-y-0.5 ${getStepStateClassName(
                     step.state,
                   )}`}
                 >
                   <div className="flex items-center justify-between">
-                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isComplete ? 'text-emerald-600' : step.state === 'current' ? 'text-white/60' : 'text-black/40'}`}>
+                    <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/50">
                       Milestone {index + 1}
                     </p>
-                    {isComplete && (
-                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                        Verified
-                      </span>
-                    )}
+                    <span
+                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider ${getStepBadgeClassName(
+                        step.state,
+                      )}`}
+                    >
+                      {isComplete ? "Verified" : isCurrent ? "Current" : "Upcoming"}
+                    </span>
                   </div>
-                  <h4 className={`mt-3 text-3xl font-black tracking-tight ${step.state === 'current' ? 'text-white' : 'text-black'}`}>
+                  <h4 className="mt-3 text-2xl font-black tracking-tight text-black sm:text-3xl">
                     {step.label}
                   </h4>
-                  <p className={`mt-4 text-base font-medium leading-relaxed ${step.state === 'current' ? 'text-white/80' : 'text-black/60'}`}>
+                  <p className="mt-4 text-base font-medium leading-relaxed text-black/75">
                     {step.description}
                   </p>
                 </article>
@@ -194,28 +211,16 @@ export function StudentProgressDashboard({
           </div>
 
           {progress.examinerFeedbackReleased ? (
-            <div className="mt-10 rounded-3xl border-2 border-black bg-black p-8 text-white shadow-[10px_10px_20px_rgba(0,0,0,0.2)]">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black">
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-lg font-black tracking-tight">Examination result released</p>
-                  <p className="font-medium text-white/70">The thesis lifecycle has been officially finalized and archived.</p>
-                </div>
-              </div>
+            <div className="mt-8 rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+              Examination result released. The thesis lifecycle has been officially finalized and archived.
             </div>
           ) : (
-            <div className="mt-10 rounded-[32px] border border-dashed border-gray-400 bg-black/5 px-8 py-6">
-              <p className="text-sm font-bold text-black/60">
-                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-black animate-pulse" />
+            <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-6 py-5">
+              <p className="text-base font-medium text-black/70">
                 Examiner feedback is currently locked and will be released following administrative validation.
               </p>
             </div>
           )}
-        </div>
       </section>
     </div>
   );

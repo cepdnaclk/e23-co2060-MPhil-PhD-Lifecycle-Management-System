@@ -26,7 +26,7 @@ export function DashboardRoleLayout({
   const pathname = usePathname();
   const meta = buildDashboardPageMeta(role);
   const isAdmin = role === "admin";
-  const heading = isAdmin ? "Administrator Dashboard" : meta.heading;
+  const heading = isAdmin ? "Administrator Dashboard" : meta.eyebrow;
   const navItemClassName =
     "group block rounded-2xl border px-5 py-4 text-base font-bold transition-all shadow-[8px_8px_16px_#bebebe]";
 
@@ -45,17 +45,9 @@ export function DashboardRoleLayout({
     <div className={`${montserrat.className} h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black`}>
       <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
         <aside className="mb-4 flex shrink-0 flex-col overflow-y-auto rounded-[40px] bg-[#e0e0e0] p-6 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff] lg:mb-0 lg:w-80 lg:p-10">
-          {!isAdmin ? (
-            <p className="text-base font-bold uppercase tracking-[0.28em] text-black/40">
-              {meta.eyebrow}
-            </p>
-          ) : null}
-          <h1 className={`${isAdmin ? "" : "mt-4 "}text-3xl font-black tracking-tighter`}>
+          <h1 className="text-3xl font-black tracking-tighter">
             {heading}
           </h1>
-          {!isAdmin ? (
-            <p className="mt-4 text-sm font-medium leading-relaxed text-black/60">{meta.description}</p>
-          ) : null}
 
           <div className="mt-10 flex flex-col gap-3 flex-1">
             <nav className="contents">
@@ -107,7 +99,7 @@ export function DashboardRoleLayout({
           <div className="mt-auto pt-8">
             <Link
               href="/logout"
-              className="block rounded-xl border-2 border-black bg-white px-5 py-4 text-center text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white shadow-[8px_8px_16px_#bebebe]"
+              className="block rounded-xl border-2 border-black bg-rose-100 px-5 py-4 text-center text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-rose-200 shadow-[8px_8px_16px_#bebebe]"
             >
               Sign Out
             </Link>

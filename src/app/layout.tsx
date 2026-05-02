@@ -13,6 +13,11 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "PGSMS",
   description: "MPhil and PhD lifecycle management system",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 type RootLayoutProps = {

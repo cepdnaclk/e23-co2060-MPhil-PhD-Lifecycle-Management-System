@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import Link from "next/link";
 
 import {
   proposalSubmissionSchema,
@@ -73,13 +72,13 @@ function formatDateLabel(value: string) {
 function getStatusBadge(status: ProposalSummary["status"]) {
   switch (status) {
     case "APPROVED":
-      return "border-emerald-500 text-emerald-600 bg-emerald-50";
+      return "border-2 border-black bg-white text-black";
     case "REJECTED":
-      return "border-red-400 text-red-600 bg-red-50";
+      return "border-2 border-black bg-white text-black";
     case "UNDER_REVIEW":
-      return "border-black text-black bg-white";
+      return "border-2 border-black bg-white text-black";
     case "SUBMITTED":
-      return "border-gray-400 text-gray-600 bg-white";
+      return "border border-gray-300 bg-white text-black";
   }
 }
 
@@ -273,7 +272,7 @@ export function ProposalSubmissionPanel() {
 
   return (
     <div className="space-y-10">
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-4">
             <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
@@ -288,7 +287,7 @@ export function ProposalSubmissionPanel() {
             </p>
           </div>
           {proposal && (
-            <div className={`rounded-2xl border-2 px-6 py-2 text-sm font-black uppercase tracking-widest shadow-sm ${getStatusBadge(proposal.status)}`}>
+            <div className={`rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest ${getStatusBadge(proposal.status)}`}>
               {proposal.status.replaceAll("_", " ")}
             </div>
           )}
@@ -296,14 +295,14 @@ export function ProposalSubmissionPanel() {
       </header>
 
       {errorMessage && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600 shadow-[inset_4px_4px_8px_#fca5a5,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{errorMessage}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{errorMessage}</p>
         </div>
       )}
 
       {successMessage && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-600 shadow-[inset_4px_4px_8px_#a7f3d0,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{successMessage}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{successMessage}</p>
         </div>
       )}
 
@@ -311,145 +310,153 @@ export function ProposalSubmissionPanel() {
         <div className="space-y-8">
           <form
             onSubmit={handleSubmit}
-            className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]"
+            className="rounded-[24px] border border-gray-300 bg-white p-6"
           >
-            <div className="p-8 sm:p-10">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-3xl font-black tracking-tight text-black">
-                    {proposal ? "Revise Proposal" : "New Submission"}
-                  </h2>
-                  <p className="mt-2 text-lg font-medium text-black/50">
-                    Version control enabled for academic integrity.
-                  </p>
-                </div>
-                {proposal && (
-                  <div className="rounded-2xl border border-gray-300 bg-[#e0e0e0] px-5 py-3 text-center shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Version</p>
-                    <p className="text-xl font-black text-black">V{proposal.currentVersion}</p>
-                  </div>
-                )}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-3xl font-black tracking-tight text-black">
+                  {proposal ? "Revise Proposal" : "New Submission"}
+                </h2>
+                <p className="mt-3 text-base font-medium leading-6 text-black/70">
+                  Version control remains enabled for academic integrity and review history.
+                </p>
               </div>
-
-              {!overview?.canSubmitNewVersion && overview?.submissionBlockedReason ? (
-                <div className="mt-8 rounded-[24px] border border-purple-200 bg-[#e0e0e0] p-6 shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff,0_0_20px_rgba(147,51,234,0.1)]">
-                  <p className="text-base font-black text-purple-700 leading-tight">
-                    {overview.submissionBlockedReason}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-8 space-y-6">
-                  <label className="block space-y-2">
-                    <span className="ml-2 text-xs font-black uppercase tracking-widest text-black/40">Proposal Title</span>
-                    <div className="rounded-2xl border border-gray-300 bg-[#e0e0e0] p-1 shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]">
-                      <input
-                        value={title}
-                        onChange={(event) => setTitle(event.target.value)}
-                        className="w-full bg-transparent px-5 py-4 text-lg font-bold text-black outline-none placeholder:text-black/20"
-                        placeholder="Research title..."
-                        disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
-                      />
-                    </div>
-                  </label>
-
-                  <label className="block space-y-2">
-                    <span className="ml-2 text-xs font-black uppercase tracking-widest text-black/40">Abstract</span>
-                    <div className="rounded-[2rem] border border-gray-300 bg-[#e0e0e0] p-1 shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]">
-                      <textarea
-                        value={abstract}
-                        onChange={(event) => setAbstract(event.target.value)}
-                        className="min-h-44 w-full bg-transparent px-6 py-5 text-base font-medium text-black outline-none placeholder:text-black/20"
-                        placeholder="Summarize your research methodology and impact..."
-                        disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
-                      />
-                    </div>
-                  </label>
-
-                  <div className="rounded-[2rem] border border-gray-300 bg-[#e0e0e0] p-8 shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]">
-                    <p className="text-xs font-black uppercase tracking-widest text-black/40">Document Upload</p>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handleFileUpload}
-                      disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
-                      className="mt-6 block w-full text-sm text-black file:mr-6 file:rounded-xl file:border-0 file:bg-black file:px-6 file:py-3 file:text-xs file:font-black file:uppercase file:tracking-widest file:text-white hover:file:bg-gray-800 cursor-pointer"
-                    />
-                    {uploadedDocument && (
-                      <div className="mt-6 flex items-center gap-3 rounded-xl bg-black/5 px-4 py-3">
-                        <svg className="h-5 w-5 text-black/40" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm font-bold text-black truncate">{uploadedDocument.fileName}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end pt-4">
-                    <button
-                      type="submit"
-                      disabled={isLoading || isSubmitting || isUploading || !overview?.canSubmitNewVersion}
-                      className="rounded-[20px] bg-black px-10 py-4 text-sm font-black uppercase tracking-widest text-white shadow-[8px_8px_16px_#bebebe] transition-all hover:bg-gray-800 hover:shadow-none active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Send Proposal"}
-                    </button>
-                  </div>
+              {proposal && (
+                <div className="rounded-[24px] border border-gray-300 bg-white px-4 py-3 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Version</p>
+                  <p className="mt-1 text-xl font-black text-black">V{proposal.currentVersion}</p>
                 </div>
               )}
             </div>
+
+            {!overview?.canSubmitNewVersion && overview?.submissionBlockedReason ? (
+              <div className="mt-6 rounded-2xl border-2 border-black bg-white px-5 py-4 text-base font-bold text-black">
+                {overview.submissionBlockedReason}
+              </div>
+            ) : (
+              <div className="mt-6 space-y-6">
+                <label className="block space-y-2">
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Proposal Title
+                  </span>
+                  <input
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-lg font-bold text-black outline-none transition placeholder:text-black/20 focus:bg-gray-50"
+                    placeholder="Research title..."
+                    disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
+                    Abstract
+                  </span>
+                  <textarea
+                    value={abstract}
+                    onChange={(event) => setAbstract(event.target.value)}
+                    className="min-h-44 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-base font-medium text-black outline-none transition placeholder:text-black/20 focus:bg-gray-50"
+                    placeholder="Summarize your research methodology and impact..."
+                    disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
+                  />
+                </label>
+
+                <div className="rounded-[24px] border border-gray-300 bg-white p-5">
+                  <p className="text-xs font-black uppercase tracking-widest text-black/40">
+                    Document Upload
+                  </p>
+                  <p className="mt-3 text-base font-medium text-black/70">
+                    Upload a PDF document to create a new version for review.
+                  </p>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                    disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
+                    className="mt-5 block w-full text-sm text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-5 file:py-3 file:text-xs file:font-black file:uppercase file:tracking-widest file:text-white"
+                  />
+                  {uploadedDocument && (
+                    <div className="mt-5 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-bold text-black">
+                      {uploadedDocument.fileName}
+                    </div>
+                  )}
+                  {isUploading ? (
+                    <p className="mt-3 text-sm font-medium text-black/70">Uploading proposal PDF...</p>
+                  ) : null}
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading || isSubmitting || isUploading || !overview?.canSubmitNewVersion}
+                    className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-sm font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                      {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Send Proposal"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 
         <section className="space-y-8">
-          <div className="rounded-[40px] bg-[#e0e0e0] p-1 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff]">
-            <div className="p-8 sm:p-10">
-              <div className="flex items-center justify-between">
+          <div className="rounded-[24px] border border-gray-300 bg-white p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
                 <h2 className="text-3xl font-black tracking-tight text-black">History</h2>
-                <button
-                  type="button"
-                  onClick={() => void refreshOverview()}
-                  disabled={isLoading}
-                  className="rounded-xl border border-gray-300 bg-[#e0e0e0] p-3 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] transition-all active:shadow-none"
-                >
-                  <svg className={`h-5 w-5 text-black ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
+                <p className="mt-3 text-base font-medium text-black/70">
+                  Every proposal version stays visible in the repository.
+                </p>
               </div>
-
-              {!proposal ? (
-                <div className="mt-8 flex flex-col items-center justify-center rounded-[32px] border-2 border-dashed border-gray-300 py-20 text-center">
-                  <p className="text-lg font-bold text-black/20 uppercase tracking-widest">Repository Empty</p>
-                </div>
-              ) : (
-                <div className="mt-8 space-y-6">
-                  {proposal.documents.map((doc) => (
-                    <article
-                      key={doc.id}
-                      className={`relative rounded-[32px] border p-6 transition-all ${
-                        doc.isCurrentVersion 
-                          ? 'border-black bg-black text-white shadow-[8px_8px_16px_#bebebe]' 
-                          : 'border-gray-300 bg-[#e0e0e0] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] opacity-80 hover:opacity-100'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0">
-                          <p className={`text-[10px] font-black uppercase tracking-widest ${doc.isCurrentVersion ? 'text-white/50' : 'text-black/40'}`}>
-                            Version {doc.version}
-                          </p>
-                          <h4 className="mt-1 truncate text-lg font-black tracking-tight">{doc.fileName}</h4>
-                        </div>
-                        {doc.isCurrentVersion && (
-                          <span className="rounded-lg bg-white/20 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">Latest</span>
-                        )}
-                      </div>
-                      <p className={`mt-4 text-[10px] font-bold uppercase tracking-widest ${doc.isCurrentVersion ? 'text-white/40' : 'text-black/30'}`}>
-                        {formatDateLabel(doc.createdAt)}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => void refreshOverview()}
+                disabled={isLoading}
+                className="rounded-xl border-2 border-black px-5 py-3 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? "Refreshing..." : "Refresh"}
+              </button>
             </div>
+
+            {!proposal ? (
+              <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-5 py-12 text-center">
+                <p className="text-2xl font-black tracking-tight text-black">Repository Empty</p>
+                <p className="mt-2 text-base font-medium text-black/70">
+                  Submit your first proposal to start version tracking.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-8 space-y-4">
+                {proposal.documents.map((doc) => (
+                  <article
+                    key={doc.id}
+                    className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
+                          Version {doc.version}
+                        </p>
+                        <h4 className="mt-2 truncate text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
+                          {doc.fileName}
+                        </h4>
+                      </div>
+                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
+                        {doc.isCurrentVersion ? "Latest" : "Archived"}
+                      </span>
+                    </div>
+                    <p className="mt-4 break-all text-base font-medium text-black/70 transition-colors group-hover:text-white/80">
+                      {doc.storagePath}
+                    </p>
+                    <p className="mt-3 text-[12px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/70">
+                      {formatDateLabel(doc.createdAt)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </section>
