@@ -11,6 +11,10 @@ type Params = {
 export const POST = withAuth(
   async (_request: NextRequest, { params, auth }) => {
     try {
+      if (!params?.id) {
+        return NextResponse.json({ error: "Progress report id is required." }, { status: 400 });
+      }
+
       const supervisor = await prisma.supervisor.findUnique({
         where: { userId: auth.userId },
         select: { id: true },

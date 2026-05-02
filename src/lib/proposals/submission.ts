@@ -580,22 +580,6 @@ export async function updateResearchProposalStatus(
     throw new ProposalSubmissionError("Research proposal not found.", 404);
   }
 
-  if (auth.role === UserRole.SUPERVISOR) {
-    const isAssigned = await prisma.supervisorAssignment.findFirst({
-      where: {
-        studentId: proposal.studentId,
-        supervisorUserId: auth.userId,
-      },
-    });
-
-    if (!isAssigned) {
-      throw new ProposalSubmissionError(
-        "You can only update proposals for students assigned to you.",
-        403,
-      );
-    }
-  }
-
   try {
     assertValidProposalStatusTransition(proposal.status, parsed.data.status);
   } catch (error) {
