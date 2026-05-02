@@ -20,19 +20,28 @@ import { prisma } from "@/lib/prisma/client";
 import {
   assertApplicationAttachmentConstraints,
   buildApplicationAttachmentStoragePath,
+  deleteFile,
   generateUploadSignedUrl,
+  getStorageObjectOwnerId,
+  normalizeStoragePath,
   StorageAccessError,
   uploadBufferToStorage,
 } from "@/lib/storage";
 
 import {
+  applicationDocumentDeleteRequestSchema,
   applicationSubmissionSchema,
   applicationUploadRequestSchema,
+  ApplicationDocumentDeleteRequest,
   ApplicationSubmissionInput,
   ApplicationUploadRequest,
 } from "@/lib/applications/schemas";
 
-export { applicationSubmissionSchema, applicationUploadRequestSchema };
+export {
+  applicationDocumentDeleteRequestSchema,
+  applicationSubmissionSchema,
+  applicationUploadRequestSchema,
+};
 
 export class ApplicationSubmissionError extends Error {
   status: 400 | 403 | 404 | 409 | 413 | 500;
@@ -159,6 +168,52 @@ export async function uploadApplicationDocument(input: {
 
     throw new ApplicationSubmissionError(
       error instanceof Error ? error.message : "Unable to upload the document.",
+      500,
+    );
+  }
+}
+
+export async function deleteUploadedApplicationDocument(
+  input: ApplicationDocumentDeleteRequest,
+) {
+  const parsed = applicationDocumentDeleteRequestSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new ApplicationSubmissionError(
+      parsed.error.issues[0]?.message ?? "Invalid document removal request.",
+      400,
+    );
+  }
+
+  try {
+    const normalizedStoragePath = normalizeStoragePath(parsed.data.storagePath);
+
+    if (!normalizedStoragePath.startsWith("applications/")) {
+      throw new ApplicationSubmissionError(
+        "Application documents must be uploaded to the applications directory.",
+        400,
+      );
+    }
+
+    if (getStorageObjectOwnerId(normalizedStoragePath) !== parsed.data.draftId) {
+      throw new ApplicationSubmissionError(
+        "Document removal denied for this draft.",
+        403,
+      );
+    }
+
+    await deleteFile(normalizedStoragePath);
+  } catch (error) {
+    if (error instanceof ApplicationSubmissionError) {
+      throw error;
+    }
+
+    if (error instanceof StorageAccessError) {
+      throw new ApplicationSubmissionError(error.message, error.status);
+    }
+
+    throw new ApplicationSubmissionError(
+      error instanceof Error ? error.message : "Unable to remove the document.",
       500,
     );
   }

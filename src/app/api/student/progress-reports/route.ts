@@ -1,6 +1,5 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
 
 import {
   assertStudentHasActiveRegistration,
@@ -8,11 +7,7 @@ import {
 } from "@/lib/registrations";
 import { withAuth } from "@/lib/firebase/with-auth";
 import { prisma } from "@/lib/prisma/client";
-
-const progressReportSchema = z.object({
-  periodLabel: z.string().min(1, "Period label is required."),
-  narrative: z.string().min(100, "Narrative must be at least 100 characters long."),
-});
+import { progressReportSubmissionSchema } from "@/lib/progress-reports/schemas";
 
 export const GET = withAuth(
   async (_request: NextRequest, context) => {
@@ -57,7 +52,7 @@ export const POST = withAuth(
       await assertStudentHasActiveRegistration(context.auth);
 
       const body = await request.json();
-      const parsed = progressReportSchema.safeParse(body);
+      const parsed = progressReportSubmissionSchema.safeParse(body);
 
       if (!parsed.success) {
         return NextResponse.json(

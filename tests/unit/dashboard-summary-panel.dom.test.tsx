@@ -33,11 +33,21 @@ describe("DashboardSummaryPanel", () => {
   });
 
   it("applies the correct classes for color-coded status badges", () => {
-    expect(getStatusBadgeClassName("success")).toContain("text-emerald-200");
-    expect(getStatusBadgeClassName("warning")).toContain("text-amber-100");
-    expect(getStatusBadgeClassName("danger")).toContain("text-rose-100");
-    expect(getStatusBadgeClassName("info")).toContain("text-sky-100");
-    expect(getStatusBadgeClassName("neutral")).toContain("text-slate-200");
+    expect(getStatusBadgeClassName("success")).toBe(
+      "border border-black bg-transparent text-black",
+    );
+    expect(getStatusBadgeClassName("warning")).toBe(
+      "border border-black bg-transparent text-black",
+    );
+    expect(getStatusBadgeClassName("danger")).toBe(
+      "border border-black bg-transparent text-black",
+    );
+    expect(getStatusBadgeClassName("info")).toBe(
+      "border border-black bg-transparent text-black",
+    );
+    expect(getStatusBadgeClassName("neutral")).toBe(
+      "border border-gray-300 bg-transparent text-black",
+    );
   });
 
   it("renders quick actions as links to their configured destination", () => {

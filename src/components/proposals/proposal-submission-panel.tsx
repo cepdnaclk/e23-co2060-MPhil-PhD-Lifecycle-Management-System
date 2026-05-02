@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
+import {
+  proposalSubmissionSchema,
+  proposalUploadRequestSchema,
+} from "@/lib/proposals/schemas";
+
 type ProposalDocument = {
   id: string;
   fileName: string;
@@ -119,6 +124,22 @@ export function ProposalSubmissionPanel() {
       return;
     }
 
+    const parsedUploadRequest = proposalUploadRequestSchema.safeParse({
+      fileName: file.name,
+      contentType: file.type,
+      fileSizeBytes: file.size,
+    });
+
+    if (!parsedUploadRequest.success) {
+      setErrorMessage(
+        parsedUploadRequest.error.issues[0]?.message ??
+          "Unable to upload the proposal PDF.",
+      );
+      setUploadedDocument(null);
+      event.target.value = "";
+      return;
+    }
+
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsUploading(true);
@@ -131,9 +152,9 @@ export function ProposalSubmissionPanel() {
         },
         credentials: "include",
         body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          fileSizeBytes: file.size,
+          fileName: parsedUploadRequest.data.fileName,
+          contentType: parsedUploadRequest.data.contentType,
+          fileSizeBytes: parsedUploadRequest.data.fileSizeBytes,
         }),
       });
       const uploadUrlPayload = (await uploadUrlResponse.json()) as {
@@ -191,6 +212,20 @@ export function ProposalSubmissionPanel() {
       return;
     }
 
+    const parsedSubmission = proposalSubmissionSchema.safeParse({
+      title,
+      abstract,
+      document: uploadedDocument,
+    });
+
+    if (!parsedSubmission.success) {
+      setErrorMessage(
+        parsedSubmission.error.issues[0]?.message ??
+          "Invalid proposal submission.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -200,11 +235,7 @@ export function ProposalSubmissionPanel() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          title,
-          abstract,
-          document: uploadedDocument,
-        }),
+        body: JSON.stringify(parsedSubmission.data),
       });
       const payload = (await response.json()) as {
         error?: string;

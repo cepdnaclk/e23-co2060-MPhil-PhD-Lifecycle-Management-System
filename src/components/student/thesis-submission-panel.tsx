@@ -3,6 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
+import {
+  thesisSubmissionSchema,
+  uploadedPdfDocumentSchema,
+} from "@/lib/theses/schemas";
+
 type ThesisDocument = {
   id: string;
   fileName: string;
@@ -32,7 +37,31 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setFile(event.target.files?.[0] ?? null);
+    const nextFile = event.target.files?.[0] ?? null;
+
+    if (!nextFile) {
+      setFile(null);
+      return;
+    }
+
+    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
+      fileName: nextFile.name,
+      mimeType: nextFile.type,
+      sizeBytes: nextFile.size,
+    });
+
+    if (!parsedDocument.success) {
+      setError(
+        parsedDocument.error.issues[0]?.message ??
+          "Choose a valid PDF thesis document.",
+      );
+      setFile(null);
+      event.target.value = "";
+      return;
+    }
+
+    setError(null);
+    setFile(nextFile);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -45,6 +74,26 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       return;
     }
 
+    const parsedSubmission = thesisSubmissionSchema.safeParse({
+      title,
+      abstract,
+      document: file
+        ? {
+            fileName: file.name,
+            mimeType: file.type,
+            sizeBytes: file.size,
+          }
+        : undefined,
+    });
+
+    if (!parsedSubmission.success) {
+      setError(
+        parsedSubmission.error.issues[0]?.message ??
+          "Invalid thesis submission details.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -52,15 +101,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          title,
-          abstract,
-          document: {
-            fileName: file.name,
-            mimeType: "application/pdf",
-            sizeBytes: file.size,
-          },
-        }),
+        body: JSON.stringify(parsedSubmission.data),
       });
       const payload = (await response.json()) as {
         error?: string;

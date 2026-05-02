@@ -10,12 +10,11 @@ export default function ApplicationSuccessPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-green-700">
           Submission Complete
         </p>
+        <br/>
         <h1 className="mt-4 text-2xl font-semibold text-green-800">
-          Application Submitted
+          Application Submitted successfully.
         </h1>
-        <p className="mt-3 text-base leading-7 text-green-700">
-          Application submitted successfully.
-        </p>
+        <br/>
         <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-green-700">
           Your application has been received and is now ready for review by the postgraduate admissions team.
         </p>

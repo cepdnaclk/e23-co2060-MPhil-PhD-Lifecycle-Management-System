@@ -42,8 +42,10 @@ function createDraftId() {
 export function ApplicationForm() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [furthestStep, setFurthestStep] = useState(0);
   const [draftId] = useState(() => createDraftId());
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [isRemovingDocument, setIsRemovingDocument] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
@@ -58,6 +60,9 @@ export function ApplicationForm() {
   });
 
   const currentStepLabel = useMemo(() => stepLabels[step], [step]);
+  const hasUploadedDocument = documents.length > 0;
+  const isNavigationBusy =
+    isUploadingDocument || isRemovingDocument || isSubmitting;
 
   function updateField(name: keyof typeof formValues, value: string) {
     setIsReviewConfirmed(false);
@@ -67,10 +72,73 @@ export function ApplicationForm() {
     }));
   }
 
+  function validateStep(stepToValidate: number) {
+    if (stepToValidate === 0) {
+      const parsed = applicantStepSchema.safeParse({
+        applicantName: formValues.applicantName,
+        applicantEmail: formValues.applicantEmail,
+        applicantPhone: formValues.applicantPhone,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(
+          parsed.error.issues[0]?.message ??
+            "Complete the applicant details before continuing.",
+        );
+        return false;
+      }
+    }
+
+    if (stepToValidate === 1) {
+      const parsed = researchStepSchema.safeParse({
+        programType: formValues.programType,
+        researchArea: formValues.researchArea,
+        statementOfPurpose: formValues.statementOfPurpose,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(
+          parsed.error.issues[0]?.message ??
+            "Complete the research details before continuing.",
+        );
+        return false;
+      }
+    }
+
+    if (stepToValidate === 2) {
+      const parsed = documentsStepSchema.safeParse({
+        supportingDocuments: documents,
+      });
+
+      if (!parsed.success) {
+        setErrorMessage(
+          parsed.error.issues[0]?.message ??
+            "Upload a supporting document before continuing.",
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function moveToStep(nextStepIndex: number) {
+    setStep(nextStepIndex);
+    setFurthestStep((current) => Math.max(current, nextStepIndex));
+  }
+
   async function handleDocumentUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) {
+      return;
+    }
+
+    if (documents.length > 0) {
+      setErrorMessage(
+        "Only one supporting document can be uploaded. Remove the current file to upload a new PDF.",
+      );
+      event.target.value = "";
       return;
     }
 
@@ -102,18 +170,14 @@ export function ApplicationForm() {
         !uploadPayload.mimeType ||
         typeof uploadPayload.sizeBytes !== "number"
       ) {
-        throw new Error(uploadPayload.error ?? "Unable to upload the selected document.");
+        throw new Error(
+          uploadPayload.error ?? "Unable to upload the selected document.",
+        );
       }
 
-      const {
-        storagePath,
-        fileName,
-        mimeType,
-        sizeBytes,
-      } = uploadPayload;
+      const { storagePath, fileName, mimeType, sizeBytes } = uploadPayload;
 
-      setDocuments((current) => [
-        ...current,
+      setDocuments([
         {
           fileName,
           storagePath,
@@ -136,52 +200,93 @@ export function ApplicationForm() {
     }
   }
 
-  function nextStep() {
+  async function handleDocumentRemoval() {
+    const document = documents[0];
+
+    if (!document) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsRemovingDocument(true);
+
+    try {
+      const response = await fetch("/api/applications/upload", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          draftId,
+          storagePath: document.storagePath,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ?? "Unable to remove the uploaded document.",
+        );
+      }
+
+      setDocuments([]);
+      setIsReviewConfirmed(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof TypeError
+          ? "Unable to reach the upload service. Please try again."
+          : error instanceof Error
+            ? error.message
+            : "Unable to remove the uploaded document.",
+      );
+    } finally {
+      setIsRemovingDocument(false);
+    }
+  }
+
+  function goToStep(targetStep: number) {
+    if (isNavigationBusy || targetStep === step || targetStep > furthestStep) {
+      return;
+    }
+
     setErrorMessage(null);
 
-    if (step === 0) {
-      const parsed = applicantStepSchema.safeParse({
-        applicantName: formValues.applicantName,
-        applicantEmail: formValues.applicantEmail,
-        applicantPhone: formValues.applicantPhone,
-      });
-
-      if (!parsed.success) {
-        setErrorMessage(parsed.error.issues[0]?.message ?? "Complete the applicant details before continuing.");
-        return;
-      }
+    if (targetStep > step && !validateStep(step)) {
+      return;
     }
 
-    if (step === 1) {
-      const parsed = researchStepSchema.safeParse({
-        programType: formValues.programType,
-        researchArea: formValues.researchArea,
-        statementOfPurpose: formValues.statementOfPurpose,
-      });
-
-      if (!parsed.success) {
-        setErrorMessage(parsed.error.issues[0]?.message ?? "Complete the research details before continuing.");
-        return;
-      }
+    if (targetStep < step) {
+      setIsReviewConfirmed(false);
     }
 
-    if (step === 2) {
-      const parsed = documentsStepSchema.safeParse({
-        supportingDocuments: documents,
-      });
+    setStep(targetStep);
+  }
 
-      if (!parsed.success) {
-        setErrorMessage(parsed.error.issues[0]?.message ?? "Upload at least one supporting document before continuing.");
-        return;
-      }
+  function nextStep() {
+    if (isNavigationBusy) {
+      return;
     }
 
-    setStep((current) => Math.min(current + 1, stepLabels.length - 1));
+    setErrorMessage(null);
+
+    if (!validateStep(step)) {
+      return;
+    }
+
+    moveToStep(Math.min(step + 1, stepLabels.length - 1));
   }
 
   function previousStep() {
+    if (isNavigationBusy) {
+      return;
+    }
+
     setErrorMessage(null);
     setIsReviewConfirmed(false);
+
     if (step === 0) {
       router.push("/");
     } else {
@@ -224,6 +329,7 @@ export function ApplicationForm() {
       }
 
       setStep(0);
+      setFurthestStep(0);
       setDocuments([]);
       setFormValues({
         applicantName: "",
@@ -247,7 +353,7 @@ export function ApplicationForm() {
   }
 
   return (
-    <div className="mx-auto max-h-full w-full max-w-5xl overflow-y-auto rounded-[30px] bg-[#e0e0e0] px-6 pt-6 pb-8 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:px-8 sm:pt-8 sm:pb-10 space-y-6">
+    <div className="mx-auto max-h-full w-full max-w-5xl space-y-6 overflow-y-auto rounded-[30px] bg-[#e0e0e0] px-6 pt-6 pb-8 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:px-8 sm:pt-8 sm:pb-10">
       <section className="border-b border-gray-300 pb-5">
         <p className="text-base font-semibold uppercase tracking-[0.26em] text-black">
           Postgraduate Admissions
@@ -256,8 +362,8 @@ export function ApplicationForm() {
           Apply for your research programme
         </h1>
         <p className="mt-2 max-w-2xl text-base leading-6 text-black">
-          Complete the public application form, upload supporting PDFs, and submit
-          your research interest for review.
+          Complete the public application form, upload one supporting PDF, and
+          submit your research interest for review.
         </p>
       </section>
 
@@ -265,23 +371,44 @@ export function ApplicationForm() {
         {stepLabels.map((label, index) => {
           const isCurrent = index === step;
           const isCompleted = index < step;
+          const isStepAccessible = index <= furthestStep;
 
           return (
-            <div
+            <button
               key={label}
-              className={`rounded-2xl border px-4 py-3 text-base transition-colors ${
+              type="button"
+              onClick={() => goToStep(index)}
+              disabled={!isStepAccessible || isNavigationBusy}
+              aria-current={isCurrent ? "step" : undefined}
+              aria-label={
+                isStepAccessible
+                  ? `Go to ${label} step`
+                  : `${label} step locked until previous sections are completed`
+              }
+              className={`rounded-2xl border px-4 py-3 text-left text-base transition-all ${
                 isCurrent
-                  ? "border-black bg-black/5 text-black font-bold"
+                  ? "border-black bg-black/5 font-bold text-black"
                   : isCompleted
                     ? "border-gray-400 bg-transparent text-black"
                     : "border-gray-300 bg-transparent text-gray-500"
+              } ${
+                isStepAccessible
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-black/70"
+                  : "cursor-not-allowed opacity-70"
               }`}
             >
               <p className="text-base uppercase tracking-[0.2em]">
                 Step {index + 1}
               </p>
               <p className="mt-2 font-semibold">{label}</p>
-            </div>
+              <p className="mt-2 text-sm uppercase tracking-[0.14em]">
+                {isCurrent
+                  ? "Current step"
+                  : isStepAccessible
+                    ? "Click to open"
+                    : "Locked"}
+              </p>
+            </button>
           );
         })}
       </section>
@@ -308,7 +435,9 @@ export function ApplicationForm() {
               <span>Full name</span>
               <input
                 value={formValues.applicantName}
-                onChange={(event) => updateField("applicantName", event.target.value)}
+                onChange={(event) =>
+                  updateField("applicantName", event.target.value)
+                }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Applicant full name"
               />
@@ -317,7 +446,9 @@ export function ApplicationForm() {
               <span>Email</span>
               <input
                 value={formValues.applicantEmail}
-                onChange={(event) => updateField("applicantEmail", event.target.value)}
+                onChange={(event) =>
+                  updateField("applicantEmail", event.target.value)
+                }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="name@example.com"
                 type="email"
@@ -327,7 +458,9 @@ export function ApplicationForm() {
               <span>Phone</span>
               <input
                 value={formValues.applicantPhone}
-                onChange={(event) => updateField("applicantPhone", event.target.value)}
+                onChange={(event) =>
+                  updateField("applicantPhone", event.target.value)
+                }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="+94 7X XXX XXXX"
               />
@@ -341,7 +474,9 @@ export function ApplicationForm() {
               <span>Programme</span>
               <select
                 value={formValues.programType}
-                onChange={(event) => updateField("programType", event.target.value)}
+                onChange={(event) =>
+                  updateField("programType", event.target.value)
+                }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
               >
                 {applicationProgramTypes.map((programType) => (
@@ -355,7 +490,9 @@ export function ApplicationForm() {
               <span>Research area</span>
               <input
                 value={formValues.researchArea}
-                onChange={(event) => updateField("researchArea", event.target.value)}
+                onChange={(event) =>
+                  updateField("researchArea", event.target.value)
+                }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="Machine Learning for Education"
               />
@@ -378,27 +515,41 @@ export function ApplicationForm() {
           <div className="space-y-3.5">
             <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
               <p className="text-base font-medium text-black">
-                Upload supporting documents
+                Upload supporting document
               </p>
               <p className="mt-2 text-base text-black">
-                PDF only. Maximum file size: 10MB per document.
+                PDF only. Maximum file size: 10MB. Only one file can be
+                uploaded.
               </p>
+              {hasUploadedDocument ? (
+                <p className="mt-3 text-base text-black">
+                  A file is already uploaded. Remove it first if you need to
+                  choose a different PDF.
+                </p>
+              ) : null}
               <input
                 className="mt-4 block w-full cursor-pointer text-base text-black file:mr-4 file:cursor-pointer file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black file:transition-all file:duration-200 hover:file:-translate-y-0.5 hover:file:shadow-md"
                 type="file"
                 accept="application/pdf"
                 onChange={handleDocumentUpload}
-                disabled={isUploadingDocument}
+                disabled={
+                  isUploadingDocument || isRemovingDocument || hasUploadedDocument
+                }
               />
               {isUploadingDocument ? (
                 <p className="mt-3 text-base text-black">Uploading PDF...</p>
+              ) : null}
+              {isRemovingDocument ? (
+                <p className="mt-3 text-base text-black">
+                  Removing uploaded PDF...
+                </p>
               ) : null}
             </div>
 
             <div className="space-y-2.5">
               {documents.length === 0 ? (
                 <div className="rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-5 text-base text-black">
-                  No supporting documents uploaded yet.
+                  No supporting document uploaded yet.
                 </div>
               ) : (
                 documents.map((document) => (
@@ -408,8 +559,16 @@ export function ApplicationForm() {
                   >
                     <p className="font-medium text-black">{document.fileName}</p>
                     <p className="mt-1 text-base uppercase tracking-[0.18em] text-black">
-                      {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB • PDF
+                      {(document.sizeBytes / (1024 * 1024)).toFixed(2)} MB | PDF
                     </p>
+                    <button
+                      type="button"
+                      onClick={handleDocumentRemoval}
+                      disabled={isRemovingDocument}
+                      className="mt-3 rounded-full border border-black px-4 py-2 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isRemovingDocument ? "Removing..." : "Remove uploaded file"}
+                    </button>
                   </div>
                 ))
               )}
@@ -420,26 +579,37 @@ export function ApplicationForm() {
         {step === 3 ? (
           <div className="space-y-3.5 rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
             <div className="rounded-2xl border border-gray-300 bg-white/40 px-4 py-3 text-base text-black">
-              Review the application details below carefully. If anything is incorrect, use the Back
-              button to return and update it before submitting.
+              Review the application details below carefully. If anything is
+              incorrect, use the step boxes above or the Back button to update
+              it before submitting.
             </div>
             <div>
-              <p className="text-base font-medium text-black">{formValues.applicantName}</p>
-              <p className="text-base text-black">{formValues.applicantEmail}</p>
-              <p className="text-base text-black">{formValues.applicantPhone}</p>
+              <p className="text-base font-medium text-black">
+                {formValues.applicantName}
+              </p>
+              <p className="text-base text-black">
+                {formValues.applicantEmail}
+              </p>
+              <p className="text-base text-black">
+                {formValues.applicantPhone}
+              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <p className="text-base uppercase tracking-[0.18em] text-black">
                   Programme
                 </p>
-                <p className="mt-1 text-base text-black">{formValues.programType}</p>
+                <p className="mt-1 text-base text-black">
+                  {formValues.programType}
+                </p>
               </div>
               <div>
                 <p className="text-base uppercase tracking-[0.18em] text-black">
                   Research area
                 </p>
-                <p className="mt-1 text-base text-black">{formValues.researchArea}</p>
+                <p className="mt-1 text-base text-black">
+                  {formValues.researchArea}
+                </p>
               </div>
             </div>
             <div>
@@ -452,7 +622,7 @@ export function ApplicationForm() {
             </div>
             <div>
               <p className="text-base uppercase tracking-[0.18em] text-black">
-                Supporting PDFs
+                Supporting PDF
               </p>
               <ul className="mt-2 space-y-1.5 text-base text-black">
                 {documents.map((document) => (
@@ -468,7 +638,8 @@ export function ApplicationForm() {
                 className="mt-1 h-4 w-4 accent-black"
               />
               <span>
-                I have reviewed the application details and confirm they are correct before submission.
+                I have reviewed the application details and confirm they are
+                correct before submission.
               </span>
             </label>
           </div>
@@ -478,12 +649,10 @@ export function ApplicationForm() {
           <button
             type="button"
             onClick={previousStep}
-            disabled={isSubmitting}
+            disabled={isNavigationBusy}
             className="theme-button theme-button--compact theme-button--black"
           >
-            <span className="theme-button__label">
-              Back
-            </span>
+            <span className="theme-button__label">Back</span>
           </button>
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -491,11 +660,10 @@ export function ApplicationForm() {
               <button
                 type="button"
                 onClick={nextStep}
+                disabled={isNavigationBusy}
                 className="theme-button theme-button--compact"
               >
-                <span className="theme-button__label">
-                  Continue
-                </span>
+                <span className="theme-button__label">Continue</span>
               </button>
             ) : (
               <button

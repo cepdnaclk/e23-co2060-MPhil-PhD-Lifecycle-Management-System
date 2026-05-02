@@ -1,22 +1,14 @@
 import { ThesisStatus, VivaOutcome } from "@prisma/client";
-import { z } from "zod";
 
 import { notifyVivaScheduled } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import { getCurrentThesisDownloadUrl, ThesisVersionError } from "@/lib/theses/versions";
+import {
+  scheduleVivaSchema,
+  vivaOutcomeSubmissionSchema,
+} from "@/lib/vivas/schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
-
-export const vivaOutcomeSubmissionSchema = z.object({
-  outcome: z.nativeEnum(VivaOutcome),
-});
-
-export const scheduleVivaSchema = z.object({
-  thesisId: z.string().min(1, "Thesis ID is required"),
-  venue: z.string().min(1, "Venue is required"),
-  scheduledDate: z.coerce.date().refine((date) => date > new Date(), {
-    message: "Scheduled date must be in the future",
-  }),
-});
+export { scheduleVivaSchema, vivaOutcomeSubmissionSchema };
 
 export class VivaWorkflowError extends Error {
   status: 400 | 403 | 404 | 409 | 500;
@@ -199,7 +191,7 @@ export async function getExaminerVivaWorkspace(
 
 export async function recordVivaOutcome(
   vivaId: string,
-  input: z.infer<typeof vivaOutcomeSubmissionSchema>,
+  input: { outcome: VivaOutcome },
   auth: AuthenticatedUserContext,
 ) {
   const parsed = vivaOutcomeSubmissionSchema.safeParse(input);
@@ -263,7 +255,11 @@ export async function recordVivaOutcome(
 }
 
 export async function scheduleViva(
-  input: z.infer<typeof scheduleVivaSchema>,
+  input: {
+    thesisId: string;
+    venue: string;
+    scheduledDate: string | Date;
+  },
   auth: AuthenticatedUserContext,
 ) {
   if (auth.role !== "ADMINISTRATOR") {

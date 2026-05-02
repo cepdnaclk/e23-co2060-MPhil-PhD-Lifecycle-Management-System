@@ -108,6 +108,26 @@ describe("LoginForm", () => {
     });
   });
 
+  it("lets the user show and hide the typed password", async () => {
+    const user = userEvent.setup();
+
+    render(<LoginForm />);
+
+    const passwordField = screen.getByTestId("login-password");
+
+    expect(passwordField).toHaveAttribute("type", "password");
+
+    await user.type(passwordField, "password123");
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+
+    expect(passwordField).toHaveAttribute("type", "text");
+    expect(passwordField).toHaveValue("password123");
+
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+
+    expect(passwordField).toHaveAttribute("type", "password");
+  });
+
   it("blocks redirection for an inactive user account", async () => {
     const user = userEvent.setup();
     const mockFirebaseUser = {

@@ -1,7 +1,7 @@
 import { ProposalStatus } from "@prisma/client";
 import { z } from "zod";
 
-import { MAX_STORAGE_FILE_SIZE_BYTES } from "@/lib/storage";
+import { MAX_STORAGE_FILE_SIZE_BYTES } from "@/lib/validation/uploads";
 import { optionalSanitizedString, sanitizedString } from "@/lib/validation/schemas";
 
 const uploadedProposalDocumentSchema = z.object({

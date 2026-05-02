@@ -7,7 +7,6 @@ import {
   ThesisStatus,
   UserRole,
 } from "@prisma/client";
-import { z } from "zod";
 
 import { notifyThesisSubmittedToAdministrator } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
@@ -18,19 +17,11 @@ import {
   normalizeStoragePath,
   StorageAccessError,
 } from "@/lib/storage";
+import {
+  thesisSubmissionSchema,
+  type ThesisSubmissionInput,
+} from "@/lib/theses/schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
-
-export const thesisSubmissionSchema = z.object({
-  title: z.string().min(1, "Thesis title is required."),
-  abstract: z.string().min(1, "Thesis abstract is required."),
-  document: z.object({
-    fileName: z.string().min(1, "Document file name is required."),
-    mimeType: z.literal("application/pdf"),
-    sizeBytes: z.number().int().positive().max(50 * 1024 * 1024),
-  }),
-});
-
-export type ThesisSubmissionInput = z.infer<typeof thesisSubmissionSchema>;
 
 type ThesisDocumentRecord = {
   id: string;

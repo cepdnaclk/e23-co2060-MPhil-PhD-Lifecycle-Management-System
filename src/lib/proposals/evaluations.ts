@@ -1,23 +1,13 @@
 import { ProposalStatus, UserRole } from "@prisma/client";
-import { z } from "zod";
 
 import { notifyProposalEvaluationSubmittedToAdministrator } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
+import {
+  proposalEvaluationSchema,
+  type ProposalEvaluationInput,
+} from "@/lib/proposals/evaluation-schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
-
-export const proposalEvaluationSchema = z.object({
-  numericalScore: z
-    .number({ invalid_type_error: "Score must be numeric." })
-    .int("Score must be a whole number.")
-    .min(0, "Score must be between 0 and 100.")
-    .max(100, "Score must be between 0 and 100."),
-  feedback: z
-    .string()
-    .trim()
-    .min(50, "Feedback must be at least 50 characters long."),
-});
-
-export type ProposalEvaluationInput = z.infer<typeof proposalEvaluationSchema>;
+export { proposalEvaluationSchema };
 
 export class ProposalEvaluationError extends Error {
   status: 400 | 403 | 404 | 409 | 500;
@@ -219,8 +209,10 @@ function assertSupervisorAssignedToProposal(
 }
 
 function assertProposalUnderReview(proposal: ProposalEvaluationView) {
-  const allowedStatuses = [ProposalStatus.SUBMITTED, ProposalStatus.UNDER_REVIEW];
-  if (!allowedStatuses.includes(proposal.status)) {
+  if (
+    proposal.status !== ProposalStatus.SUBMITTED &&
+    proposal.status !== ProposalStatus.UNDER_REVIEW
+  ) {
     throw new ProposalEvaluationError(
       "Proposal evaluations are only allowed while the proposal is SUBMITTED or UNDER_REVIEW.",
       409,

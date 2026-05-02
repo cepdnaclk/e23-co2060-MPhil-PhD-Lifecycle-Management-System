@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { createSessionRequestSchema } from "@/lib/auth/schemas";
 import {
   SESSION_COOKIE_MAX_AGE_SECONDS,
   SESSION_COOKIE_NAME,
@@ -17,11 +18,6 @@ import {
   buildSessionActivityValue,
   hasSessionExpiredByInactivity,
 } from "@/lib/security/session";
-import { sanitizedString } from "@/lib/validation/schemas";
-
-const createSessionRequestSchema = z.object({
-  idToken: sanitizedString.min(1, "Missing idToken."),
-});
 
 function setSessionCookies(response: NextResponse, sessionCookie: string) {
   response.cookies.set(

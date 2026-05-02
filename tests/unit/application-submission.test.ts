@@ -100,6 +100,40 @@ describe("application submission utilities", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects a submission schema payload with more than one supporting document", () => {
+    const result = applicationSubmissionSchema.safeParse({
+      applicantName: "Applicant One",
+      applicantEmail: "applicant@example.com",
+      applicantPhone: "+94770000000",
+      programType: "MPHIL",
+      researchArea: "AI",
+      statementOfPurpose:
+        "I want to pursue a long-term research problem in adaptive systems for education.",
+      supportingDocuments: [
+        {
+          fileName: "cv.pdf",
+          storagePath: "applications/draft-4/cv.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 1024,
+        },
+        {
+          fileName: "transcript.pdf",
+          storagePath: "applications/draft-4/transcript.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 2048,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        "Upload only one supporting document.",
+      );
+    }
+  });
+
   it("blocks an illegal REJECTED to SUBMITTED transition with a 400 error", async () => {
     vi.mocked(prisma.application.findUnique).mockResolvedValue({
       id: "application-1",

@@ -5,7 +5,6 @@ import {
   ThesisStatus,
   UserRole,
 } from "@prisma/client";
-import { z } from "zod";
 
 import { notifyCorrectionSubmittedToAdministrator } from "@/lib/email";
 import { notifyInBackground } from "@/lib/notifications";
@@ -18,17 +17,11 @@ import {
   normalizeStoragePath,
   StorageAccessError,
 } from "@/lib/storage";
+import {
+  correctionSubmissionSchema,
+  type CorrectionSubmissionInput,
+} from "@/lib/theses/schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
-
-export const correctionSubmissionSchema = z.object({
-  correctionType: z.nativeEnum(CorrectionType),
-  description: z.string().trim().optional(),
-  document: z.object({
-    fileName: z.string().min(1, "Document file name is required."),
-    mimeType: z.literal("application/pdf"),
-    sizeBytes: z.number().int().positive().max(50 * 1024 * 1024),
-  }),
-});
 
 export class ThesisCorrectionError extends Error {
   status: 400 | 403 | 404 | 409 | 413 | 500;
@@ -254,7 +247,7 @@ async function notifyAdministratorsOfCorrectionSubmission(input: {
 
 export async function submitCorrectionDocument(
   thesisId: string,
-  input: z.infer<typeof correctionSubmissionSchema>,
+  input: CorrectionSubmissionInput,
   auth: AuthenticatedUserContext,
 ) {
   const parsed = correctionSubmissionSchema.safeParse(input);

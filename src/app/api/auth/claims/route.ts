@@ -1,28 +1,26 @@
 import { NextResponse } from "next/server";
 
+import { syncFirebaseClaimsRequestSchema } from "@/lib/auth/schemas";
 import { syncFirebaseClaimsToUser } from "@/lib/firebase/claims";
-import { isAppUserRole } from "@/types/auth";
-
-type SetClaimsRequestBody = {
-  userId?: string;
-  firebaseUid?: string;
-  role?: string;
-};
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as SetClaimsRequestBody;
+  const parsed = syncFirebaseClaimsRequestSchema.safeParse(await request.json());
 
-  if (!body.userId || !body.firebaseUid || !isAppUserRole(body.role)) {
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid payload for Firebase custom claims assignment." },
+      {
+        error:
+          parsed.error.issues[0]?.message ??
+          "Invalid payload for Firebase custom claims assignment.",
+      },
       { status: 400 },
     );
   }
 
   const user = await syncFirebaseClaimsToUser({
-    userId: body.userId,
-    firebaseUid: body.firebaseUid,
-    role: body.role,
+    userId: parsed.data.userId,
+    firebaseUid: parsed.data.firebaseUid,
+    role: parsed.data.role,
   });
 
   return NextResponse.json({
