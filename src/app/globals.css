@@ -125,3 +125,22 @@ textarea {
     font-size: 1.05rem;
   }
 }
+
+.theme-button--black {
+  background: #111111;
+  color: white;
+  border-color: #111111;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
+}
+
+.theme-button--black:hover {
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+}
+
+.theme-button--black::before {
+  display: none;
+}
+
+.theme-button--black .theme-button__label {
+  color: white;
+}

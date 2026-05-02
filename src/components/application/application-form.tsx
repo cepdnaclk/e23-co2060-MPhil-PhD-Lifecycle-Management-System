@@ -182,7 +182,11 @@ export function ApplicationForm() {
   function previousStep() {
     setErrorMessage(null);
     setIsReviewConfirmed(false);
-    setStep((current) => Math.max(current - 1, 0));
+    if (step === 0) {
+      router.push("/");
+    } else {
+      setStep((current) => Math.max(current - 1, 0));
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -380,7 +384,7 @@ export function ApplicationForm() {
                 PDF only. Maximum file size: 10MB per document.
               </p>
               <input
-                className="mt-4 block w-full text-base text-black file:mr-4 file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black"
+                className="mt-4 block w-full cursor-pointer text-base text-black file:mr-4 file:cursor-pointer file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black file:transition-all file:duration-200 hover:file:-translate-y-0.5 hover:file:shadow-md"
                 type="file"
                 accept="application/pdf"
                 onChange={handleDocumentUpload}
@@ -474,8 +478,8 @@ export function ApplicationForm() {
           <button
             type="button"
             onClick={previousStep}
-            disabled={step === 0 || isSubmitting}
-            className="theme-button theme-button--compact"
+            disabled={isSubmitting}
+            className="theme-button theme-button--compact theme-button--black"
           >
             <span className="theme-button__label">
               Back
