@@ -299,7 +299,7 @@ export function SupervisorAssignmentPanel() {
             <div className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <div className="overflow-hidden rounded-[24px] border border-gray-200 bg-transparent">
+          <div className="overflow-hidden rounded-[24px] border border-gray-300 bg-white">
             <table className="min-w-full divide-y divide-gray-300 text-base">
               <thead className="text-left text-black">
                 <tr>
@@ -318,7 +318,7 @@ export function SupervisorAssignmentPanel() {
                 {students.map((student) => (
                   <tr
                     key={student.id}
-                    className={`align-top transition-colors hover:bg-black/5 ${selectedStudentId === student.id ? "bg-black/5" : ""}`}
+                    className={`align-top transition-colors ${selectedStudentId === student.id ? "bg-black/5" : "hover:bg-gray-50"}`}
                   >
                     <td className="px-6 py-6">
                       <div className="text-lg font-black">
@@ -400,7 +400,7 @@ export function SupervisorAssignmentPanel() {
             <div className="h-px flex-1 bg-gray-200" />
           </div>
 
-          <div className="sticky top-10 rounded-[30px] border-4 border-black bg-white p-8 shadow-[12px_12px_0px_black]">
+          <div className="sticky top-10 rounded-[24px] border border-gray-300 bg-white p-8">
             <h2 className="text-3xl font-black tracking-tighter text-black">
               {selectedStudent
                 ? `Assign to ${selectedStudent.user.displayName}`
@@ -475,7 +475,7 @@ export function SupervisorAssignmentPanel() {
               </div>
             </form>
 
-            <div className="mt-10 rounded-2xl border-2 border-dashed border-black/20 p-5">
+            <div className="mt-10 rounded-[24px] border border-dashed border-gray-300 bg-white p-5">
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black/40 mb-3">
                 Supervision Rules
               </p>

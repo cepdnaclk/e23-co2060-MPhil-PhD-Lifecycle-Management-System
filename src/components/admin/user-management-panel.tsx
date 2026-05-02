@@ -361,7 +361,7 @@ export function UserManagementPanel() {
         </div>
       ) : null}
 
-      <div className="hidden overflow-hidden rounded-[24px] border border-gray-200 bg-transparent md:block">
+      <div className="hidden overflow-hidden rounded-[24px] border border-gray-300 bg-white md:block">
         <table className="min-w-full divide-y divide-gray-300 text-base">
           <thead className="text-left text-black">
             <tr>
@@ -405,31 +405,31 @@ export function UserManagementPanel() {
               users.map((user) => (
                 <tr
                   key={user.id}
-                  className="align-top transition-colors hover:bg-black/5"
+                  className="group align-top transition-colors hover:bg-black"
                 >
                   <td className="px-6 py-6">
-                    <div className="text-lg font-black">{user.displayName}</div>
-                    <div className="font-medium text-black/60">
+                    <div className="text-lg font-black transition-colors group-hover:text-white">{user.displayName}</div>
+                    <div className="font-medium text-black/60 transition-colors group-hover:text-white/80">
                       {user.email}
                     </div>
                   </td>
                   <td className="px-6 py-6">
-                    <span className="inline-block rounded-lg border-2 border-black px-3 py-1 text-[13px] font-black uppercase tracking-wider">
+                    <span className="inline-block rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                       {user.role}
                     </span>
                   </td>
                   <td className="px-6 py-6 font-black">
                     {user.role === "STUDENT" ? (
-                      <div className="text-lg">
+                      <div className="text-lg transition-colors group-hover:text-white">
                         {user.programType ?? "N/A"} Candidate
                       </div>
                     ) : (
                       <>
-                        <div className="text-lg">
+                        <div className="text-lg transition-colors group-hover:text-white">
                           {user.department ?? "No Department"}
                         </div>
                         {user.specialization ? (
-                          <div className="text-sm text-black/70">
+                          <div className="text-sm text-black/70 transition-colors group-hover:text-white/80">
                             {user.specialization}
                           </div>
                         ) : null}
@@ -438,10 +438,10 @@ export function UserManagementPanel() {
                   </td>
                   <td className="px-6 py-6">
                     <span
-                      className={`inline-block rounded-full border-2 px-3 py-1 text-[13px] font-black uppercase tracking-widest ${
+                      className={`inline-block rounded-full border-2 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white ${
                         user.isActive
                           ? "border-black text-black"
-                          : "border-gray-300 text-gray-300"
+                          : "border-gray-300 text-black/40"
                       }`}
                     >
                       {user.isActive ? "Active" : "Inactive"}
@@ -452,7 +452,7 @@ export function UserManagementPanel() {
                       type="button"
                       disabled={!user.isActive}
                       onClick={() => void handleDeactivate(user.id)}
-                      className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                      className="rounded-xl border-2 border-black bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       Deactivate
                     </button>
@@ -468,18 +468,18 @@ export function UserManagementPanel() {
         {users.map((user) => (
           <article
             key={user.id}
-            className="rounded-[24px] border border-gray-200 bg-transparent p-6"
+            className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xl font-black tracking-tight text-black">
+                <p className="text-xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                   {user.displayName}
                 </p>
-                <p className="text-sm font-medium text-black/60">
+                <p className="text-sm font-medium text-black/60 transition-colors group-hover:text-white/80">
                   {user.email}
                 </p>
               </div>
-              <span className="shrink-0 rounded-lg border-2 border-black px-2 py-1 text-[12px] font-black uppercase">
+              <span className="shrink-0 rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                 {user.role}
               </span>
             </div>
@@ -487,7 +487,7 @@ export function UserManagementPanel() {
               type="button"
               disabled={!user.isActive}
               onClick={() => void handleDeactivate(user.id)}
-              className="mt-6 w-full rounded-xl border-2 border-black py-3 text-xs font-black uppercase tracking-widest transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:opacity-20"
+              className="mt-6 w-full rounded-xl border-2 border-black bg-white py-3 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:opacity-20"
             >
               Deactivate Account
             </button>

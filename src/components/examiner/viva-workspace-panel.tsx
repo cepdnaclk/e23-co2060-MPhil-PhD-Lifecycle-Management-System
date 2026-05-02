@@ -60,7 +60,7 @@ function CustomSelect<T extends string>({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-[#e0e0e0] px-6 py-3 text-base font-bold text-black shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] outline-none transition-all disabled:opacity-30"
+        className="flex w-full items-center justify-between rounded-[24px] border-2 border-black bg-white px-5 py-4 text-base font-bold text-black outline-none transition hover:bg-gray-50 disabled:opacity-30"
       >
         <span className="truncate">{value ? labelMap[value] : placeholder}</span>
         <svg className={`h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,13 +68,13 @@ function CustomSelect<T extends string>({
         </svg>
       </button>
       {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-2xl border border-gray-300 bg-[#e0e0e0] shadow-[10px_10px_20px_#bebebe]">
+        <div className="absolute left-0 right-0 z-50 mt-2 overflow-hidden rounded-[24px] border border-gray-300 bg-white shadow-[10px_10px_30px_rgba(0,0,0,0.12)]">
           {options.map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => { onChange(option); setIsOpen(false); }}
-              className="w-full px-6 py-3 text-left text-sm font-bold hover:bg-black hover:text-white transition-colors"
+              className="w-full px-6 py-3 text-left text-sm font-bold transition-colors hover:bg-black hover:text-white"
             >
               {labelMap[option]}
             </button>
@@ -130,7 +130,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
 
   return (
     <div className="space-y-10">
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="space-y-4">
           <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
             Examiner Portal
@@ -146,21 +146,24 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
       </header>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600 shadow-[inset_4px_4px_8px_#fca5a5,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{error}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{error}</p>
         </div>
       )}
 
       {message && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-600 shadow-[inset_4px_4px_8px_#a7f3d0,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{message}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{message}</p>
         </div>
       )}
 
       <section className="grid gap-8">
         {vivas.length === 0 ? (
-          <div className="rounded-[40px] border-2 border-dashed border-gray-300 p-20 text-center">
-            <p className="text-xl font-bold text-black/20 uppercase tracking-widest">No Assigned Vivas</p>
+          <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-20 text-center">
+            <p className="text-3xl font-black tracking-tight text-black">No Assigned Vivas</p>
+            <p className="mt-3 text-base font-medium text-black/70">
+              Assigned oral defense workspaces will appear here once scheduled.
+            </p>
           </div>
         ) : (
           vivas.map((viva) => {
@@ -170,67 +173,67 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
             return (
               <article
                 key={viva.id}
-                className="rounded-[48px] bg-[#e0e0e0] p-1 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff]"
+                className="rounded-[24px] border border-gray-300 bg-white p-6"
               >
-                <div className="p-8 sm:p-12">
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-black px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">
-                          {new Date(viva.scheduledDate).toLocaleDateString()}
-                        </span>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-black/40">
-                          {viva.venue}
-                        </span>
-                      </div>
-                      <h2 className="text-3xl font-black tracking-tight text-black">
-                        {viva.thesis.title}
-                      </h2>
-                      <p className="text-lg font-medium text-black/60">
-                        Candidate: {viva.thesis.student.user.displayName}
-                      </p>
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black">
+                        {new Date(viva.scheduledDate).toLocaleDateString()}
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                        {viva.venue}
+                      </span>
                     </div>
-                    {isRecorded ? (
-                      <div className="rounded-2xl border-2 border-emerald-500 bg-emerald-50 px-6 py-2 text-sm font-black uppercase tracking-widest text-emerald-600 shadow-sm">
-                        {viva.outcome?.replaceAll("_", " ")}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-gray-300 bg-white px-6 py-2 text-sm font-black uppercase tracking-widest text-black/40 shadow-sm">
-                        Examination Pending
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-8 rounded-[32px] border border-gray-300 bg-[#e0e0e0] p-8 shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]">
-                    <p className="text-xs font-black uppercase tracking-widest text-black/40 mb-3">Thesis Abstract</p>
-                    <p className="text-base font-medium leading-relaxed text-black/70">
-                      {viva.thesis.abstract}
+                    <h2 className="text-3xl font-black tracking-tight text-black">
+                      {viva.thesis.title}
+                    </h2>
+                    <p className="text-lg font-medium text-black/70">
+                      Candidate: {viva.thesis.student.user.displayName}
                     </p>
                   </div>
-
-                  {!isRecorded && (
-                    <div className="mt-10 flex flex-col gap-6 sm:flex-row sm:items-end">
-                      <div className="flex-1 space-y-2">
-                        <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-black/40">Final Outcome</span>
-                        <CustomSelect
-                          value={selectedOutcome[viva.id] ?? ""}
-                          onChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
-                          options={outcomes}
-                          labelMap={outcomeLabels}
-                          disabled={!canRecord}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        disabled={!canRecord || busyId === viva.id || !selectedOutcome[viva.id]}
-                        onClick={() => void recordOutcome(viva.id)}
-                        className="rounded-2xl bg-black px-10 py-4 text-xs font-black uppercase tracking-widest text-white shadow-[8px_8px_16px_#bebebe] transition-all hover:bg-gray-800 disabled:opacity-20 active:scale-95"
-                      >
-                        {busyId === viva.id ? "Recording..." : "Record Official Outcome"}
-                      </button>
+                  {isRecorded ? (
+                    <div className="rounded-full border-2 border-black bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black">
+                      {viva.outcome?.replaceAll("_", " ")}
+                    </div>
+                  ) : (
+                    <div className="rounded-full border border-gray-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black/40">
+                      Examination Pending
                     </div>
                   )}
                 </div>
+
+                <div className="mt-8 rounded-[24px] border border-gray-300 bg-white p-6">
+                  <p className="mb-3 text-xs font-black uppercase tracking-widest text-black/40">Thesis Abstract</p>
+                  <p className="text-base font-medium leading-relaxed text-black/70">
+                    {viva.thesis.abstract}
+                  </p>
+                </div>
+
+                {!isRecorded && (
+                  <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end">
+                    <div className="flex-1 space-y-2">
+                      <span className="ml-1 text-[10px] font-black uppercase tracking-widest text-black/40">Final Outcome</span>
+                      <CustomSelect
+                        value={selectedOutcome[viva.id] ?? ""}
+                        onChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
+                        options={outcomes}
+                        labelMap={outcomeLabels}
+                        disabled={!canRecord}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canRecord || busyId === viva.id || !selectedOutcome[viva.id]}
+                      onClick={() => void recordOutcome(viva.id)}
+                      className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-xs font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
+                        {busyId === viva.id ? "Recording..." : "Record Official Outcome"}
+                      </span>
+                    </button>
+                  </div>
+                )}
               </article>
             );
           })

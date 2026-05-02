@@ -234,7 +234,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-[30px] border-4 border-black bg-white p-8 shadow-[12px_12px_0px_black]"
+            className="rounded-[24px] border border-gray-300 bg-white p-8"
           >
             <h2 className="text-3xl font-black tracking-tighter text-black">
               Viva Details
@@ -309,8 +309,8 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
           <div className="space-y-6">
             {theses.length === 0 ? (
-              <div className="rounded-[30px] border-2 border-dashed border-gray-300 p-12 text-center">
-                <p className="font-bold text-black/30">
+              <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
+                <p className="font-bold text-black/40">
                   No theses are currently under examination.
                 </p>
               </div>
@@ -318,20 +318,20 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
               theses.map((thesis) => (
                 <article
                   key={thesis.id}
-                  className="rounded-[30px] border-2 border-black bg-white p-6 transition-transform hover:-translate-y-1 hover:shadow-[8px_8px_0px_black]"
+                  className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h3 className="text-xl font-black tracking-tight text-black">
+                      <h3 className="text-xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                         {thesis.title}
                       </h3>
-                      <p className="mt-1 font-medium text-black/60">
+                      <p className="mt-1 font-medium text-black/60 transition-colors group-hover:text-white/80">
                         {thesis.student.user.displayName} •{" "}
                         {thesis.student.user.email}
                       </p>
                     </div>
                     <span
-                      className={`inline-block self-start rounded-full border-2 px-3 py-1 text-[11px] font-black uppercase tracking-widest ${thesis.viva ? "border-black bg-black text-white" : "border-gray-200 text-black/40"}`}
+                      className={`inline-block self-start rounded-full border-2 px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-colors group-hover:border-white ${thesis.viva ? "border-black bg-white text-black group-hover:bg-transparent group-hover:text-white" : "border-gray-300 bg-white text-black/40 group-hover:bg-transparent group-hover:text-white/70"}`}
                     >
                       {thesis.viva ? "Scheduled" : "Not Scheduled"}
                     </span>
@@ -339,10 +339,10 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
 
                   <div className="mt-6 flex flex-wrap gap-4">
                     <div className="flex flex-col gap-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
                         Assigned Examiners
                       </p>
-                      <p className="text-sm font-bold text-black">
+                      <p className="text-sm font-bold text-black transition-colors group-hover:text-white">
                         {thesis.examinerAssignments.length > 0
                           ? thesis.examinerAssignments
                               .map(
@@ -355,9 +355,9 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                     </div>
 
                     {thesis.viva && (
-                      <div className="flex flex-1 flex-col gap-2 rounded-xl border-2 border-black bg-gray-50 p-4">
+                      <div className="flex flex-1 flex-col gap-2 rounded-[24px] border border-gray-300 bg-white p-4 transition-colors group-hover:border-white/30 group-hover:bg-transparent">
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
                             Logistics
                           </p>
                         </div>
@@ -375,7 +375,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                           </svg>
-                          <p className="text-sm font-black text-black">
+                          <p className="text-sm font-black text-black transition-colors group-hover:text-white">
                             {new Date(
                               thesis.viva.scheduledDate,
                             ).toLocaleString()}
@@ -401,12 +401,12 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
                               d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                             />
                           </svg>
-                          <p className="text-sm font-black text-black">
+                          <p className="text-sm font-black text-black transition-colors group-hover:text-white">
                             {thesis.viva.venue}
                           </p>
                         </div>
                         {thesis.viva.outcome && (
-                          <div className="mt-1 border-t border-black/10 pt-2 text-xs font-bold text-black">
+                          <div className="mt-1 border-t border-gray-300 pt-2 text-xs font-bold text-black transition-colors group-hover:border-white/20 group-hover:text-white/80">
                             Status: {thesis.viva.outcome}
                           </div>
                         )}

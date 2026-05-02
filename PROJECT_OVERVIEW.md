@@ -2,119 +2,118 @@
 
 ## 1. What This Project Is
 
-This project is a **Postgraduate Lifecycle Management System** for managing the full MPhil/PhD student journey in one platform.
+This repository contains a **Postgraduate Lifecycle Management System** for managing the full MPhil/PhD journey in one platform.
 
-It is built to handle the major academic and administrative workflows around:
+It brings together the major academic and administrative workflows involved in postgraduate research:
 
 - public programme applications
-- admissions and student creation
-- registrations and renewal tracking
-- research proposal submission and review
+- admissions and student onboarding
+- registration and renewal tracking
+- proposal submission and review
 - progress report submission and supervisor sign-off
 - thesis submission and versioning
 - viva scheduling and outcome recording
 - correction upload and approval
-- user management and administrative reporting
-- notifications and operational monitoring
+- final archival and administrative oversight
 
-In short, this system is not just a student portal. It is a **multi-role academic workflow platform** that supports students, supervisors, examiners, and administrators from the first application all the way to thesis archiving.
+In practice, this is not just a student portal. It is a **multi-role academic workflow platform** used by students, supervisors, examiners, and administrators across the entire research lifecycle.
 
 ---
 
-## 2. Main Technology Stack
+## 2. Technology Stack
 
-The project is built with the following main technologies:
+The project is built with:
 
-- **Next.js 14 App Router** for pages, layouts, and API routes
-- **React 18** for UI rendering
-- **TypeScript** for type safety across frontend and backend
+- **Next.js 14 App Router** for pages, layouts, and route handlers
+- **React 18** for the UI layer
+- **TypeScript** for end-to-end type safety
 - **Tailwind CSS** for styling
 - **Prisma** as the ORM
-- **PostgreSQL** as the main database
-- **Firebase Auth** for authentication and session identity
+- **PostgreSQL** as the main relational database
+- **Firebase Auth** for authentication and identity
 - **Firebase Admin SDK** for secure server-side auth verification
-- **Supabase Storage** for storing uploaded files and documents
+- **Supabase Storage** for uploaded documents and file workflows
 - **Zod** for shared validation
 - **Nodemailer** for email delivery
-- **SWR** for live dashboard data refresh on the client
-- **Vitest / Testing Library / Playwright** for testing
-- **Sentry** for monitoring and error reporting support
+- **SWR** for client-side data refresh
+- **Vitest**, **Testing Library**, and **Playwright** for testing
+- **Sentry** support for monitoring and error reporting
 
 ---
 
-## 3. High-Level System Purpose
+## 3. High-Level Purpose
 
-The system is designed to cover the full academic lifecycle of postgraduate students.
+The system is designed to manage the complete postgraduate academic lifecycle from first contact to final completion.
 
-The flow generally looks like this:
+The typical flow is:
 
 1. A public applicant submits an application.
-2. Administrators review the application.
+2. Administrators review the application and intake status.
 3. Once admitted, the student enters the research lifecycle.
 4. The student submits proposals, progress reports, and thesis documents.
-5. Supervisors evaluate and sign off on student work.
-6. Examiners and administrators manage thesis and viva workflows.
-7. Corrections are uploaded and reviewed.
-8. Final records are archived and tracked.
+5. Supervisors evaluate and sign off on academic work.
+6. Examiners and administrators manage viva and thesis workflows.
+7. Corrections are submitted, reviewed, and approved.
+8. Final records are archived.
 
 This makes the project a combination of:
 
-- a public-facing application portal
-- a role-based internal academic dashboard
-- a workflow engine for research milestones
-- a document handling and review platform
+- a public-facing admissions portal
+- a role-based internal dashboard
+- a research milestone workflow engine
+- a document submission and review platform
 
 ---
 
-## 4. User Roles in the System
+## 4. User Roles
 
-The application supports **four main roles**.
+The application supports four main roles.
 
 ### Student
 
-Student users can:
+Students can:
 
-- submit proposals
+- submit research proposals
 - submit progress reports
-- view progress dashboards
+- track academic progress
 - submit thesis documents
-- upload thesis corrections
-- follow status updates on their academic journey
+- upload correction files
+- follow lifecycle status updates
 
 ### Supervisor
 
-Supervisor users can:
+Supervisors can:
 
 - view assigned students
 - review and evaluate proposals
 - sign off progress reports
-- monitor supervised student activity
+- monitor student progress and workload
 
 ### Examiner
 
-Examiner users can:
+Examiners can:
 
-- access assigned viva/thesis workspaces
+- access assigned viva workspaces
 - review examination-related information
-- participate in viva-related workflows
+- record viva outcomes
 
 ### Administrator
 
-Administrator users can:
+Administrators can:
 
-- manage users
+- manage user accounts
 - review applications
-- review and approve proposals
+- approve or reject proposals
 - assign supervisors and examiners
 - schedule vivas
 - finalize thesis workflows
-- access reports, logs, and operational oversight features
+- access reporting and operational controls
 
 ---
 
-## 5. Top-Level Folder Structure
+## 5. Repository Structure
 
-At a high level, the codebase is mainly organized like this:
+At a high level, the project is organized like this:
 
 ```text
 src/
@@ -130,16 +129,16 @@ tests/
 
 ### `src/app`
 
-This is the **App Router** area of the project. It contains:
+This is the **Next.js App Router** layer. It includes:
 
-- public pages
-- dashboard pages
-- route layouts
-- server API endpoints under `app/api`
+- public routes
+- dashboard routes
+- layouts
+- route handlers under `src/app/api`
 
 ### `src/components`
 
-This contains the reusable UI and feature-level React components, grouped by domain such as:
+This contains reusable and feature-level UI components, grouped by domain:
 
 - `admin`
 - `application`
@@ -154,95 +153,91 @@ This contains the reusable UI and feature-level React components, grouped by dom
 
 ### `src/lib`
 
-This contains business logic and service modules, including:
+This contains business logic and shared service modules, including:
 
-- validation
-- database access helpers
+- validation helpers
 - dashboard summary logic
+- database access helpers
 - application workflows
 - proposal workflows
 - thesis workflows
 - progress-report workflows
 - viva workflows
-- security and monitoring helpers
+- auth and monitoring helpers
 
 ### `src/types`
 
-This contains shared TypeScript types used across the app.
+Shared TypeScript types used across the application.
 
 ### `prisma`
 
-This contains the Prisma schema, which defines the database models and relationships.
+The Prisma schema and related database definitions live here.
 
 ### `tests`
 
-This contains unit and integration tests, with end-to-end tests prepared separately.
+This directory contains unit and integration tests, with end-to-end coverage prepared separately.
 
 ### `.github`
 
-This contains GitHub workflow automation such as sync or CI-related support files.
+GitHub workflows and automation support files.
 
 ---
 
-## 6. Frontend Page Structure
+## 6. Frontend Structure
 
-The main user-facing areas of the application are:
+The app has two main user-facing areas:
 
 ### Public Pages
 
 - `/` landing page
-- `/apply` public application form
+- `/apply` application form
 - `/apply/success` application success page
 - `/login` sign-in page
 
 ### Dashboard Pages
 
-Role-based dashboards live under `/dashboard`.
-
-Examples include:
+Role-based dashboards live under `/dashboard`, for example:
 
 - `/dashboard/student`
 - `/dashboard/supervisor`
 - `/dashboard/examiner`
 - `/dashboard/admin`
 
-There are also role-specific subpages, for example:
+There are also role-specific subpages such as:
 
-- student proposal pages
-- student progress report pages
-- student thesis submission/correction pages
-- supervisor student and sign-off pages
-- admin application review pages
-- admin proposal approval pages
-- admin assignment pages
-- admin viva scheduling pages
+- student proposals
+- student progress reports
+- student thesis submission and corrections
+- supervisor student roster and sign-off pages
+- examiner viva workspace
+- admin applications, assignments, scheduling, and finalization pages
 
-### Shared Dashboard Layout
+### Shared Dashboard Shell
 
-The project uses a shared dashboard shell through:
+The main shared dashboard layout is:
 
 - `src/components/dashboard/dashboard-role-layout.tsx`
 
 This layout controls:
 
 - sidebar navigation
-- active navigation state
-- common dashboard look and feel
-- shared typography and page framing
+- active route styling
+- dashboard framing
+- shared typography and page structure
 
-Because student, supervisor, examiner, and admin dashboards all flow through this shared layout, dashboard-wide UI updates can often be applied in one place.
+Because all role dashboards flow through this shell, many dashboard-wide UI changes can be applied centrally.
 
 ---
 
 ## 7. API Layer
 
-The backend HTTP logic lives under:
+Backend logic lives under:
 
 - `src/app/api`
 
-This project uses **Next.js route handlers** instead of a separate Express or Nest server.
+This project uses **Next.js route handlers** rather than a separate Express or Nest application.
 
-The API layer covers many domains, including:
+The API is organized by domain, including:
 
 - `auth`
 - `applications`
@@ -260,37 +255,30 @@ The API layer covers many domains, including:
 - `theses`
 - `vivas`
 
-This means the app is built as a **full-stack Next.js application**, where the frontend pages and backend endpoints live in the same repository and framework.
+So the repository is a **full-stack Next.js application** where frontend pages and backend endpoints live in the same codebase.
 
 ---
 
-## 8. Core Domain Modules
-
-Below is the practical meaning of the major business areas in this project.
+## 8. Core Business Areas
 
 ### Applications
 
-This is the public admissions entry point.
+This is the public admissions entry point. It includes:
 
-It includes:
-
-- public application form
-- multi-step validation
+- multi-step application submission
 - supporting document upload
-- application review state changes
-- applicant-to-student lifecycle transition support
+- validation and review status changes
+- applicant-to-student transition support
 
 ### Authentication
 
-Authentication is handled using Firebase.
+Authentication is handled with Firebase and supports:
 
-The system supports:
-
-- login with institutional credentials
-- session cookie creation
-- role claim handling
+- login and identity verification
+- session cookies
+- role-aware access control
 - authenticated dashboard access
-- inactivity/session tracking
+- session activity tracking
 
 ### Dashboard
 
@@ -299,31 +287,28 @@ The dashboard layer provides:
 - role-based summaries
 - KPI cards
 - quick actions
-- route-based role access
+- route-aware access control
 - server/client separation for summary rendering
 
 ### Proposals
 
-This is one of the most important workflow areas.
-
-It includes:
+This is one of the central workflows in the system. It includes:
 
 - proposal submission
-- version handling
+- document version handling
 - supervisor evaluations
 - administrator approval/rejection
 - evaluation aggregation
-- workflow state transitions like `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, and `REJECTED`
+- lifecycle transitions such as `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, and `REJECTED`
 
 ### Progress Reports
 
 This area handles:
 
-- student progress report submission
+- student report submission
 - reporting cycles
 - supervisor sign-off
-- overdue tracking
-- possible review panel interaction
+- milestone visibility
 
 ### Theses
 
@@ -332,34 +317,34 @@ This area supports:
 - thesis submission
 - versioned document management
 - examiner assignment
-- correction handling
-- archival/final status progression
+- correction workflows
+- final archival
 
 ### Vivas
 
 This area handles:
 
 - viva scheduling
-- venues and dates
+- venue and date/time management
 - outcome recording
-- post-viva transition states
+- post-viva lifecycle transitions
 
 ### User Administration
 
-The administrator area manages:
+Administrators can:
 
-- role-based user creation
-- deactivation
-- filtering and listing
-- management of system accounts
+- create users
+- deactivate users
+- filter and manage accounts
+- coordinate assignment and review workflows
 
-### Notifications
+### Notifications and Monitoring
 
-The system stores notification records and delivery logs, allowing:
+The system also stores notification records and operational logs to support:
 
-- user notifications
-- administrative operational monitoring
-- failed delivery auditing
+- user-facing notifications
+- admin oversight
+- failed-delivery auditing
 
 ---
 
@@ -369,7 +354,7 @@ The database schema is defined in:
 
 - `prisma/schema.prisma`
 
-The schema models the project around a central academic lifecycle.
+The schema models the application around a central academic lifecycle.
 
 ### Main Entities
 
@@ -396,17 +381,16 @@ The schema models the project around a central academic lifecycle.
 
 ### Key Relationship Pattern
 
-The structure works roughly like this:
+At a high level:
 
-- A `User` may be linked to one academic/administrative role record.
-- A `Student` may have an `Application`, multiple `Registrations`, multiple `ResearchProposals`, multiple `ProgressReports`, and multiple `Theses`.
-- A `ResearchProposal` can receive multiple `EvaluationForm` entries from supervisors.
-- A `Thesis` can have examiner assignments, a viva, correction documents, and uploaded document versions.
-- Many workflow states are modeled as enums so transitions are explicit and type-safe.
+- a `User` may be linked to one role-specific record
+- a `Student` may have an `Application`, multiple `Registrations`, multiple `ResearchProposals`, multiple `ProgressReports`, and multiple `Theses`
+- a `ResearchProposal` can receive multiple `EvaluationForm` records
+- a `Thesis` can have examiner assignments, viva data, correction documents, and versioned file records
 
 ### Important Enums
 
-The schema uses many enums to keep workflows consistent, including:
+The schema relies heavily on enums to keep workflows consistent, including:
 
 - `UserRole`
 - `ProgramType`
@@ -422,52 +406,50 @@ The schema uses many enums to keep workflows consistent, including:
 - `CorrectionType`
 - `PanelEvaluationOutcome`
 
-This makes the lifecycle rules easier to enforce both in the UI and in backend logic.
+This makes lifecycle rules explicit both in the UI and in backend logic.
 
 ---
 
 ## 10. Document Handling
 
-This project has a strong document workflow layer.
+Document workflows are a major part of this project.
 
-Document handling includes:
+The system handles:
 
 - application attachments
-- proposal documents
-- progress report files
+- proposal files
+- progress-report documents
 - thesis files
 - correction documents
 - version tracking
-- logical delete flags
 - current-version flags
+- storage metadata
 
-Supabase Storage is used for file storage, while database records track metadata such as:
+Supabase Storage stores the physical files, while the database tracks metadata such as:
 
 - file name
 - storage path
-- document type
 - MIME type
+- document type
 - version
-- ownership relation
+- ownership and workflow relation
 
 ---
 
 ## 11. Validation Strategy
 
-A major strength of this project is that it uses **shared validation rules** across frontend and backend.
+One of the strongest parts of this codebase is its **shared validation strategy**.
 
-Validation is primarily handled with **Zod**.
+Validation is handled mainly with **Zod**, which means:
 
-This means:
+- invalid input can be rejected in the browser early
+- the server still enforces the exact same rules
+- core workflows stay consistent end-to-end
 
-- the browser can reject bad inputs early
-- the server still validates the exact same rules
-- important workflows stay consistent end-to-end
-
-Shared validation is used for areas such as:
+Shared validation currently covers areas such as:
 
 - login
-- applications
+- public applications
 - proposals
 - proposal evaluations
 - progress reports
@@ -479,53 +461,53 @@ Shared validation is used for areas such as:
 
 ## 12. Security and Access Control
 
-Security is handled in multiple layers.
+Security is handled in several layers.
 
-### Authentication Layer
+### Authentication
 
 Firebase provides:
 
 - identity verification
-- role-aware access setup
-- token/session handling
+- role-aware user context
+- token and session support
 
 ### Route Protection
 
-Dashboard routes and APIs use authenticated context and role checks to make sure users only reach allowed workflows.
+Dashboard routes and API endpoints are protected with authenticated context and role checks.
 
 ### Role-Based Access
 
-Examples:
+Examples include:
 
-- only administrators can access admin operations
-- supervisors can only evaluate students assigned to them
-- examiners only see their examination areas
-- students only access their own academic workflows
+- administrators can access admin-only operations
+- supervisors can only review assigned students
+- examiners only see relevant examination workspaces
+- students only access their own lifecycle data
 
 ### Session Handling
 
-The app also includes session activity tracking and cookie-based authenticated server access.
+The project also includes session activity tracking and cookie-based authenticated server access.
 
 ---
 
 ## 13. Monitoring and Reliability
 
-The project includes support for Sentry and operational logging.
+The codebase includes support for Sentry and operational logging.
 
-This includes:
+That includes:
 
-- Sentry config files
+- Sentry configuration files
 - monitoring helpers
 - notification logs
-- workflow/reporting endpoints for admin oversight
+- reporting and oversight endpoints
 
-This is important because the system is not just transactional. It also supports operational follow-up and issue auditing.
+This matters because the platform is not just transactional. It also needs auditability and operational follow-up.
 
 ---
 
 ## 14. Testing Coverage
 
-The repository includes strong automated test support.
+The repository includes strong automated testing support.
 
 Testing tools include:
 
@@ -535,7 +517,7 @@ Testing tools include:
 - `jsdom`
 - `Playwright`
 
-The test suite covers multiple domains such as:
+Coverage spans multiple domains such as:
 
 - authentication
 - applications
@@ -547,71 +529,69 @@ The test suite covers multiple domains such as:
 - vivas
 - storage helpers
 
-This suggests the project is built with a fairly serious quality and regression-prevention mindset.
+This reflects a solid quality and regression-prevention mindset.
 
 ---
 
-## 15. Development and Runtime Characteristics
+## 15. Runtime Characteristics
 
 This is a **Node-backed full-stack application**, not a static site.
 
 It depends on:
 
-- a running database
+- a running PostgreSQL database
 - Firebase configuration
-- storage credentials
+- Supabase storage credentials
 - email credentials
 - optional monitoring credentials
 
 Typical development flow:
 
 1. install dependencies
-2. generate Prisma client
-3. run Prisma migrations
+2. generate the Prisma client
+3. run migrations
 4. configure environment variables
-5. run the Next.js dev server
+5. start the Next.js dev server
 
 ---
 
-## 16. Main Project Strengths
+## 16. Project Strengths
 
 From the structure of the repository, the strongest qualities of the project are:
 
 - clear role-based architecture
-- shared validation strategy
-- strong workflow coverage across the whole postgraduate lifecycle
+- shared validation across frontend and backend
+- strong workflow coverage across the full postgraduate lifecycle
 - integrated document handling
-- practical administrative reporting
-- test coverage across major features
+- practical administrative tooling
+- automated test coverage across major features
 - full-stack implementation in one framework
 
 ---
 
 ## 17. In One Sentence
 
-This project is a **role-based full-stack postgraduate academic workflow system** built with Next.js, Prisma, Firebase, and Supabase to manage the complete lifecycle from application to final thesis completion.
+This project is a **role-based full-stack postgraduate academic workflow system** built with Next.js, Prisma, Firebase, and Supabase to manage the full lifecycle from application to final thesis completion.
 
 ---
 
-## 18. Key Files to Read First
+## 18. Best Files to Read First
 
-If someone is new to the repository, the best starting points are:
+For someone new to the repository, the best entry points are:
 
 - `README.md`
 - `package.json`
 - `prisma/schema.prisma`
 - `src/app/layout.tsx`
 - `src/components/dashboard/dashboard-role-layout.tsx`
-- `src/lib/dashboard/summary.ts`
+- `src/app/api/*`
 - `src/lib/applications/*`
 - `src/lib/proposals/*`
 - `src/lib/theses/*`
-- `src/app/api/*`
 
 These files give the fastest understanding of:
 
 - what the system does
 - how the app is structured
-- what the main workflows are
-- how the data model supports those workflows
-
+- what the major workflows are
+- how the data model supports them

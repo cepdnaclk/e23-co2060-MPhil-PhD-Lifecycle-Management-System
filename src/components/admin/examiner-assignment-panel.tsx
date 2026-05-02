@@ -268,7 +268,7 @@ export function ExaminerAssignmentPanel({
 
           <form
             onSubmit={handleAssign}
-            className="rounded-[30px] border-4 border-black bg-white p-8 shadow-[12px_12px_0px_black]"
+            className="rounded-[24px] border border-gray-300 bg-white p-8"
           >
             <h2 className="text-3xl font-black tracking-tighter text-black">
               Assignment Control
@@ -333,8 +333,8 @@ export function ExaminerAssignmentPanel({
 
           <div className="space-y-6">
             {theses.length === 0 ? (
-              <div className="rounded-[30px] border-2 border-dashed border-gray-300 p-12 text-center">
-                <p className="font-bold text-black/30">
+              <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
+                <p className="font-bold text-black/40">
                   No submitted or examination-stage theses available.
                 </p>
               </div>
@@ -342,17 +342,17 @@ export function ExaminerAssignmentPanel({
               theses.map((thesis) => (
                 <article
                   key={thesis.id}
-                  className="rounded-[30px] border-2 border-black bg-white p-6 transition-transform hover:-translate-y-1 hover:shadow-[8px_8px_0px_black]"
+                  className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <span className="inline-block rounded-lg border-2 border-black px-2 py-0.5 text-[11px] font-black uppercase tracking-wider">
+                      <span className="inline-block rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
                         {thesis.status.replaceAll("_", " ")}
                       </span>
-                      <h3 className="mt-2 text-xl font-black tracking-tight text-black">
+                      <h3 className="mt-2 text-xl font-black tracking-tight text-black transition-colors group-hover:text-white">
                         {thesis.title}
                       </h3>
-                      <p className="mt-1 font-medium text-black/60">
+                      <p className="mt-1 font-medium text-black/60 transition-colors group-hover:text-white/80">
                         {thesis.student.user.displayName} •{" "}
                         {thesis.student.user.email}
                       </p>
@@ -372,11 +372,11 @@ export function ExaminerAssignmentPanel({
                   </div>
 
                   <div className="mt-6 space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
-                      Assigned Examiners
-                    </p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/60">
+                        Assigned Examiners
+                      </p>
                     {thesis.examinerAssignments.length === 0 ? (
-                      <p className="text-sm font-bold text-black/30 italic">
+                      <p className="text-sm font-bold italic text-black/40 transition-colors group-hover:text-white/60">
                         Waiting for assignments...
                       </p>
                     ) : (
@@ -384,12 +384,12 @@ export function ExaminerAssignmentPanel({
                         {thesis.examinerAssignments.map((assignment) => (
                           <div
                             key={assignment.id}
-                            className="rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-2"
+                            className="rounded-[20px] border border-gray-300 bg-white px-4 py-3 transition-colors group-hover:border-white/30 group-hover:bg-transparent"
                           >
-                            <div className="text-sm font-black text-black">
+                            <div className="text-sm font-black text-black transition-colors group-hover:text-white">
                               {assignment.examiner.user.displayName}
                             </div>
-                            <div className="text-[10px] font-medium text-black/60">
+                            <div className="text-[10px] font-medium text-black/60 transition-colors group-hover:text-white/70">
                               {assignment.examiner.user.email}
                             </div>
                           </div>

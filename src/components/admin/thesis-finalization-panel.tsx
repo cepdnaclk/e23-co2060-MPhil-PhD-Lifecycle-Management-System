@@ -68,7 +68,7 @@ export function ThesisFinalizationPanel({
 
   return (
     <div className="space-y-10">
-      <header className="pb-10 border-b-2 border-gray-300">
+      <header className="border-b-2 border-gray-200 pb-10">
         <div className="space-y-4">
           <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
             Thesis Management
@@ -84,21 +84,24 @@ export function ThesisFinalizationPanel({
       </header>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-600 shadow-[inset_4px_4px_8px_#fca5a5,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{error}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{error}</p>
         </div>
       )}
 
       {message && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-600 shadow-[inset_4px_4px_8px_#a7f3d0,inset_-4px_-4px_8px_#ffffff]">
-          <p className="font-bold">{message}</p>
+        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+          <p>{message}</p>
         </div>
       )}
 
       <div className="space-y-10">
         {theses.length === 0 ? (
-          <div className="rounded-[40px] border-2 border-dashed border-gray-300 p-20 text-center">
-            <p className="text-xl font-bold text-black/20 uppercase tracking-widest">Repository Cleared</p>
+          <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-20 text-center">
+            <p className="text-3xl font-black tracking-tight text-black">Repository Cleared</p>
+            <p className="mt-3 text-base font-medium text-black/70">
+              No thesis records are currently awaiting final archival.
+            </p>
           </div>
         ) : (
           theses.map((thesis) => {
@@ -113,41 +116,42 @@ export function ThesisFinalizationPanel({
             return (
               <article
                 key={thesis.id}
-                className="rounded-[48px] bg-[#e0e0e0] p-1 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff]"
+                className="rounded-[24px] border border-gray-300 bg-white p-6"
               >
-                <div className="p-8 sm:p-12">
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
-                      <span className="inline-block rounded-full border border-black px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black">
-                        {thesis.status.replaceAll("_", " ")}
-                      </span>
-                      <h3 className="text-3xl font-black tracking-tight text-black">
-                        {thesis.title}
-                      </h3>
-                      <p className="text-lg font-medium text-black/60">
-                        Candidate: {thesis.student.user.displayName} • {thesis.student.user.email}
-                      </p>
-                    </div>
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <span className="inline-block rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black">
+                      {thesis.status.replaceAll("_", " ")}
+                    </span>
+                    <h3 className="text-3xl font-black tracking-tight text-black">
+                      {thesis.title}
+                    </h3>
+                    <p className="text-lg font-medium text-black/70">
+                      Candidate: {thesis.student.user.displayName} • {thesis.student.user.email}
+                    </p>
+                  </div>
 
-                    <button
-                      type="button"
-                      disabled={!canArchive || busyId === `archive-${thesis.id}`}
-                      onClick={() =>
-                        void runPatch(
-                          `/api/theses/${thesis.id}/archive`,
-                          "Thesis successfully archived and student graduated.",
-                          `archive-${thesis.id}`,
-                        )
-                      }
-                      className="rounded-2xl bg-black px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-[8px_8px_16px_#bebebe] transition-all hover:bg-gray-800 disabled:opacity-20 active:scale-95"
-                    >
+                  <button
+                    type="button"
+                    disabled={!canArchive || busyId === `archive-${thesis.id}`}
+                    onClick={() =>
+                      void runPatch(
+                        `/api/theses/${thesis.id}/archive`,
+                        "Thesis successfully archived and student graduated.",
+                        `archive-${thesis.id}`,
+                      )
+                    }
+                    className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+                  >
+                    <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-4 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
                       {busyId === `archive-${thesis.id}`
                         ? "Archiving..."
                         : "Archive & Graduate"}
-                    </button>
-                  </div>
+                    </span>
+                  </button>
+                </div>
 
-                  <div className="mt-12 space-y-6">
+                <div className="mt-12 space-y-6">
                     <div className="flex items-center gap-4">
                       <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
                         Correction Workflow
@@ -156,39 +160,39 @@ export function ThesisFinalizationPanel({
                     </div>
 
                     {thesis.corrections.length === 0 ? (
-                      <div className="rounded-3xl border border-dashed border-gray-400 p-8 text-center">
-                        <p className="text-sm font-bold text-black/30 uppercase tracking-widest">Awaiting Correction Documents</p>
+                      <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-8 text-center">
+                        <p className="text-sm font-bold uppercase tracking-widest text-black/40">Awaiting Correction Documents</p>
                       </div>
                     ) : (
                       <div className="grid gap-6 sm:grid-cols-2">
                         {thesis.corrections.map((correction) => (
                           <div
                             key={correction.id}
-                            className="flex flex-col justify-between rounded-[32px] border border-gray-300 bg-[#e0e0e0] p-8 shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]"
+                            className="group flex flex-col justify-between rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
                           >
                             <div className="space-y-4">
                               <div className="flex items-center justify-between">
-                                <span className={`text-xs font-black uppercase tracking-widest ${correction.isApproved ? 'text-emerald-600' : 'text-black'}`}>
+                                <span className="text-xs font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/70">
                                   {correction.correctionType} Correction
                                 </span>
-                                <span className="text-[10px] font-bold text-black/40">
+                                <span className="text-[10px] font-bold text-black/40 transition-colors group-hover:text-white/60">
                                   {new Date(correction.createdAt).toLocaleDateString()}
                                 </span>
                               </div>
 
                               {correction.description && (
-                                <p className="text-sm font-medium leading-relaxed text-black/70 italic">
+                                <p className="text-sm font-medium italic leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
                                   "{correction.description}"
                                 </p>
                               )}
 
                               <div className="space-y-2">
                                 {correction.documents.map((doc) => (
-                                  <div key={doc.id} className="flex items-center gap-3 rounded-xl bg-black/5 px-4 py-3">
-                                    <svg className="h-4 w-4 text-black/40" fill="currentColor" viewBox="0 0 20 20">
+                                  <div key={doc.id} className="flex items-center gap-3 rounded-[20px] border border-gray-300 bg-white px-4 py-3 transition-colors group-hover:border-white/30 group-hover:bg-transparent">
+                                    <svg className="h-4 w-4 text-black/40 transition-colors group-hover:text-white/60" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                                     </svg>
-                                    <span className="text-xs font-bold text-black truncate">{doc.fileName}</span>
+                                    <span className="truncate text-xs font-bold text-black transition-colors group-hover:text-white">{doc.fileName}</span>
                                   </div>
                                 ))}
                               </div>
@@ -205,10 +209,10 @@ export function ThesisFinalizationPanel({
                                     `approve-${correction.id}`,
                                   )
                                 }
-                                className={`w-full rounded-2xl py-4 text-[10px] font-black uppercase tracking-widest transition-all ${
+                                className={`w-full rounded-xl border-2 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${
                                   correction.isApproved
-                                    ? "bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                                    : "bg-black text-white shadow-[6px_6px_12px_#bebebe] hover:bg-gray-800 active:scale-95 disabled:opacity-20"
+                                    ? "border-black bg-white text-black"
+                                    : "border-black bg-white text-black group-hover:border-white group-hover:bg-transparent group-hover:text-white disabled:opacity-20"
                                 }`}
                               >
                                 {correction.isApproved
@@ -222,7 +226,6 @@ export function ThesisFinalizationPanel({
                         ))}
                       </div>
                     )}
-                  </div>
                 </div>
               </article>
             );
