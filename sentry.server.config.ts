@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 
-function redactServerEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
+function redactServerEvent(event: Sentry.Event): Sentry.Event {
   if (event.user) {
     event.user = {
       id: event.user.id,
@@ -24,7 +24,7 @@ Sentry.init({
   enabled: Boolean(process.env.SENTRY_DSN),
   sendDefaultPii: false,
   tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0),
-  beforeSend(event: Sentry.ErrorEvent) {
+  beforeSend(event: Sentry.Event) {
     return redactServerEvent(event);
   },
 });
