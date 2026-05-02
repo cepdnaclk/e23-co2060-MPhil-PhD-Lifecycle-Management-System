@@ -14,16 +14,24 @@ export function DashboardRoleLayout({
   children,
 }: DashboardRoleLayoutProps) {
   const meta = buildDashboardPageMeta(role);
+  const isAdmin = role === "admin";
+  const heading = isAdmin ? "Administrator Dashboard" : meta.heading;
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black">
       <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
         <aside className="mb-4 shrink-0 overflow-y-auto rounded-[30px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] lg:mb-0 lg:w-72 lg:p-8">
-          <p className="text-base font-bold uppercase tracking-[0.28em] text-black">
-            {meta.eyebrow}
-          </p>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight">{meta.heading}</h1>
-          <p className="mt-4 text-base leading-7 text-black">{meta.description}</p>
+          {!isAdmin ? (
+            <p className="text-base font-bold uppercase tracking-[0.28em] text-black">
+              {meta.eyebrow}
+            </p>
+          ) : null}
+          <h1 className={`${isAdmin ? "" : "mt-4 "}text-3xl font-bold tracking-tight`}>
+            {heading}
+          </h1>
+          {!isAdmin ? (
+            <p className="mt-4 text-base leading-7 text-black">{meta.description}</p>
+          ) : null}
 
           <nav className="mt-10 space-y-4">
             <Link
