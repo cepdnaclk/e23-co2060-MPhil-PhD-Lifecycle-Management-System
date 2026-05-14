@@ -1,18 +1,1 @@
-name: Sync Fork
 
-on:
-  schedule:
-    - cron: '*/30 * * * *' # Runs every 30 minutes
-  workflow_dispatch:      # Allows you to trigger it manually
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Sync with Upstream
-        uses: wei/pull@v3
-        with:
-          upstream_package_repository: cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System
-          upstream_branch: main
-          target_branch: main
-          github_token: ${{ secrets.GITHUB_TOKEN }}
