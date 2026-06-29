@@ -34,7 +34,7 @@
   inset: 0;
   left: -10%;
   width: 120%;
-  background: #111111;
+  background: #16a34a;
   transform: skew(30deg) translate3d(-105%, 0, 0);
   transform-origin: left center;
   transition: transform 0.45s cubic-bezier(0.3, 1, 0.8, 1);
