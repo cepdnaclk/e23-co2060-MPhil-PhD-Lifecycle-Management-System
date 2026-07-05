@@ -18,8 +18,8 @@ export const proposalUploadRequestSchema = z.object({
 });
 
 export const proposalSubmissionSchema = z.object({
-  title: sanitizedString.min(5, "Enter the proposal title."),
-  abstract: sanitizedString.min(30, "Provide a short proposal abstract."),
+  title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
+  abstract: sanitizedString.min(30, "Proposal abstract must be at least 30 characters long."),
   document: uploadedProposalDocumentSchema,
 });
 

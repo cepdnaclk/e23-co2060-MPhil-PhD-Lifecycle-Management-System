@@ -463,6 +463,7 @@ export function ApplicationForm() {
                 }
                 className="w-full rounded-2xl border border-black bg-transparent px-4 py-3 text-black outline-none focus:border-black"
                 placeholder="+94 7X XXX XXXX"
+                type="tel"
               />
             </label>
           </div>
@@ -513,38 +514,27 @@ export function ApplicationForm() {
 
         {step === 2 ? (
           <div className="space-y-3.5">
-            <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
-              <p className="text-base font-medium text-black">
-                Upload supporting document
-              </p>
-              <p className="mt-2 text-base text-black">
-                PDF only. Maximum file size: 10MB. Only one file can be
-                uploaded.
-              </p>
-              {hasUploadedDocument ? (
-                <p className="mt-3 text-base text-black">
-                  A file is already uploaded. Remove it first if you need to
-                  choose a different PDF.
+            {!hasUploadedDocument ? (
+              <div className="rounded-[1.5rem] border border-gray-200 bg-transparent p-4">
+                <p className="text-base font-medium text-black">
+                  Upload supporting document
                 </p>
-              ) : null}
-              <input
-                className="mt-4 block w-full cursor-pointer text-base text-black file:mr-4 file:cursor-pointer file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black file:transition-all file:duration-200 hover:file:-translate-y-0.5 hover:file:shadow-md"
-                type="file"
-                accept="application/pdf"
-                onChange={handleDocumentUpload}
-                disabled={
-                  isUploadingDocument || isRemovingDocument || hasUploadedDocument
-                }
-              />
-              {isUploadingDocument ? (
-                <p className="mt-3 text-base text-black">Uploading PDF...</p>
-              ) : null}
-              {isRemovingDocument ? (
-                <p className="mt-3 text-base text-black">
-                  Removing uploaded PDF...
+                <p className="mt-2 text-base text-black">
+                  PDF only. Maximum file size: 10MB. Only one file can be
+                  uploaded.
                 </p>
-              ) : null}
-            </div>
+                <input
+                  className="mt-4 block w-full cursor-pointer text-base text-black file:mr-4 file:cursor-pointer file:rounded-full file:border file:border-black/10 file:bg-[linear-gradient(135deg,#fff8f5_0%,#f7f4ee_55%,#eef4ff_100%)] file:px-4 file:py-3 file:font-semibold file:text-black file:transition-all file:duration-200 hover:file:-translate-y-0.5 hover:file:shadow-md"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleDocumentUpload}
+                  disabled={isUploadingDocument || isRemovingDocument}
+                />
+                {isUploadingDocument ? (
+                  <p className="mt-3 text-base text-black">Uploading PDF...</p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="space-y-2.5">
               {documents.length === 0 ? (

@@ -30,16 +30,21 @@ export const applicationDocumentDeleteRequestSchema = z.object({
 });
 
 export const applicationSubmissionSchema = z.object({
-  applicantName: sanitizedString.min(3, "Enter the applicant name."),
+  applicantName: sanitizedString.min(3, "Applicant name must be at least 3 characters long."),
   applicantEmail: sanitizedEmail,
-  applicantPhone: sanitizedString.min(7, "Enter a valid contact number."),
+  applicantPhone: sanitizedString
+    .regex(/^\+?[0-9\s\-()]+$/, "Phone number can only contain digits, spaces, hyphens, and parentheses.")
+    .refine((val) => {
+      const digitCount = val.replace(/\D/g, "").length;
+      return digitCount >= 7 && digitCount <= 15;
+    }, "Phone number must contain between 7 and 15 digits."),
   programType: z.enum([
     ProgramType.MPHIL,
     ProgramType.PHD,
     ProgramType.MSC,
     ProgramType.MENG,
   ]),
-  researchArea: sanitizedString.min(2, "Enter the research area."),
+  researchArea: sanitizedString.min(2, "Research area must be at least 2 characters long."),
   statementOfPurpose: sanitizedString.min(1, "Provide a short statement of purpose."),
   supportingDocuments: z
     .array(uploadedApplicationDocumentSchema)
