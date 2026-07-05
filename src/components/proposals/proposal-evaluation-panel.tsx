@@ -4,6 +4,26 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { proposalEvaluationSchema } from "@/lib/proposals/evaluation-schemas";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 type ReviewerRole = "ADMINISTRATOR" | "SUPERVISOR";
 
 type EvaluationPayload = {
@@ -359,317 +379,309 @@ export function ProposalEvaluationPanel({
   }
 
   return (
-    <div className="relative space-y-10">
-      {/* Custom Neumorphic Modal */}
-      {showConfirmModal.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
-          <div className="w-full max-w-md scale-100 rounded-[24px] border border-gray-300 bg-white p-8 shadow-[10px_10px_30px_rgba(0,0,0,0.15)] transition-all">
-            <h3 className="text-2xl font-black tracking-tight text-black">
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <Dialog
+        open={showConfirmModal.show}
+        onOpenChange={(open) => {
+          if (!open) setShowConfirmModal({ show: false, type: null });
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
               {showConfirmModal.type === "APPROVED" ? "Confirm Approval" : "Confirm Rejection"}
-            </h3>
-            <p className="mt-4 text-base font-medium leading-7 text-black/70">
+            </DialogTitle>
+            <DialogDescription>
               Are you sure you want to {showConfirmModal.type === "APPROVED" ? "approve" : "reject"} this research proposal?
               {result && (
-                <div className="mt-2 font-black text-black">
-                  {result.proposal.student.displayName}
+                <div className="mt-2 font-medium text-foreground">
+                  Candidate: {result.proposal.student.displayName}
                 </div>
               )}
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-end">
-              <button
-                onClick={() => setShowConfirmModal({ show: false, type: null })}
-                className="rounded-xl border-2 border-black px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={showConfirmModal.type === "APPROVED" ? executeApprove : executeReject}
-                className={`rounded-xl border-2 px-6 py-3 text-xs font-black uppercase tracking-widest transition ${
-                  showConfirmModal.type === "APPROVED"
-                    ? "border-black bg-black text-white hover:bg-white hover:text-black"
-                    : "border-black bg-white text-black hover:bg-black hover:text-white"
-                }`}
-              >
-                Yes, Proceed
-              </button>
-            </div>
-          </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmModal({ show: false, type: null })}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={showConfirmModal.type === "APPROVED" ? "default" : "destructive"}
+              onClick={showConfirmModal.type === "APPROVED" ? executeApprove : executeReject}
+            >
+              Yes, Proceed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {isAdmin ? "Approve Proposals" : "Review Proposals"}
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            {isAdmin
+              ? "Review pending proposals and approve or request revisions."
+              : "Review assigned proposals and submit evaluations."}
+          </p>
+        </div>
+      </div>
+
+      {errorMessage && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          {errorMessage}
         </div>
       )}
 
-      <header className="border-b-2 border-gray-200 pb-10">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Proposals
-            </p>
-            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              {isAdmin ? "Approve Proposals" : "Review Proposals"}
-            </h1>
-            <p className="max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-              {isAdmin
-                ? "Review pending proposals and approve or request revisions."
-                : "Review assigned proposals and submit evaluations."}
-            </p>
-          </div>
-        </div>
-      </header>
-
-      {errorMessage ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      {successMessage && (
+        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
           {successMessage}
         </div>
-      ) : null}
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6 md:grid-cols-[1fr_1fr] xl:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
-          <section className="rounded-[24px] border border-gray-300 bg-white p-6">
-            <h2 className="text-3xl font-black tracking-tight text-black">
-              {isAdmin ? "All pending proposals" : "Assigned student proposals"}
-            </h2>
-            <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              {isAdmin
-                ? "Select a proposal to review its status and history."
-                : "Select a proposal to load it for review."}
-            </p>
-
-            <div className="mt-5 space-y-3">
-              {isListLoading ? (
-                <div className="animate-pulse space-y-3">
-                  <div className="h-20 rounded-[24px] border border-gray-300 bg-white" />
-                  <div className="h-20 rounded-[24px] border border-gray-300 bg-white" />
-                </div>
-              ) : proposalsToReview.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-6 text-center text-base font-bold text-black/40">
-                  {isAdmin
-                    ? "No proposals pending review."
-                    : "No assigned proposals found."}
-                </div>
-              ) : (
-                proposalsToReview.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => loadProposalById(item.id)}
-                    className={`group w-full rounded-[24px] border p-5 text-left transition-all ${
-                      proposalId === item.id
-                        ? "border-2 border-black bg-white"
-                        : "border border-gray-300 bg-white hover:bg-black"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-                          {item.student.displayName}
-                        </p>
-                        <p className="mt-2 truncate text-base font-medium text-black/70 transition-colors group-hover:text-white/80">
-                          {item.title}
-                        </p>
-                      </div>
-                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
-                        V{item.currentVersion} • {item.status.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </section>
-
-          <form
-            onSubmit={handleLookup}
-            className="rounded-[24px] border border-gray-300 bg-white p-6"
-          >
-            <h2 className="text-3xl font-black tracking-tight text-black">Load proposal</h2>
-            <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              Enter a proposal ID to load its status and evaluation history.
-            </p>
-            <label className="mt-5 block space-y-2 text-base text-black">
-              <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Proposal ID</span>
-              <input
-                value={proposalId}
-                onChange={(event) => setProposalId(event.target.value)}
-                className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                placeholder="proposal_abc123"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group mt-5 inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                {isLoading ? "Loading..." : "Load evaluations"}
-              </span>
-            </button>
-          </form>
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[24px] border border-gray-300 bg-white p-6"
-          >
-            <h2 className="text-3xl font-black tracking-tight text-black">
-              {isAdmin ? "Finalize decision" : "Submit evaluation"}
-            </h2>
-            <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-              {isAdmin
-                ? "Approve or reject the proposal with feedback."
-                : "Submit a score and feedback for the selected proposal."}
-            </p>
-
-            <div className="mt-5 grid gap-4">
-              {!isAdmin && (
-                <label className="space-y-2 text-base text-black">
-                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Score (0-100)</span>
-                  <input
-                    value={numericalScore}
-                    onChange={(event) => setNumericalScore(event.target.value)}
-                    type="number"
-                    min={0}
-                    max={100}
-                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                    placeholder="85"
-                  />
-                </label>
-              )}
-
-              <label className="space-y-2 text-base text-black">
-                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">{isAdmin ? "Decision notes / Feedback" : "Feedback"}</span>
-                <textarea
-                  value={feedback}
-                  onChange={(event) => setFeedback(event.target.value)}
-                  className="min-h-44 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                  placeholder={isAdmin
-                    ? "Explain your approval or rejection decision..." 
-                    : "Provide at least 50 characters of evaluation feedback..."}
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-              {!isAdmin && (
-                <button
-                  type="submit"
-                  disabled={isSubmitting || isRejecting || isApproving}
-                  className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                    {isSubmitting ? "Submitting..." : "Submit evaluation"}
-                  </span>
-                </button>
-              )}
-              {isAdmin && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleReject}
-                    disabled={isSubmitting || isRejecting || isApproving}
-                    className="rounded-xl border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition hover:bg-red-600 hover:border-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-20"
-                  >
-                    {isRejecting ? "Rejecting..." : "Reject and request revisions"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApprove}
-                    disabled={isSubmitting || isRejecting || isApproving}
-                    className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black box-border px-[1.5em] py-[0.75em] text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                      {isApproving ? "Approving..." : "Approve Proposal"}
-                    </span>
-                  </button>
-                </>
-              )}
-            </div>
-          </form>
-        </div>
-
-        <section className="rounded-[24px] border border-gray-300 bg-white p-6">
-          <h2 className="text-3xl font-black tracking-tight text-black">Evaluation history</h2>
-          <p className="mt-2 text-lg font-medium leading-relaxed text-black/70">
-            Review submitted evaluations and the current aggregate score.
-          </p>
-
-          {!result ? (
-            <div className="mt-6 rounded-[24px] border border-dashed border-gray-300 bg-white px-4 py-6 text-base font-bold text-black/40">
-              Load a proposal to view its evaluation history.
-            </div>
-          ) : (
-            <div className="mt-6 space-y-5">
-              <div className="rounded-[24px] border border-gray-300 bg-white p-5">
-                <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
-                  Proposal
-                </p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-black">
-                  {result.proposal.title}
-                </h3>
-                <p className="mt-2 text-base font-medium text-black/80">
-                  Student: {result.proposal.student.displayName}
-                </p>
-                <p className="mt-1 text-base font-black uppercase tracking-[0.16em] text-black/40">
-                  Status: {result.proposal.status.replaceAll("_", " ")}
-                </p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="group rounded-[24px] border border-gray-300 bg-white p-5 transition-all hover:bg-black">
-                  <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
-                    Aggregate Score
-                  </p>
-                  <p className="mt-2 text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-                    {result.aggregate.averageScore ?? "N/A"}
-                  </p>
-                </div>
-                <div className="group rounded-[24px] border border-gray-300 bg-white p-5 transition-all hover:bg-black">
-                  <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
-                    Evaluation Count
-                  </p>
-                  <p className="mt-2 text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-                    {result.aggregate.evaluationCount}
-                  </p>
-                </div>
-              </div>
-
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {isAdmin ? "All pending proposals" : "Assigned student proposals"}
+              </CardTitle>
+              <CardDescription>
+                {isAdmin
+                  ? "Select a proposal to review its status and history."
+                  : "Select a proposal to load it for review."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
-                {result.evaluations.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-gray-300 bg-white px-4 py-5 text-base font-bold text-black/40">
-                    No evaluations submitted yet.
+                {isListLoading ? (
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-20 rounded-md bg-muted/50" />
+                    <div className="h-20 rounded-md bg-muted/50" />
+                  </div>
+                ) : proposalsToReview.length === 0 ? (
+                  <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    {isAdmin ? "No proposals pending review." : "No assigned proposals found."}
                   </div>
                 ) : (
-                  result.evaluations.map((evaluation) => (
-                    <article
-                      key={evaluation.id}
-                      className="group rounded-[24px] border border-gray-300 bg-white px-5 py-5 transition-all hover:bg-black"
+                  proposalsToReview.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => loadProposalById(item.id)}
+                      className={`w-full rounded-md border p-4 text-left transition-colors ${
+                        proposalId === item.id
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-muted/50"
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-lg font-black tracking-tight text-black transition-colors group-hover:text-white">
-                            {evaluation.evaluator.displayName}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">
+                            {item.student.displayName}
                           </p>
-                          <p className="mt-1 text-base font-black uppercase tracking-[0.16em] text-black/40 transition-colors group-hover:text-white/70">
-                            Submitted {formatDateLabel(evaluation.submissionDate)}
+                          <p className="text-sm text-muted-foreground truncate">
+                            {item.title}
                           </p>
                         </div>
-                        <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
-                          {evaluation.numericalScore}/100
-                        </span>
+                        <Badge variant="outline" className="shrink-0 self-start">
+                          V{item.currentVersion} • {item.status.replaceAll("_", " ")}
+                        </Badge>
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap text-base font-medium leading-6 text-black/80 transition-colors group-hover:text-white/80">
-                        {evaluation.feedback}
-                      </p>
-                    </article>
+                    </button>
                   ))
                 )}
               </div>
-            </div>
-          )}
-        </section>
-      </section>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Load proposal</CardTitle>
+              <CardDescription>
+                Enter a proposal ID to load its status and evaluation history.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLookup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Proposal ID</Label>
+                  <Input
+                    value={proposalId}
+                    onChange={(event) => setProposalId(event.target.value)}
+                    placeholder="proposal_abc123"
+                  />
+                </div>
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? "Loading..." : "Load evaluations"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {isAdmin ? "Finalize decision" : "Submit evaluation"}
+              </CardTitle>
+              <CardDescription>
+                {isAdmin
+                  ? "Approve or reject the proposal with feedback."
+                  : "Submit a score and feedback for the selected proposal."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-4">
+                  {!isAdmin && (
+                    <div className="space-y-2">
+                      <Label>Score (0-100)</Label>
+                      <Input
+                        value={numericalScore}
+                        onChange={(event) => setNumericalScore(event.target.value)}
+                        type="number"
+                        min={0}
+                        max={100}
+                        placeholder="85"
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>{isAdmin ? "Decision notes / Feedback" : "Feedback"}</Label>
+                    <Textarea
+                      value={feedback}
+                      onChange={(event) => setFeedback(event.target.value)}
+                      className="min-h-[160px]"
+                      placeholder={isAdmin
+                        ? "Explain your approval or rejection decision..." 
+                        : "Provide at least 50 characters of evaluation feedback..."}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {!isAdmin && (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || isRejecting || isApproving}
+                      className="w-full sm:w-auto"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit evaluation"}
+                    </Button>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleReject}
+                        disabled={isSubmitting || isRejecting || isApproving}
+                        className="w-full sm:w-auto"
+                      >
+                        {isRejecting ? "Rejecting..." : "Reject & Request Revisions"}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleApprove}
+                        disabled={isSubmitting || isRejecting || isApproving}
+                        className="w-full sm:w-auto"
+                      >
+                        {isApproving ? "Approving..." : "Approve Proposal"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Evaluation history</CardTitle>
+            <CardDescription>
+              Review submitted evaluations and the current aggregate score.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!result ? (
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Load a proposal to view its evaluation history.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="rounded-md border bg-muted/30 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                    Proposal
+                  </p>
+                  <h3 className="font-semibold">{result.proposal.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Student: {result.proposal.student.displayName}
+                  </p>
+                  <Badge className="mt-2 uppercase" variant="outline">
+                    {result.proposal.status.replaceAll("_", " ")}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-md border p-4 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Aggregate Score
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">
+                      {result.aggregate.averageScore ?? "N/A"}
+                    </p>
+                  </div>
+                  <div className="rounded-md border p-4 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Evaluation Count
+                    </p>
+                    <p className="mt-2 text-3xl font-bold">
+                      {result.aggregate.evaluationCount}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">
+                    Feedback Details
+                  </h4>
+                  {result.evaluations.length === 0 ? (
+                    <p className="text-sm italic text-muted-foreground">No evaluations submitted yet.</p>
+                  ) : (
+                    result.evaluations.map((evaluation) => (
+                      <div
+                        key={evaluation.id}
+                        className="rounded-md border p-4 space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="font-semibold">
+                              {evaluation.evaluator.displayName}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Submitted {formatDateLabel(evaluation.submissionDate)}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="shrink-0">
+                            {evaluation.numericalScore}/100
+                          </Badge>
+                        </div>
+                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                          {evaluation.feedback}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

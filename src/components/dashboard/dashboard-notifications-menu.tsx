@@ -1,6 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
 
 type DashboardNotification = {
   id: string;
@@ -30,7 +43,7 @@ function getEventLabel(event: string) {
   return event.replaceAll("_", " ").toLowerCase();
 }
 
-export function DashboardNotificationsMenu() {
+export function DashboardNotificationsMenu({ trigger }: { trigger?: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
@@ -107,98 +120,90 @@ export function DashboardNotificationsMenu() {
   }
 
   return (
-    <div className="mt-6">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((current) => !current)}
-        className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-white px-5 py-4 text-left text-base font-bold text-black shadow-[8px_8px_16px_#bebebe] transition-all hover:bg-black hover:text-white"
-      >
-        <span>Notifications</span>
-        {visibleUnreadCount > 0 ? (
-          <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-black">
-            {visibleUnreadCount}
-          </span>
-        ) : (
-          <span className="rounded-full border border-gray-300 px-3 py-1 text-[10px] font-black uppercase tracking-widest">
-            Clear
-          </span>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        {trigger || (
+          <Button variant="outline" className="relative">
+            <Bell className="h-4 w-4" />
+            {visibleUnreadCount > 0 && (
+              <Badge variant="destructive" className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full p-0">
+                {visibleUnreadCount}
+              </Badge>
+            )}
+          </Button>
         )}
-      </button>
-
-      {isOpen ? (
-        <section className="mt-4 rounded-[24px] border border-gray-300 bg-white p-4 shadow-[8px_8px_16px_#bebebe]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40">
-                Inbox
-              </p>
-              <h2 className="text-lg font-black tracking-tight text-black">
-                Recent alerts
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => void markAllRead()}
-              disabled={visibleUnreadCount === 0 || isMarkingRead}
-              className="rounded-xl border-2 border-black bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isMarkingRead ? "Saving..." : "Mark read"}
-            </button>
+      </SheetTrigger>
+      <SheetContent className="flex w-full flex-col sm:max-w-md">
+        <SheetHeader className="flex flex-row items-center justify-between border-b pb-4">
+          <div className="space-y-1">
+            <SheetTitle>Notifications</SheetTitle>
+            <SheetDescription>Recent alerts and workflow updates</SheetDescription>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void markAllRead()}
+            disabled={visibleUnreadCount === 0 || isMarkingRead}
+          >
+            {isMarkingRead ? "Saving..." : "Mark all read"}
+          </Button>
+        </SheetHeader>
 
-          {error ? (
-            <p className="mt-4 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-bold text-black">
-              {error}
+        {error ? (
+          <div className="mt-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <div className="mt-4 space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-20 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <Bell className="h-10 w-10 text-muted-foreground opacity-20" />
+            <p className="mt-4 text-sm font-medium">No notifications yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Workflow alerts will appear here.
             </p>
-          ) : null}
-
-          {isLoading ? (
-            <div className="mt-4 space-y-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="h-16 animate-pulse rounded-2xl bg-gray-100" />
-              ))}
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-gray-300 px-4 py-8 text-center">
-              <p className="text-sm font-black text-black">No notifications yet</p>
-              <p className="mt-1 text-xs font-medium text-black/60">
-                Workflow alerts will appear here.
-              </p>
-            </div>
-          ) : (
-            <ul className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">
+          </div>
+        ) : (
+          <ScrollArea className="mt-4 h-full pr-4">
+            <div className="flex flex-col gap-3">
               {notifications.map((notification) => (
-                <li
+                <Card
                   key={notification.id}
-                  className="rounded-2xl border border-gray-200 bg-white px-4 py-3"
+                  className={`flex flex-col gap-2 p-4 transition-colors ${
+                    notification.isRead ? "bg-muted/40" : "bg-card"
+                  }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span
-                      aria-hidden="true"
-                      className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
-                        notification.isRead ? "bg-gray-300" : "bg-black"
-                      }`}
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-black leading-tight text-black">
+                    {!notification.isRead && (
+                      <span className="mt-1.5 flex h-2 w-2 shrink-0 rounded-full bg-primary" />
+                    )}
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
                         {notification.title}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-black/70">
+                      <p className="text-sm text-muted-foreground">
                         {notification.message}
                       </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black/40">
-                        <span>{getEventLabel(notification.event)}</span>
+                      <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">
+                        <Badge variant="secondary" className="font-normal">
+                          {getEventLabel(notification.event)}
+                        </Badge>
                         <span>{formatNotificationDate(notification.createdAt)}</span>
                       </div>
                     </div>
                   </div>
-                </li>
+                </Card>
               ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-    </div>
+            </div>
+          </ScrollArea>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

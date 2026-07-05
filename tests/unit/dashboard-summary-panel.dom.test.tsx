@@ -8,10 +8,7 @@ import React from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import {
-  DashboardSummaryPanel,
-  getStatusBadgeClassName,
-} from "@/components/dashboard/dashboard-summary-panel";
+import { DashboardSummaryPanel } from "@/components/dashboard/dashboard-summary-panel";
 import type { DashboardSummary } from "@/types/dashboard";
 
 describe("DashboardSummaryPanel", () => {
@@ -30,24 +27,6 @@ describe("DashboardSummaryPanel", () => {
 
     expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument();
     expect(screen.getByText("Nothing to show yet")).toBeInTheDocument();
-  });
-
-  it("applies the correct classes for color-coded status badges", () => {
-    expect(getStatusBadgeClassName("success")).toBe(
-      "border border-black bg-transparent text-black",
-    );
-    expect(getStatusBadgeClassName("warning")).toBe(
-      "border border-black bg-transparent text-black",
-    );
-    expect(getStatusBadgeClassName("danger")).toBe(
-      "border border-black bg-transparent text-black",
-    );
-    expect(getStatusBadgeClassName("info")).toBe(
-      "border border-black bg-transparent text-black",
-    );
-    expect(getStatusBadgeClassName("neutral")).toBe(
-      "border border-gray-300 bg-transparent text-black",
-    );
   });
 
   it("renders quick actions as links to their configured destination", () => {

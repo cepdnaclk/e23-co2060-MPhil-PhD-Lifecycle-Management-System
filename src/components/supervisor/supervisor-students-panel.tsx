@@ -3,6 +3,31 @@
 import Link from "next/link";
 import { ProgramType, RegistrationStatus } from "@prisma/client";
 import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
 
 type SupervisorStudentListItem = {
   assignmentId: string;
@@ -137,164 +162,151 @@ export function SupervisorStudentsPanel({
   });
 
   return (
-    <div className="space-y-10">
-      <header className="border-b-2 border-gray-200 pb-10">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Roster
-            </p>
-            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              Student Roster
-            </h2>
-            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              Review assigned students, registrations, and latest proposals.
-            </p>
-          </div>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Student Roster</h2>
+          <p className="text-muted-foreground mt-2">
+            Review assigned students, registrations, and latest proposals.
+          </p>
         </div>
-      </header>
+      </div>
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <div className="flex flex-col space-y-3">
-          <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Program Type</span>
-          <select
+      <div className="grid gap-6 md:grid-cols-[1fr_1fr_auto]">
+        <div className="space-y-2">
+          <Label>Program Type</Label>
+          <Select
             value={programFilter}
-            onChange={(event) =>
-              setProgramFilter(event.target.value as typeof programFilter)
-            }
-            className="w-full rounded-[24px] border border-gray-300 bg-white px-5 py-4 text-base font-bold text-black outline-none transition hover:bg-black hover:text-white"
+            onValueChange={(val: any) => setProgramFilter(val)}
           >
-            <option value="ALL">All programmes</option>
-            <option value="MPHIL">MPhil</option>
-            <option value="PHD">PhD</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="All programmes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All programmes</SelectItem>
+              <SelectItem value="MPHIL">MPhil</SelectItem>
+              <SelectItem value="PHD">PhD</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex flex-col space-y-3">
-          <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Registration Status</span>
-          <select
+        <div className="space-y-2">
+          <Label>Registration Status</Label>
+          <Select
             value={registrationFilter}
-            onChange={(event) =>
-              setRegistrationFilter(
-                event.target.value as typeof registrationFilter,
-              )
-            }
-            className="w-full rounded-[24px] border border-gray-300 bg-white px-5 py-4 text-base font-bold text-black outline-none transition hover:bg-black hover:text-white"
+            onValueChange={(val: any) => setRegistrationFilter(val)}
           >
-            <option value="ALL">All registrations</option>
-            <option value="ACTIVE">Active</option>
-            <option value="LAPSED">Lapsed</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="All registrations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All registrations</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="LAPSED">Lapsed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex flex-col justify-end">
-          <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-4 transition-all hover:bg-black">
-            <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-              Filtered results
-            </p>
-            <p className="mt-2 text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-              {filteredStudents.length}
-            </p>
-          </div>
-        </div>
-      </section>
+        <Card className="flex flex-col justify-center px-6 py-2 min-w-[150px]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Filtered results
+          </p>
+          <p className="mt-1 text-3xl font-bold">
+            {filteredStudents.length}
+          </p>
+        </Card>
+      </div>
 
       {errorMessage && (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          <p>{errorMessage}</p>
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          {errorMessage}
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex animate-pulse items-center justify-center rounded-[24px] border border-gray-300 bg-white py-20">
-          <p className="text-xl font-bold text-black/40">Loading assigned students...</p>
-        </div>
-      ) : filteredStudents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-gray-300 bg-white py-24 text-center">
-          <h3 className="text-3xl font-black text-black">No matches found</h3>
-          <p className="mt-4 text-lg font-medium text-black/70">Adjust your filters and try again.</p>
-        </div>
-      ) : (
-        <div className="rounded-[24px] border border-gray-300 bg-white p-4 sm:p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-left">
-                  <th className="pb-6 pl-4 text-xs font-black uppercase tracking-[0.2em] text-black/40">Researcher</th>
-                  <th className="pb-6 text-xs font-black uppercase tracking-[0.2em] text-black/40">Status & Proposal</th>
-                  <th className="pb-6 pr-4 text-right text-xs font-black uppercase tracking-[0.2em] text-black/40">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-300">
-                {filteredStudents.map((entry) => {
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-6">Researcher</TableHead>
+                <TableHead>Status & Proposal</TableHead>
+                <TableHead className="text-right px-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                    Loading assigned students...
+                  </TableCell>
+                </TableRow>
+              ) : filteredStudents.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                    No matches found. Adjust your filters and try again.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredStudents.map((entry) => {
                   const registrationLabel = getRegistrationLabel(entry.currentRegistration);
                   const proposalLabel = getProposalLabel(entry.latestProposal);
 
                   return (
-                    <tr key={entry.assignmentId}>
-                      <td className="py-8 pl-4 pr-6">
-                        <div className="flex flex-col">
+                    <TableRow key={entry.assignmentId}>
+                      <TableCell className="px-6">
+                        <div className="flex flex-col gap-1">
                           <Link
                             href={`/dashboard/supervisor/students/${entry.student.id}`}
-                            className="text-2xl font-black tracking-tight text-black"
+                            className="font-bold hover:underline"
                           >
                             {entry.student.displayName}
                           </Link>
-                          <span className="mt-1 text-sm font-bold text-black/60">{entry.student.email}</span>
-                          <div className="mt-3 flex items-center gap-3">
-                            <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black">
+                          <span className="text-sm text-muted-foreground">{entry.student.email}</span>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge variant="secondary" className="uppercase">
                               {entry.student.programType}
-                            </span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-black/40">
+                            </Badge>
+                            <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
                               {entry.isPrimary ? "Primary" : "Co-supervisor"} · {formatDateLabel(entry.assignedAt)}
                             </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="py-8 pr-6">
-                        <div className="flex flex-col space-y-4">
-                          <div className="flex items-center gap-4">
-                            <div className="h-2 w-2 rounded-full bg-black" />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40">Registration</span>
-                              <span
-                                className="text-sm font-bold text-black"
-                                data-testid={`registration-badge-${entry.student.id}`}
-                              >
-                                {registrationLabel} · Expires {formatDateLabel(entry.currentRegistration?.expirationDate)}
-                              </span>
-                            </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Registration</span>
+                            <span
+                              className="text-sm font-medium"
+                              data-testid={`registration-badge-${entry.student.id}`}
+                            >
+                              {registrationLabel} · Expires {formatDateLabel(entry.currentRegistration?.expirationDate)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className={`h-2 w-2 rounded-full ${proposalLabel === 'APPROVED' ? 'bg-black' : 'bg-gray-400'}`} />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-black/40">Latest Proposal</span>
-                              <span className="max-w-[200px] truncate text-sm font-bold text-black">
-                                {entry.latestProposal ? entry.latestProposal.title : "No proposal submitted"}
-                              </span>
-                            </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Latest Proposal</span>
+                            <span className="max-w-[200px] truncate text-sm font-medium">
+                              {entry.latestProposal ? entry.latestProposal.title : "No proposal submitted"}
+                            </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="py-8 pr-4 text-right">
-                        <div className="flex flex-col items-end gap-3">
-                          <Link
-                            href={`/dashboard/supervisor/students/${entry.student.id}`}
-                            className="rounded-xl border-2 border-black bg-white px-5 py-2 text-xs font-black text-black transition-all duration-150 hover:-translate-y-0.5 hover:bg-black hover:text-white"
-                          >
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/dashboard/supervisor/students/${entry.student.id}`}>
                             Open Profile
                             <span className="sr-only">{entry.student.displayName}</span>
                           </Link>
-                        </div>
-                      </td>
-                    </tr>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

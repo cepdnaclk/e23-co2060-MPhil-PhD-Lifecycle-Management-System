@@ -7,6 +7,25 @@ import {
   correctionSubmissionSchema,
   uploadedPdfDocumentSchema,
 } from "@/lib/theses/schemas";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Correction = {
   id: string;
@@ -148,131 +167,142 @@ export function ThesisCorrectionPanel({
   const canSubmit = thesis?.status === "CORRECTIONS_REQUIRED";
 
   return (
-    <main className="space-y-12">
-      <section className="border-b-2 border-gray-200 pb-10">
-        <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-          Corrections
-        </p>
-        <h1 className="mt-3 text-5xl font-black tracking-tighter text-black sm:text-6xl">
-          Submit Corrections
-        </h1>
-        <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-          Upload corrected thesis files when corrections are required.
-        </p>
-      </section>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Submit Corrections</h2>
+          <p className="text-muted-foreground mt-2">
+            Upload corrected thesis files when corrections are required.
+          </p>
+        </div>
+      </div>
 
-      {error ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
           {error}
         </div>
-      ) : null}
-      {message ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      )}
+      {message && (
+        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
           {message}
         </div>
-      ) : null}
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-[24px] border border-gray-300 bg-white p-6"
-        >
-          <h2 className="text-3xl font-black tracking-tight text-black">Submit Corrections</h2>
-          {!thesis ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
-              No thesis record yet.
-            </p>
-          ) : !canSubmit ? (
-            <p className="mt-4 rounded-2xl border-2 border-black bg-white px-4 py-3 text-base font-bold text-black">
-              Corrections can only be uploaded while the thesis status is
-              CORRECTIONS REQUIRED. Current status: {thesis.status.replaceAll("_", " ")}.
-            </p>
-          ) : (
-            <div className="mt-5 grid gap-4">
-              <label className="space-y-2 text-base text-black">
-                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Correction type</span>
-                <select
-                  value={correctionType}
-                  onChange={(event) => setCorrectionType(event.target.value)}
-                  className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                >
-                  <option value="MINOR">Minor</option>
-                  <option value="MAJOR">Major</option>
-                </select>
-              </label>
-              <label className="space-y-2 text-base text-black">
-                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Description</span>
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  className="min-h-32 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                />
-              </label>
-              <label className="space-y-2 text-base text-black">
-                <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Corrected PDF</span>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  className="block w-full text-base text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-4 file:py-3 file:font-bold file:text-white"
-                  required
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:opacity-60"
-              >
-                <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-5 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                  {isSubmitting ? "Submitting..." : "Submit correction"}
-                </span>
-              </button>
-            </div>
-          )}
-        </form>
-
-        <section className="rounded-[24px] border border-gray-300 bg-white p-6">
-          <h2 className="text-3xl font-black tracking-tight text-black">Correction history</h2>
-          {!thesis || thesis.corrections.length === 0 ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
-              No corrections submitted.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {thesis.corrections.map((correction) => (
-                <article
-                  key={correction.id}
-                  className="rounded-[24px] border border-gray-300 bg-white p-5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-black tracking-tight text-black">
-                        {correction.correctionType} correction
-                      </p>
-                      <p className="mt-1 text-base font-black uppercase tracking-wider text-black/40">
-                        {new Date(correction.createdAt).toLocaleString()}
-                      </p>
+      <div className="grid gap-6 md:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Submit Corrections</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              {!thesis ? (
+                <div className="rounded-md border border-dashed p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No thesis record yet.
+                  </p>
+                </div>
+              ) : !canSubmit ? (
+                <div className="rounded-md border p-4 text-sm font-medium">
+                  Corrections can only be uploaded while the thesis status is
+                  CORRECTIONS REQUIRED. Current status: {thesis?.status.replaceAll("_", " ")}.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Correction type</Label>
+                      <Select
+                        value={correctionType}
+                        onValueChange={(val: string) => setCorrectionType(val)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MINOR">Minor</SelectItem>
+                          <SelectItem value="MAJOR">Major</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black">
-                      {correction.isApproved ? "Approved" : "Pending"}
-                    </span>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={description}
+                        onChange={(event) => setDescription(event.target.value)}
+                        className="min-h-[120px]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Corrected PDF</Label>
+                      <Input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handleFileChange}
+                        required
+                      />
+                    </div>
                   </div>
-                  {correction.description ? (
-                    <p className="mt-3 text-base font-medium leading-6 text-black/80">
-                      {correction.description}
-                    </p>
-                  ) : null}
-                  {correction.documents.map((document) => (
-                    <p key={document.id} className="mt-3 break-all text-base font-medium text-black/80">
-                      {document.fileName}: {document.storagePath}
-                    </p>
-                  ))}
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </section>
-    </main>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full"
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit correction"}
+                  </Button>
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Correction history</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!thesis || thesis.corrections.length === 0 ? (
+              <div className="rounded-md border border-dashed p-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No corrections submitted.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {thesis?.corrections.map((correction) => (
+                  <div
+                    key={correction.id}
+                    className="rounded-md border p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <p className="font-semibold">
+                          {correction.correctionType} correction
+                        </p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                          {new Date(correction.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <Badge variant={correction.isApproved ? "default" : "secondary"}>
+                        {correction.isApproved ? "Approved" : "Pending"}
+                      </Badge>
+                    </div>
+                    {correction.description && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {correction.description}
+                      </p>
+                    )}
+                    {correction.documents.map((document) => (
+                      <p key={document.id} className="mt-2 break-all text-xs text-muted-foreground">
+                        {document.fileName}: {document.storagePath}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

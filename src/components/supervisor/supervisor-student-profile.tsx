@@ -2,6 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, BookOpen, FileText } from "lucide-react";
 
 type StudentProfilePayload = {
   id: string;
@@ -89,108 +98,107 @@ export function SupervisorStudentProfile({
 
   if (isLoading) {
     return (
-      <div className="rounded-[2rem] border border-gray-200 bg-transparent p-6 text-base text-black">
-        Loading student profile...
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+        <div className="text-muted-foreground text-sm">Loading student profile...</div>
       </div>
     );
   }
 
   if (errorMessage || !student) {
     return (
-      <div className="rounded-[2rem] border border-gray-300 bg-transparent px-5 py-4 text-base text-black">
-        {errorMessage ?? "Student profile could not be loaded."}
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          {errorMessage ?? "Student profile could not be loaded."}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10">
-      <header className="pb-10 border-b-2 border-gray-300">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <Link
-              href="/dashboard/supervisor/students"
-              className="group inline-flex items-center text-xs font-black uppercase tracking-widest text-black/40 transition-colors hover:text-black"
-            >
-              <span className="mr-2 transition-transform group-hover:-translate-x-1">&larr;</span> Back to Roster
-            </Link>
-            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              {student.user.displayName}
-            </h1>
-            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              {student.user.email} · {student.programType} Researcher
-            </p>
-          </div>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div className="space-y-1">
+          <Link
+            href="/dashboard/supervisor/students"
+            className="inline-flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Roster
+          </Link>
+          <h2 className="text-3xl font-bold tracking-tight">{student.user.displayName}</h2>
+          <p className="text-muted-foreground">
+            {student.user.email} · {student.programType} Researcher
+          </p>
         </div>
-      </header>
+      </div>
 
-      <section className="grid gap-6 sm:grid-cols-3">
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Programme
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {student.programType}
-          </p>
-        </div>
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Academic Status
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {student.academicStatus}
-          </p>
-        </div>
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Enrolled Since
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {formatDateLabel(student.enrollmentDate)}
-          </p>
-        </div>
-      </section>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Programme
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{student.programType}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Academic Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{student.academicStatus}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Enrolled Since
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatDateLabel(student.enrollmentDate)}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section
-          id="research-proposals"
-          className="group rounded-[24px] border border-gray-300 bg-white p-8 transition-all hover:bg-black"
-        >
-          <h3 className="text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            Research Proposals
-          </h3>
-          <p className="mt-4 text-lg font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
-            Review proposal submissions, evaluations, and approval history.
-          </p>
-          <div className="mt-8">
-            <Link
-              href={`#`}
-              className="rounded-xl border-2 border-black bg-white px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
-            >
-              View Proposal History
-            </Link>
-          </div>
-        </section>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Research Proposals
+            </CardTitle>
+            <CardDescription>
+              Review proposal submissions, evaluations, and approval history.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="#">View Proposal History</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
-        <section
-          id="progress-reports"
-          className="group rounded-[24px] border border-gray-300 bg-white p-8 transition-all hover:bg-black"
-        >
-          <h3 className="text-3xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            Progress Reports
-          </h3>
-          <p className="mt-4 text-lg font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
-            Review submitted reports, sign-off status, and panel feedback.
-          </p>
-          <div className="mt-8">
-            <Link
-              href={`#`}
-              className="rounded-xl border-2 border-black bg-white px-6 py-3 text-sm font-black text-black transition-all hover:bg-black hover:text-white"
-            >
-              Open Progress Reports
-            </Link>
-          </div>
-        </section>
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Progress Reports
+            </CardTitle>
+            <CardDescription>
+              Review submitted reports, sign-off status, and panel feedback.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="#">Open Progress Reports</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

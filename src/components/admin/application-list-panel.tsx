@@ -3,6 +3,23 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type Application = {
   id: string;
@@ -58,55 +75,62 @@ export function ApplicationListPanel() {
 
   if (applications.length === 0) {
     return (
-      <div className="rounded-[24px] border border-dashed border-gray-300 bg-white p-12 text-center">
-        <h3 className="text-2xl font-black tracking-tight text-black">
-          No pending applications
-        </h3>
-        <p className="mt-2 text-base font-medium text-black/70">
-          There are currently no new applications waiting for review.
-        </p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>No pending applications</CardTitle>
+          <CardDescription>
+            There are currently no new applications waiting for review.
+          </CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-gray-300 bg-white">
-      <table className="w-full text-left text-base">
-        <thead className="border-b border-gray-300 bg-white text-base uppercase text-black">
-          <tr>
-            <th className="px-6 py-5 text-[14px] font-black tracking-[0.2em] text-black/40">Applicant</th>
-            <th className="px-6 py-5 text-[14px] font-black tracking-[0.2em] text-black/40">Program</th>
-            <th className="px-6 py-5 text-[14px] font-black tracking-[0.2em] text-black/40">Submitted</th>
-            <th className="px-6 py-5 text-right text-[14px] font-black tracking-[0.2em] text-black/40">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-300">
-          {applications.map((app) => (
-            <tr key={app.id} className="group transition-colors hover:bg-black">
-              <td className="px-6 py-4">
-                <div className="text-lg font-black tracking-tight text-black transition-colors group-hover:text-white">{app.applicantName}</div>
-                <div className="font-medium text-black/70 transition-colors group-hover:text-white/80">{app.applicantEmail}</div>
-              </td>
-              <td className="px-6 py-4">
-                <span className="inline-flex rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
-                  {app.programType}
-                </span>
-              </td>
-              <td className="px-6 py-4 font-medium text-black/80 transition-colors group-hover:text-white/80">
-                {format(new Date(app.createdAt), "MMM d, yyyy")}
-              </td>
-              <td className="px-6 py-4 text-right">
-                <Link
-                  href={`/dashboard/admin/applications/${app.id}`}
-                  className="rounded-xl border-2 border-black bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black transition group-hover:border-white group-hover:bg-transparent group-hover:text-white"
-                >
-                  Review
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Pending Applications</CardTitle>
+        <CardDescription>
+          A list of all recently submitted student applications waiting for your approval.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Applicant</TableHead>
+              <TableHead>Program</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {applications.map((app) => (
+              <TableRow key={app.id}>
+                <TableCell>
+                  <div className="font-medium">{app.applicantName}</div>
+                  <div className="text-sm text-muted-foreground">{app.applicantEmail}</div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {app.programType}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {format(new Date(app.createdAt), "MMM d, yyyy")}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/admin/applications/${app.id}`}>
+                      Review
+                    </Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

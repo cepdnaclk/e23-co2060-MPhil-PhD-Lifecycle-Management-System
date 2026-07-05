@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
-import { Header } from "@/components/layout/header";
 import { LandingBackRedirect } from "@/components/layout/landing-back-redirect";
 import DotField from "@/components/ui/dot-field";
 import styles from "./home-page.module.css";
@@ -17,7 +16,18 @@ export default function HomePage() {
   return (
     <>
       <LandingBackRedirect />
-      <Header />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+        <nav className="flex w-full items-center justify-end px-5 py-5 sm:px-8 md:px-10 md:py-6">
+          <Link
+            href="/login"
+            className={styles.signInButton}
+          >
+            <span className={`${styles.signInButtonLabel} ${montserrat.className}`}>
+              Sign In
+            </span>
+          </Link>
+        </nav>
+      </header>
       <main className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-[#e0e0e0] px-5 py-20 text-black sm:px-6 sm:py-24">
         <div className="absolute inset-0">
           <div className="absolute inset-0 opacity-90">

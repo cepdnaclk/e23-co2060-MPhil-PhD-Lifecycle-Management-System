@@ -2,19 +2,11 @@ import { ProgressReportSubmissionForm } from "@/components/progress-reports/prog
 
 export default function SubmitProgressReportPage() {
   return (
-    <main className="space-y-12">
-      <section className="border-b-2 border-gray-200 pb-10">
-      <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-        Reports
-      </p>
-      <h1 className="mt-3 text-5xl font-black tracking-tighter text-black sm:text-6xl">Submit Report</h1>
-      <p className="mt-3 max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-        Submit your latest research update. Your primary supervisor must sign it
-        off before it reaches the review panel.
-      </p>
-      </section>
-
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Submit Report</h2>
+      </div>
       <ProgressReportSubmissionForm />
-    </main>
+    </div>
   );
 }

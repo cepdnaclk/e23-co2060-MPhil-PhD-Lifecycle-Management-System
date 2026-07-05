@@ -7,6 +7,19 @@ import {
   proposalSubmissionSchema,
   proposalUploadRequestSchema,
 } from "@/lib/proposals/schemas";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { FileUp, RefreshCw } from "lucide-react";
 
 type ProposalDocument = {
   id: string;
@@ -72,13 +85,13 @@ function formatDateLabel(value: string) {
 function getStatusBadge(status: ProposalSummary["status"]) {
   switch (status) {
     case "APPROVED":
-      return "border-2 border-black bg-white text-black";
+      return "default";
     case "REJECTED":
-      return "border-2 border-black bg-white text-black";
+      return "destructive";
     case "UNDER_REVIEW":
-      return "border-2 border-black bg-white text-black";
+      return "secondary";
     case "SUBMITTED":
-      return "border border-gray-300 bg-white text-black";
+      return "outline";
   }
 }
 
@@ -271,194 +284,178 @@ export function ProposalSubmissionPanel() {
   const proposal = overview?.proposal ?? null;
 
   return (
-    <div className="space-y-10">
-      <header className="border-b-2 border-gray-200 pb-10">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Proposal workflow
-            </p>
-            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              Proposals
-            </h1>
-            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              Submit proposals and new versions after feedback.
-            </p>
-          </div>
-          {proposal && (
-            <div className={`rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest ${getStatusBadge(proposal.status)}`}>
-              {proposal.status.replaceAll("_", " ")}
-            </div>
-          )}
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Proposals</h2>
+          <p className="text-muted-foreground mt-2">
+            Submit proposals and new versions after feedback.
+          </p>
         </div>
-      </header>
+        {proposal && (
+          <Badge variant={getStatusBadge(proposal.status)} className="uppercase">
+            {proposal.status.replaceAll("_", " ")}
+          </Badge>
+        )}
+      </div>
 
       {errorMessage && (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          <p>{errorMessage}</p>
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          {errorMessage}
         </div>
       )}
 
       {successMessage && (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
-          <p>{successMessage}</p>
+        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
+          {successMessage}
         </div>
       )}
 
-      <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-8">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[24px] border border-gray-300 bg-white p-6"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-3xl font-black tracking-tight text-black">
-                  {proposal ? "Revise Proposal" : "New Submission"}
-                </h2>
-                <p className="mt-3 text-base font-medium leading-6 text-black/70">
-                  All versions remain available for review.
-                </p>
-              </div>
-              {proposal && (
-                <div className="rounded-[24px] border border-gray-300 bg-white px-4 py-3 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Version</p>
-                  <p className="mt-1 text-xl font-black text-black">V{proposal.currentVersion}</p>
-                </div>
-              )}
+      <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle>
+                {proposal ? "Revise Proposal" : "New Submission"}
+              </CardTitle>
+              <CardDescription>
+                All versions remain available for review.
+              </CardDescription>
             </div>
-
-            {!overview?.canSubmitNewVersion && overview?.submissionBlockedReason ? (
-              <div className="mt-6 rounded-2xl border-2 border-black bg-white px-5 py-4 text-base font-bold text-black">
-                {overview.submissionBlockedReason}
-              </div>
-            ) : (
-              <div className="mt-6 space-y-6">
-                <label className="block space-y-2">
-                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
-                    Proposal Title
-                  </span>
-                  <input
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                    className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-lg font-bold text-black outline-none transition placeholder:text-black/20 focus:bg-gray-50"
-                    placeholder="Research title..."
-                    disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
-                  />
-                </label>
-
-                <label className="block space-y-2">
-                  <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">
-                    Abstract
-                  </span>
-                  <textarea
-                    value={abstract}
-                    onChange={(event) => setAbstract(event.target.value)}
-                    className="min-h-44 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 text-base font-medium text-black outline-none transition placeholder:text-black/20 focus:bg-gray-50"
-                    placeholder="Summarize your research methodology and impact..."
-                    disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
-                  />
-                </label>
-
-                <div className="rounded-[24px] border border-gray-300 bg-white p-5">
-                  <p className="text-xs font-black uppercase tracking-widest text-black/40">
-                    Document Upload
-                  </p>
-                  <p className="mt-3 text-base font-medium text-black/70">
-                    Upload a PDF to create a new version.
-                  </p>
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handleFileUpload}
-                    disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
-                    className="mt-5 block w-full text-sm text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-5 file:py-3 file:text-xs file:font-black file:uppercase file:tracking-widest file:text-white"
-                  />
-                  {uploadedDocument && (
-                    <div className="mt-5 rounded-2xl border-2 border-black bg-white px-4 py-3 text-sm font-bold text-black">
-                      {uploadedDocument.fileName}
-                    </div>
-                  )}
-                  {isUploading ? (
-                    <p className="mt-3 text-sm font-medium text-black/70">Uploading proposal PDF...</p>
-                  ) : null}
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={isLoading || isSubmitting || isUploading || !overview?.canSubmitNewVersion}
-                    className="group inline-block cursor-pointer rounded-[0.75em] bg-black text-sm font-bold uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-8 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-                      {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Submit Proposal"}
-                    </span>
-                  </button>
-                </div>
+            {proposal && (
+              <div className="rounded-md border bg-muted/50 px-3 py-1 text-center">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Version</p>
+                <p className="text-sm font-bold">V{proposal.currentVersion}</p>
               </div>
             )}
-          </form>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {!overview?.canSubmitNewVersion && overview?.submissionBlockedReason ? (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm font-medium text-destructive">
+                  {overview.submissionBlockedReason}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Proposal Title</Label>
+                    <Input
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      placeholder="Research title..."
+                      disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
+                    />
+                  </div>
 
-        <section className="space-y-8">
-          <div className="rounded-[24px] border border-gray-300 bg-white p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-black tracking-tight text-black">History</h2>
-                <p className="mt-3 text-base font-medium text-black/70">
-                  All proposal versions remain available here.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void refreshOverview()}
-                disabled={isLoading}
-                className="rounded-xl border-2 border-black px-5 py-3 text-xs font-black uppercase tracking-widest text-black transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isLoading ? "Refreshing..." : "Refresh"}
-              </button>
+                  <div className="space-y-2">
+                    <Label>Abstract</Label>
+                    <Textarea
+                      value={abstract}
+                      onChange={(event) => setAbstract(event.target.value)}
+                      className="min-h-[160px]"
+                      placeholder="Summarize your research methodology and impact..."
+                      disabled={isLoading || !overview?.canSubmitNewVersion || isSubmitting}
+                    />
+                  </div>
+
+                  <div className="rounded-md border p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileUp className="h-4 w-4 text-muted-foreground" />
+                      <Label className="font-semibold uppercase tracking-wider text-muted-foreground text-xs">
+                        Document Upload
+                      </Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Upload a PDF to create a new version.
+                    </p>
+                    <Input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleFileUpload}
+                      disabled={isLoading || !overview?.canSubmitNewVersion || isUploading}
+                    />
+                    {uploadedDocument && (
+                      <div className="mt-4 rounded-md border bg-muted/30 p-2 text-sm font-medium">
+                        {uploadedDocument.fileName}
+                      </div>
+                    )}
+                    {isUploading && (
+                      <p className="mt-2 text-sm text-muted-foreground">Uploading proposal PDF...</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading || isSubmitting || isUploading || !overview?.canSubmitNewVersion}
+                    className="w-full"
+                  >
+                    {isSubmitting ? "Processing..." : proposal ? "Submit Revision" : "Submit Proposal"}
+                  </Button>
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="h-fit">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle>History</CardTitle>
+              <CardDescription>
+                All proposal versions remain available here.
+              </CardDescription>
             </div>
-
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshOverview()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </CardHeader>
+          <CardContent>
             {!proposal ? (
-              <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-5 py-12 text-center">
-                <p className="text-2xl font-black tracking-tight text-black">No proposal submitted</p>
-                <p className="mt-2 text-base font-medium text-black/70">
+              <div className="rounded-md border border-dashed p-6 text-center">
+                <p className="text-lg font-semibold">No proposal submitted</p>
+                <p className="text-sm text-muted-foreground mt-1">
                   Submit your first proposal to start version tracking.
                 </p>
               </div>
             ) : (
-              <div className="mt-8 space-y-4">
+              <div className="space-y-4">
                 {proposal.documents.map((doc) => (
-                  <article
+                  <div
                     key={doc.id}
-                    className="group rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
+                    className="rounded-md border p-4 space-y-3"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Version {doc.version}
                         </p>
-                        <h4 className="mt-2 truncate text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
+                        <h4 className="mt-1 font-semibold truncate">
                           {doc.fileName}
                         </h4>
                       </div>
-                      <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
+                      <Badge variant={doc.isCurrentVersion ? "default" : "secondary"} className="shrink-0">
                         {doc.isCurrentVersion ? "Latest" : "Archived"}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="mt-4 break-all text-base font-medium text-black/70 transition-colors group-hover:text-white/80">
+                    <p className="text-xs text-muted-foreground break-all">
                       {doc.storagePath}
                     </p>
-                    <p className="mt-3 text-[12px] font-black uppercase tracking-widest text-black/40 transition-colors group-hover:text-white/70">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {formatDateLabel(doc.createdAt)}
                     </p>
-                  </article>
+                  </div>
                 ))}
               </div>
             )}
-          </div>
-        </section>
-      </section>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

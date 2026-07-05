@@ -3,17 +3,30 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { Montserrat } from "next/font/google";
+import { LogOut } from "lucide-react";
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
+import { Bell } from "lucide-react";
+import { Header } from "@/components/layout/header";
+import { Main } from "@/components/layout/main";
+import { ProfileDropdown } from "@/components/profile-dropdown";
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 type DashboardRoleLayoutProps = {
   role: DashboardRole;
@@ -27,96 +40,121 @@ export function DashboardRoleLayout({
   const pathname = usePathname();
   const meta = buildDashboardPageMeta(role);
   const isAdmin = role === "admin";
-  const heading = isAdmin ? "Administrator Dashboard" : meta.eyebrow;
-  const navItemClassName =
-    "group block rounded-2xl border px-5 py-4 text-base font-bold transition-all shadow-[8px_8px_16px_#bebebe]";
+  const heading = isAdmin ? "Administrator" : meta.eyebrow;
 
-  function getNavItemClassName(href: string) {
-    const isActive =
-      pathname === href || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`));
-
-    if (isActive) {
-      return `${navItemClassName} border-gray-400 bg-gray-300 text-black shadow-[inset_4px_4px_8px_#bebebe]`;
-    }
-
-    return `${navItemClassName} border-gray-300 bg-white text-black hover:bg-black hover:text-white`;
+  function isActive(href: string) {
+    return pathname === href || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`));
   }
 
+  const navItems = getNavItems(role);
+
   return (
-    <div className={`${montserrat.className} h-[100dvh] overflow-hidden bg-[#e0e0e0] text-black`}>
-      <div className="box-border flex h-full w-full flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8">
-        <aside className="mb-4 flex shrink-0 flex-col overflow-y-auto rounded-[40px] bg-[#e0e0e0] p-6 shadow-[20px_20px_40px_#bebebe,-20px_-20px_40px_#ffffff] lg:mb-0 lg:w-80 lg:p-10">
-          <h1 className="text-3xl font-black tracking-tighter">
+    <SidebarProvider>
+      <Sidebar variant="inset">
+        <SidebarHeader className="p-4">
+          <div className="flex items-center gap-2 font-semibold">
+            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+              {heading.charAt(0)}
+            </div>
             {heading}
-          </h1>
-
-          <DashboardNotificationsMenu />
-
-          <div className="mt-10 flex flex-col gap-3 flex-1">
-            <nav className="contents">
-              <Link
-                href={`/dashboard/${role}`}
-                className={getNavItemClassName(`/dashboard/${role}`)}
-              >
-                Overview
-              </Link>
-              
-              {role === "student" ? (
-                <>
-                  <Link href="/dashboard/student/proposals" className={getNavItemClassName("/dashboard/student/proposals")}>Proposals</Link>
-                  <Link href="/dashboard/student/progress-reports" className={getNavItemClassName("/dashboard/student/progress-reports")}>Progress Reports</Link>
-                  <Link href="/dashboard/student/progress" className={getNavItemClassName("/dashboard/student/progress")}>Milestones</Link>
-                  <Link href="/dashboard/student/documents" className={getNavItemClassName("/dashboard/student/documents")}>Documents</Link>
-                  <Link href="/dashboard/student/theses/submit" className={getNavItemClassName("/dashboard/student/theses/submit")}>Thesis Submission</Link>
-                  <Link href="/dashboard/student/theses/corrections" className={getNavItemClassName("/dashboard/student/theses/corrections")}>Corrections</Link>
-                </>
-              ) : null}
-
-              {role === "supervisor" ? (
-                <>
-                  <Link href="/dashboard/supervisor/students" className={getNavItemClassName("/dashboard/supervisor/students")}>Student Roster</Link>
-                  <Link href="/dashboard/supervisor/proposals/evaluate" className={getNavItemClassName("/dashboard/supervisor/proposals/evaluate")}>Review Proposals</Link>
-                  <Link href="/dashboard/supervisor/progress-reports/sign" className={getNavItemClassName("/dashboard/supervisor/progress-reports/sign")}>Sign Progress Reports</Link>
-                  <Link href="/dashboard/supervisor/documents" className={getNavItemClassName("/dashboard/supervisor/documents")}>Documents</Link>
-                </>
-              ) : null}
-
-              {role === "admin" ? (
-                <>
-                  <Link href="/dashboard/admin/users" className={getNavItemClassName("/dashboard/admin/users")}>Manage Users</Link>
-                  <Link href="/dashboard/admin/applications" className={getNavItemClassName("/dashboard/admin/applications")}>Applications</Link>
-                  <Link href="/dashboard/admin/proposals/evaluate" className={getNavItemClassName("/dashboard/admin/proposals/evaluate")}>Approve Proposals</Link>
-                  <Link href="/dashboard/admin/assignments/supervisors" className={getNavItemClassName("/dashboard/admin/assignments/supervisors")}>Supervisor Assignments</Link>
-                  <Link href="/dashboard/admin/assignments/examiners" className={getNavItemClassName("/dashboard/admin/assignments/examiners")}>Examiner Assignments</Link>
-                  <Link href="/dashboard/admin/vivas/schedule" className={getNavItemClassName("/dashboard/admin/vivas/schedule")}>Schedule Vivas</Link>
-                  <Link href="/dashboard/admin/theses" className={getNavItemClassName("/dashboard/admin/theses")}>Finalize Theses</Link>
-                  <Link href="/dashboard/admin/documents" className={getNavItemClassName("/dashboard/admin/documents")}>Documents</Link>
-                </>
-              ) : null}
-
-              {role === "examiner" ? (
-                <>
-                  <Link href="/dashboard/examiner/vivas" className={getNavItemClassName("/dashboard/examiner/vivas")}>Assigned Vivas</Link>
-                  <Link href="/dashboard/examiner/documents" className={getNavItemClassName("/dashboard/examiner/documents")}>Documents</Link>
-                </>
-              ) : null}
-            </nav>
           </div>
-
-          <div className="mt-auto pt-8">
-            <Link
-              href="/logout"
-              className="block rounded-xl border-2 border-black bg-rose-100 px-5 py-4 text-center text-[10px] font-black uppercase tracking-widest text-black transition hover:bg-rose-200 shadow-[8px_8px_16px_#bebebe]"
-            >
-              Sign Out
-            </Link>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive(`/dashboard/${role}`)}>
+                    <Link href={`/dashboard/${role}`}>Overview</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
+                      <Link href={item.href}>{item.label}</Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DashboardNotificationsMenu
+                trigger={
+                  <SidebarMenuButton tooltip="Notifications">
+                    <Bell />
+                    <span>Notifications</span>
+                  </SidebarMenuButton>
+                }
+              />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link href="/logout"><LogOut /> Sign Out</Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <Header>
+          <div className="flex items-center gap-2 max-md:scale-125">
+            <SidebarTrigger variant='outline' />
+            <Separator orientation='vertical' className='h-6 ml-2 mr-2' />
           </div>
-        </aside>
-
-        <div className="flex-1 overflow-y-auto rounded-[40px] bg-[#e0e0e0] p-6 shadow-[15px_15px_30px_#bebebe,-15px_-15px_30px_#ffffff] sm:p-10">
+          <div className="flex-1">
+            <h1 className="text-sm font-medium">{heading} Dashboard</h1>
+          </div>
+          <div className="ml-auto flex items-center space-x-4">
+            <ProfileDropdown />
+          </div>
+        </Header>
+        <Main>
           {children}
-        </div>
-      </div>
-    </div>
+        </Main>
+      </SidebarInset>
+    </SidebarProvider>
   );
+}
+
+function getNavItems(role: DashboardRole) {
+  switch (role) {
+    case "student":
+      return [
+        { href: "/dashboard/student/proposals", label: "Proposals" },
+        { href: "/dashboard/student/progress-reports", label: "Progress Reports" },
+        { href: "/dashboard/student/progress", label: "Milestones" },
+        { href: "/dashboard/student/documents", label: "Documents" },
+        { href: "/dashboard/student/theses/submit", label: "Thesis Submission" },
+        { href: "/dashboard/student/theses/corrections", label: "Corrections" },
+      ];
+    case "supervisor":
+      return [
+        { href: "/dashboard/supervisor/students", label: "Student Roster" },
+        { href: "/dashboard/supervisor/proposals/evaluate", label: "Review Proposals" },
+        { href: "/dashboard/supervisor/progress-reports/sign", label: "Sign Progress Reports" },
+        { href: "/dashboard/supervisor/documents", label: "Documents" },
+      ];
+    case "admin":
+      return [
+        { href: "/dashboard/admin/users", label: "Manage Users" },
+        { href: "/dashboard/admin/applications", label: "Applications" },
+        { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals" },
+        { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments" },
+        { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments" },
+        { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas" },
+        { href: "/dashboard/admin/theses", label: "Finalize Theses" },
+        { href: "/dashboard/admin/documents", label: "Documents" },
+      ];
+    case "examiner":
+      return [
+        { href: "/dashboard/examiner/vivas", label: "Assigned Vivas" },
+        { href: "/dashboard/examiner/documents", label: "Documents" },
+      ];
+    default:
+      return [];
+  }
 }

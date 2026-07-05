@@ -1,4 +1,14 @@
 import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Activity, AlertTriangle, CheckCircle2, Info, Circle } from "lucide-react";
 
 import type {
   DashboardKpiCard,
@@ -7,146 +17,114 @@ import type {
   DashboardSummary,
 } from "@/types/dashboard";
 
-export function getStatusBadgeClassName(tone: DashboardStatusTone) {
+export function getStatusIcon(tone: DashboardStatusTone) {
   switch (tone) {
     case "success":
+      return <CheckCircle2 className="h-4 w-4 text-muted-foreground" />;
     case "warning":
     case "danger":
+      return <AlertTriangle className="h-4 w-4 text-muted-foreground" />;
     case "info":
-      return "border border-black bg-transparent text-black";
+      return <Info className="h-4 w-4 text-muted-foreground" />;
     case "neutral":
-      return "border border-gray-300 bg-transparent text-black";
+    default:
+      return <Activity className="h-4 w-4 text-muted-foreground" />;
   }
 }
 
-function DashboardKpi({
-  card,
-}: {
-  card: DashboardKpiCard;
-}) {
+function DashboardKpi({ card }: { card: DashboardKpiCard }) {
   return (
-    <article className="group flex flex-col rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black h-full cursor-default">
-      <div className="mb-2 flex flex-col items-start gap-3">
-        <span
-          className={`shrink-0 rounded-full border-2 px-3 py-1 text-[12px] font-black uppercase tracking-wider transition-colors group-hover:border-white group-hover:text-white ${getStatusBadgeClassName(card.statusTone)}`}
-        >
-          {card.statusLabel}
-        </span>
-        <div className="min-h-[2.8em]">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-gray-400 leading-tight transition-colors group-hover:text-gray-400">
-            {card.title}
-          </p>
-        </div>
-      </div>
-      
-      <p className="text-5xl font-black text-black tracking-tighter sm:text-6xl transition-colors group-hover:text-white">
-        {card.value}
-      </p>
-      
-      <p className="mt-4 text-sm leading-relaxed text-black/70 font-medium transition-colors group-hover:text-white/80">
-        {card.description}
-      </p>
-    </article>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">
+          {card.title}
+        </CardTitle>
+        {getStatusIcon(card.statusTone)}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{card.value}</div>
+        <p className="text-xs text-muted-foreground mt-1">
+          {card.description}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
-function QuickActionCard({
-  action,
-}: {
-  action: DashboardQuickAction;
-}) {
+function QuickActionCard({ action }: { action: DashboardQuickAction }) {
   return (
-    <Link
-      href={action.href}
-      className="group flex flex-col justify-center min-h-[120px] rounded-[24px] border border-gray-300 bg-white p-6 transition-all hover:bg-black"
-    >
-      <p className="text-xl font-black text-black tracking-tight transition-colors group-hover:text-white">
-        {action.label}
-      </p>
-      <p className="mt-2 text-base leading-snug text-black/70 font-medium transition-colors group-hover:text-white/70">
-        {action.description}
-      </p>
+    <Link href={action.href} className="block h-full transition-opacity hover:opacity-80">
+      <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
+        <CardHeader>
+          <CardTitle className="text-lg">{action.label}</CardTitle>
+          <CardDescription>{action.description}</CardDescription>
+        </CardHeader>
+      </Card>
     </Link>
   );
 }
 
 export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
   return (
-    <section
-      className="rounded-[30px] border-2 border-dashed border-gray-300 bg-transparent/40 px-6 py-16 text-center"
-      data-testid="dashboard-empty-state"
-    >
-      <p className="text-base font-bold uppercase tracking-[0.24em] text-black/40">
-        {roleLabel}
-      </p>
-      <h2 className="mt-6 text-4xl font-black text-black tracking-tight">
-        Nothing to show yet
-      </h2>
-      <p className="mt-4 text-lg leading-relaxed text-black/60 max-w-lg mx-auto">
-        This dashboard will populate when workflow data is available for your role.
-      </p>
-    </section>
+    <div className="flex h-[400px] shrink-0 items-center justify-center rounded-md border border-dashed">
+      <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+        <h3 className="mt-4 text-lg font-semibold">No data available</h3>
+        <p className="mb-4 mt-2 text-sm text-muted-foreground">
+          This {roleLabel} dashboard will populate when workflow data is available.
+        </p>
+      </div>
+    </div>
   );
 }
 
 export function DashboardSkeletonGrid() {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4" data-testid="dashboard-skeleton-grid">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div
-          key={index}
-          className="h-56 animate-pulse rounded-[24px] bg-gray-200"
-        />
+        <Card key={index} className="animate-pulse">
+          <CardHeader className="space-y-0 pb-2">
+            <div className="h-4 w-1/2 rounded bg-muted"></div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-8 w-12 rounded bg-muted mt-2"></div>
+            <div className="h-3 w-3/4 rounded bg-muted mt-2"></div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
 }
 
-export function DashboardSummaryPanel({
-  summary,
-}: {
-  summary: DashboardSummary;
-}) {
+export function DashboardSummaryPanel({ summary }: { summary: DashboardSummary }) {
   if (summary.cards.length === 0) {
     return <DashboardEmptyState roleLabel={summary.roleLabel} />;
   }
 
   return (
-    <div className="space-y-12">
-      <header className="pb-10 border-b-2 border-gray-200">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              {summary.roleLabel}
-            </p>
-            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              {summary.title}
-            </h2>
-            <p className="max-w-2xl text-xl leading-relaxed text-black/80 font-medium">
-              {summary.subtitle}
-            </p>
-          </div>
+    <div className="flex-1 space-y-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{summary.title}</h2>
+          <p className="text-muted-foreground">{summary.subtitle}</p>
         </div>
-      </header>
-
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      </div>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {summary.cards.map((card) => (
           <DashboardKpi key={card.id} card={card} />
         ))}
-      </section>
+      </div>
 
-      <section className="pt-6">
-        <div className="flex items-center gap-4 mb-8">
-          <h3 className="text-3xl font-black tracking-tight text-black">Actions</h3>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
+      <Separator className="my-6" />
 
-        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+      <div>
+        <h3 className="text-lg font-medium mb-4">Quick Actions</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {summary.quickActions.map((action) => (
             <QuickActionCard key={action.id} action={action} />
           ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 }

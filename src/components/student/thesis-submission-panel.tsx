@@ -7,6 +7,18 @@ import {
   thesisSubmissionSchema,
   uploadedPdfDocumentSchema,
 } from "@/lib/theses/schemas";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 type ThesisDocument = {
   id: string;
@@ -137,131 +149,131 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
   }
 
   return (
-    <main className="space-y-12">
-      <section className="border-b-2 border-gray-200 pb-10">
-        <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-          Thesis
-        </p>
-        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              Submit Thesis
-            </h1>
-            <p className="mt-3 max-w-3xl text-xl font-medium leading-relaxed text-black/80">
-              Upload the thesis PDF for examination. New submissions create a new version.
-            </p>
-          </div>
-          {thesis ? (
-            <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black uppercase tracking-wider text-black">
-              {thesis.status.replaceAll("_", " ")}
-            </span>
-          ) : null}
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Submit Thesis</h2>
+          <p className="text-muted-foreground mt-2">
+            Upload the thesis PDF for examination. New submissions create a new version.
+          </p>
         </div>
-      </section>
+        {thesis && (
+          <Badge variant="outline" className="uppercase">
+            {thesis.status.replaceAll("_", " ")}
+          </Badge>
+        )}
+      </div>
 
-      {error ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
           {error}
         </div>
-      ) : null}
-      {message ? (
-        <div className="rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+      )}
+      {message && (
+        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
           {message}
         </div>
-      ) : null}
+      )}
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-[24px] border border-gray-300 bg-white p-6"
-        >
-          <h2 className="text-3xl font-black tracking-tight text-black">
-            {thesis ? "Submit Revision" : "New Submission"}
-          </h2>
-          <div className="mt-5 grid gap-4">
-            <label className="space-y-2 text-base text-black">
-              <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Thesis title</span>
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                className="w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                required
-              />
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Abstract</span>
-              <textarea
-                value={abstract}
-                onChange={(event) => setAbstract(event.target.value)}
-                className="min-h-40 w-full rounded-[0.75em] border-2 border-black bg-white px-5 py-4 font-bold text-black outline-none focus:bg-gray-50"
-                required
-              />
-            </label>
-            <label className="space-y-2 text-base text-black">
-              <span className="ml-1 text-xs font-black uppercase tracking-widest text-black/40">Thesis PDF</span>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileChange}
-                className="block w-full text-base text-black file:mr-4 file:rounded-[0.75em] file:border-2 file:border-black file:bg-black file:px-4 file:py-3 file:font-bold file:text-white"
-                required
-              />
-            </label>
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="group mt-6 inline-block cursor-pointer rounded-[0.75em] bg-black text-base font-bold disabled:opacity-60"
-          >
-            <span className="block -translate-y-[0.2em] rounded-[0.75em] border-2 border-black bg-black px-5 py-3 text-white transition-transform duration-100 ease-out group-hover:-translate-y-[0.33em] group-active:translate-y-0">
-              {isSubmitting ? "Submitting..." : thesis ? "Submit revision" : "Submit thesis"}
-            </span>
-          </button>
-        </form>
+      <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {thesis ? "Submit Revision" : "New Submission"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Thesis title</Label>
+                  <Input
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Abstract</Label>
+                  <Textarea
+                    value={abstract}
+                    onChange={(event) => setAbstract(event.target.value)}
+                    className="min-h-[160px]"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Thesis PDF</Label>
+                  <Input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileChange}
+                    required
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                {isSubmitting ? "Submitting..." : thesis ? "Submit revision" : "Submit thesis"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-        <section className="rounded-[24px] border border-gray-300 bg-white p-6">
-          <h2 className="text-3xl font-black tracking-tight text-black">Thesis record</h2>
-          {!thesis ? (
-            <p className="mt-4 rounded-[1.5rem] border border-dashed border-gray-300 px-4 py-6 text-base font-bold text-black/40">
-              No thesis has been submitted yet.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              <div className="rounded-[24px] border border-gray-300 bg-white p-5">
-                <p className="text-base font-black uppercase tracking-[0.18em] text-black/40">
-                  Thesis ID
-                </p>
-                <p className="mt-1 break-all text-base font-bold text-black/70">{thesis.id}</p>
-                <h3 className="mt-4 text-2xl font-black tracking-tight text-black">{thesis.title}</h3>
-                <p className="mt-2 whitespace-pre-wrap text-base font-medium leading-6 text-black/80">
-                  {thesis.abstract}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Thesis record</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!thesis ? (
+              <div className="rounded-md border border-dashed p-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No thesis has been submitted yet.
                 </p>
               </div>
-              {thesis.documents.map((document) => (
-                <article
-                  key={document.id}
-                  className="rounded-[24px] border border-gray-300 bg-white p-5"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-black tracking-tight text-black">{document.fileName}</p>
-                      <p className="mt-1 text-base font-black uppercase tracking-[0.18em] text-black/40">
-                        Version {document.version}
+            ) : (
+              <div className="space-y-6">
+                <div className="rounded-md border p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                    Thesis ID
+                  </p>
+                  <p className="break-all text-sm font-medium mb-3">{thesis.id}</p>
+                  <h3 className="text-lg font-bold">{thesis.title}</h3>
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                    {thesis.abstract}
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  {thesis.documents.map((document) => (
+                    <div
+                      key={document.id}
+                      className="rounded-md border p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                          <p className="font-semibold">{document.fileName}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                            Version {document.version}
+                          </p>
+                        </div>
+                        <Badge variant={document.isCurrentVersion ? "default" : "secondary"}>
+                          {document.isCurrentVersion ? "Current" : "Previous"}
+                        </Badge>
+                      </div>
+                      <p className="break-all text-xs text-muted-foreground">
+                        {document.storagePath}
                       </p>
                     </div>
-                    <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-base font-black text-black">
-                      {document.isCurrentVersion ? "Current" : "Previous"}
-                    </span>
-                  </div>
-                  <p className="mt-3 break-all text-base font-medium text-black/80">
-                    {document.storagePath}
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </section>
-    </main>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

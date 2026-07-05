@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import "@/app/globals.css";
 import { SessionActivityTracker } from "@/components/auth/session-activity-tracker";
+import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "PGSMS",
@@ -26,10 +24,10 @@ type RootLayoutProps = {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
-      <body className={montserrat.className}>
+    <html lang="en" className={cn("font-sans antialiased", inter.variable)}>
+      <body className="min-h-screen bg-background text-foreground">
         <SessionActivityTracker />
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
   );

@@ -2,42 +2,36 @@ import type {
   ProgressStepperStep,
   StageProgressSummary,
 } from "@/lib/students/progress";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 function getStepStateClassName(state: ProgressStepperStep["state"]) {
   switch (state) {
     case "complete":
-      return "border-emerald-500 bg-emerald-50";
+      return "border-green-500/50 bg-green-500/10";
     case "current":
-      return "border-sky-500 bg-sky-50";
+      return "border-blue-500/50 bg-blue-500/10";
     default:
-      return "border-gray-300 bg-stone-50";
+      return "bg-muted/50";
   }
 }
 
-function getStepBadgeClassName(state: ProgressStepperStep["state"]) {
+function getStepBadgeVariant(state: ProgressStepperStep["state"]) {
   switch (state) {
     case "complete":
-      return "border-emerald-600 bg-emerald-100 text-emerald-900";
+      return "default";
     case "current":
-      return "border-sky-600 bg-sky-100 text-sky-900";
+      return "secondary";
     default:
-      return "border-gray-400 bg-stone-100 text-stone-700";
+      return "outline";
   }
-}
-
-function getStageCardClassName(percentage: number) {
-  if (percentage >= 100) {
-    return "border-2 border-black bg-white";
-  }
-  return "border-gray-300 bg-white";
-}
-
-function formatDateLabel(value: string | Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function StageCard({
@@ -50,33 +44,30 @@ function StageCard({
   const isComplete = value.completionPercentage >= 100;
 
   return (
-    <article
-      className={`group relative overflow-hidden rounded-[24px] border p-6 transition-all hover:bg-black ${getStageCardClassName(
-        value.completionPercentage,
-      )}`}
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
+    <Card className={isComplete ? "border-green-500/50 bg-green-500/5" : ""}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
           {label}
-        </p>
-        <span className="rounded-full border-2 border-black bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-black transition-colors group-hover:border-white group-hover:bg-transparent group-hover:text-white">
+        </CardTitle>
+        <Badge variant={isComplete ? "default" : "secondary"}>
           {isComplete ? "Complete" : "In Progress"}
-        </span>
-      </div>
-      <p className="mt-4 text-5xl font-black tracking-tighter text-black transition-colors group-hover:text-white sm:text-6xl">
-        {value.completionPercentage}%
-      </p>
-      <p className="mt-4 text-base font-medium leading-relaxed text-black/70 transition-colors group-hover:text-white/80">
-        <span className="font-black text-black transition-colors group-hover:text-white">
-          {value.approvedVersions}
-        </span>{" "}
-        approved ·{" "}
-        <span className="font-black text-black transition-colors group-hover:text-white">
-          {value.totalSubmittedVersions}
-        </span>{" "}
-        submissions
-      </p>
-    </article>
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold">{value.completionPercentage}%</div>
+        <Progress value={value.completionPercentage} className="mt-3 mb-2 h-2" />
+        <p className="text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground">
+            {value.approvedVersions}
+          </span>{" "}
+          approved ·{" "}
+          <span className="font-semibold text-foreground">
+            {value.totalSubmittedVersions}
+          </span>{" "}
+          submissions
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -106,122 +97,117 @@ export function StudentProgressDashboard({
   };
 }) {
   return (
-    <div className="space-y-12">
-      <header className="border-b-2 border-gray-200 pb-10">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <p className="text-base font-black uppercase tracking-[0.3em] text-black/40">
-              Milestones
-            </p>
-            <h2 className="text-5xl font-black tracking-tighter text-black sm:text-6xl">
-              {progress.student.displayName}
-            </h2>
-            <p className="max-w-2xl text-xl font-medium leading-relaxed text-black/80">
-              {progress.student.programType} candidate
-            </p>
-          </div>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      <div className="flex items-center justify-between space-y-2 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{progress.student.displayName}</h2>
+          <p className="text-muted-foreground mt-2">
+            {progress.student.programType} candidate
+          </p>
         </div>
-      </header>
+      </div>
 
-      <section className="grid gap-6 sm:grid-cols-3">
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Current Milestone
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {progress.currentMilestone}
-          </p>
-        </div>
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Estimated Completion
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {formatDateLabel(progress.estimatedCompletionDate)}
-          </p>
-        </div>
-        <div className="group rounded-[24px] border border-gray-300 bg-white px-6 py-6 transition-all hover:bg-black">
-          <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/40 transition-colors group-hover:text-white/70">
-            Document Approvals
-          </p>
-          <p className="mt-3 text-2xl font-black tracking-tight text-black transition-colors group-hover:text-white">
-            {progress.counts.approvedDocumentVersions} / {progress.counts.totalDocumentVersions}
-          </p>
-        </div>
-      </section>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Current Milestone
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{progress.currentMilestone}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Estimated Completion
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(progress.estimatedCompletionDate))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Document Approvals
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {progress.counts.approvedDocumentVersions} / {progress.counts.totalDocumentVersions}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StageCard label="Proposal" value={progress.stageProgress.proposal} />
         <StageCard label="Ethics" value={progress.stageProgress.ethics} />
-        <StageCard
-          label="Data Collection"
-          value={progress.stageProgress.dataCollection}
-        />
+        <StageCard label="Data Collection" value={progress.stageProgress.dataCollection} />
         <StageCard label="Thesis" value={progress.stageProgress.thesis} />
-      </section>
+      </div>
 
-      <section className="rounded-[24px] border border-gray-300 bg-white p-6 sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-base font-black uppercase tracking-[0.2em] text-black/40">
-                Lifecycle Stepper
-              </p>
-              <h3 className="text-3xl font-black tracking-tight text-black">
-                Sequential milestone tracking
-              </h3>
-            </div>
-            <div className="rounded-full border-2 border-black bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-black">
-              Review phase
-            </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Lifecycle Stepper</CardTitle>
+            <CardDescription>
+              Sequential milestone tracking
+            </CardDescription>
           </div>
-
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <Badge variant="outline" className="uppercase">
+            Review phase
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 lg:grid-cols-2">
             {progress.stepper.map((step, index) => {
               const isComplete = step.state === "complete";
               const isCurrent = step.state === "current";
 
               return (
-                <article
+                <div
                   key={step.id}
-                  className={`group relative rounded-[24px] border p-6 transition-all hover:-translate-y-0.5 ${getStepStateClassName(
+                  className={`rounded-lg border p-6 transition-all ${getStepStateClassName(
                     step.state,
                   )}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="text-[14px] font-black uppercase tracking-[0.2em] text-black/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       Milestone {index + 1}
                     </p>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-wider ${getStepBadgeClassName(
-                        step.state,
-                      )}`}
-                    >
+                    <Badge variant={getStepBadgeVariant(step.state)}>
                       {isComplete ? "Verified" : isCurrent ? "Current" : "Upcoming"}
-                    </span>
+                    </Badge>
                   </div>
-                  <h4 className="mt-3 text-2xl font-black tracking-tight text-black sm:text-3xl">
+                  <h4 className="text-xl font-bold mb-2">
                     {step.label}
                   </h4>
-                  <p className="mt-4 text-base font-medium leading-relaxed text-black/75">
+                  <p className="text-sm text-muted-foreground">
                     {step.description}
                   </p>
-                </article>
+                </div>
               );
             })}
           </div>
 
           {progress.examinerFeedbackReleased ? (
-            <div className="mt-8 rounded-2xl border-2 border-black bg-white px-6 py-4 text-base font-bold text-black shadow-[4px_4px_0px_black]">
+            <div className="mt-8 rounded-md border border-green-500/50 bg-green-500/10 p-4 text-sm font-medium text-green-700 dark:text-green-400">
               Examination result released. The thesis lifecycle has been officially finalized and archived.
             </div>
           ) : (
-            <div className="mt-8 rounded-[24px] border border-dashed border-gray-300 bg-white px-6 py-5">
-              <p className="text-base font-medium text-black/70">
+            <div className="mt-8 rounded-md border border-dashed p-4 text-center">
+              <p className="text-sm text-muted-foreground">
                 Examiner feedback will be released after administrative validation.
               </p>
             </div>
           )}
-      </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }

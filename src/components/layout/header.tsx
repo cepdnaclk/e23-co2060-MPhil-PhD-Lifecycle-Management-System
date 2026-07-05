@@ -1,28 +1,43 @@
 "use client";
 
-import Link from "next/link";
-import { Montserrat } from "next/font/google";
-import styles from "@/app/home-page.module.css";
+import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
+type HeaderProps = React.HTMLAttributes<HTMLElement> & {
+  fixed?: boolean
+}
 
-export function Header() {
+export function Header({ className, fixed, children, ...props }: HeaderProps) {
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    const onScroll = () => {
+      setOffset(document.body.scrollTop || document.documentElement.scrollTop)
+    }
+    document.addEventListener('scroll', onScroll, { passive: true })
+    return () => document.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-      <nav className="flex w-full items-center justify-end px-5 py-5 sm:px-8 md:px-10 md:py-6">
-        <Link
-          href="/login"
-          className={styles.signInButton}
-        >
-          <span className={`${styles.signInButtonLabel} ${montserrat.className}`}>
-            Sign In
-          </span>
-        </Link>
-      </nav>
+    <header
+      className={cn(
+        'z-50 h-16',
+        fixed && 'header-fixed peer/header sticky top-0 w-[inherit]',
+        offset > 10 && fixed ? 'shadow' : 'shadow-none',
+        className
+      )}
+      {...props}
+    >
+      <div
+        className={cn(
+          'relative flex h-full items-center gap-3 p-4 sm:gap-4',
+          offset > 10 &&
+            fixed &&
+            'after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg'
+        )}
+      >
+        {children}
+      </div>
     </header>
-  );
+  )
 }
