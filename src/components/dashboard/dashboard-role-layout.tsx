@@ -147,6 +147,7 @@ function getNavItems(role: DashboardRole) {
     case "student":
       return [
         { href: "/dashboard/student/proposals", label: "Proposals", icon: FileText },
+        { href: "/dashboard/student/ethics", label: "Ethics Approval", icon: ClipboardCheck },
         { href: "/dashboard/student/progress-reports", label: "Progress Reports", icon: TrendingUp },
         { href: "/dashboard/student/progress", label: "Milestones", icon: Milestone },
         { href: "/dashboard/student/documents", label: "Documents", icon: FolderOpen },
@@ -165,11 +166,13 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/admin/users", label: "Manage Users", icon: UserCog },
         { href: "/dashboard/admin/applications", label: "Applications", icon: Inbox },
         { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/admin/ethics", label: "Ethics Approvals", icon: ClipboardCheck },
         { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments", icon: UserCheck },
         { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments", icon: UserSearch },
         { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas", icon: CalendarDays },
         { href: "/dashboard/admin/theses", label: "Finalize Theses", icon: GraduationCap },
         { href: "/dashboard/admin/documents", label: "Documents", icon: FolderOpen },
+        { href: "/dashboard/admin/notification-log", label: "Notification Log", icon: Bell },
       ];
     case "examiner":
       return [

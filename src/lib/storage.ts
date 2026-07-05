@@ -10,6 +10,7 @@ export { MAX_APPLICATION_UPLOAD_SIZE_BYTES, MAX_STORAGE_FILE_SIZE_BYTES };
 export const PROTECTED_STORAGE_ROOTS = [
   "applications",
   "proposals",
+  "ethics-approvals",
   "theses",
   "progress-reports",
   "corrections",
@@ -117,6 +118,16 @@ export function buildProposalStoragePath(
 ) {
   return normalizeStoragePath(
     `proposals/${studentId}/${version}/${sanitizeFileName(fileName)}`,
+  );
+}
+
+export function buildEthicsApprovalStoragePath(
+  studentId: string,
+  approvalId: string,
+  fileName: string,
+) {
+  return normalizeStoragePath(
+    `ethics-approvals/${studentId}/${approvalId}/${sanitizeFileName(fileName)}`,
   );
 }
 

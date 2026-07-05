@@ -1,5 +1,6 @@
 import {
   DocumentType,
+  EthicsApprovalStatus,
   ProposalStatus,
   ThesisStatus,
   type Prisma,
@@ -52,6 +53,7 @@ export type DocumentListItem = {
   studentId: string | null;
   applicationId: string | null;
   researchProposalId: string | null;
+  ethicsApprovalId: string | null;
   progressReportId: string | null;
   thesisId: string | null;
   correctionDocumentId: string | null;
@@ -62,6 +64,7 @@ export type DocumentListItem = {
 const REPOSITORY_DOCUMENT_TYPES = [
   DocumentType.APPLICATION_ATTACHMENT,
   DocumentType.PROPOSAL,
+  DocumentType.ETHICS_APPROVAL,
   DocumentType.THESIS,
   DocumentType.PROGRESS_REPORT,
   DocumentType.CORRECTION,
@@ -75,6 +78,10 @@ const proposalStatusTags = new Set<string>(
 
 const thesisStatusTags = new Set<string>(
   Object.values(ThesisStatus).map((status) => status.toLowerCase()),
+);
+
+const ethicsStatusTags = new Set<string>(
+  Object.values(EthicsApprovalStatus).map((status) => status.toLowerCase()),
 );
 
 // ---------------------------------------------------------------------------
@@ -187,6 +194,7 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
     studentId: true;
     applicationId: true;
     researchProposalId: true;
+    ethicsApprovalId: true;
     progressReportId: true;
     thesisId: true;
     correctionDocumentId: true;
@@ -196,6 +204,13 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
       select: {
         title: true;
         abstract: true;
+        status: true;
+      };
+    };
+    ethicsApproval: {
+      select: {
+        title: true;
+        summary: true;
         status: true;
       };
     };
@@ -277,6 +292,14 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
     return { documentType: DocumentType.PROPOSAL };
   }
 
+  if (
+    normalizedTag === "ethics" ||
+    normalizedTag === "ethics-approval" ||
+    normalizedTag === "ethics-approvals"
+  ) {
+    return { documentType: DocumentType.ETHICS_APPROVAL };
+  }
+
   if (normalizedTag === "application" || normalizedTag === "applications") {
     return { documentType: DocumentType.APPLICATION_ATTACHMENT };
   }
@@ -338,6 +361,16 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
       thesis: {
         is: {
           status: tagEnumValue as ThesisStatus,
+        },
+      },
+    };
+  }
+
+  if (ethicsStatusTags.has(normalizedTag)) {
+    return {
+      ethicsApproval: {
+        is: {
+          status: tagEnumValue as EthicsApprovalStatus,
         },
       },
     };
@@ -443,6 +476,26 @@ function buildTextFilter(q?: string | null): Prisma.DocumentWhereInput {
         },
       },
       {
+        ethicsApproval: {
+          is: {
+            OR: [
+              {
+                title: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+              {
+                summary: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
         application: {
           is: {
             OR: [
@@ -529,6 +582,26 @@ function buildTextFilter(q?: string | null): Prisma.DocumentWhereInput {
         },
       },
       {
+        ethicsApproval: {
+          is: {
+            OR: [
+              {
+                title: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+              {
+                summary: {
+                  contains: q,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
         correctionDocument: {
           is: {
             OR: [
@@ -569,6 +642,12 @@ function mapDocumentTags(document: RepositoryDocumentRecord) {
     tags.add(document.researchProposal.status.toLowerCase().replace(/_/g, "-"));
   }
 
+  if (document.ethicsApproval) {
+    tags.add("ethics");
+    tags.add("ethics-approval");
+    tags.add(document.ethicsApproval.status.toLowerCase().replace(/_/g, "-"));
+  }
+
   if (document.application) {
     tags.add("application");
     tags.add(document.application.status.toLowerCase().replace(/_/g, "-"));
@@ -607,6 +686,7 @@ function mapDocumentListItem(document: RepositoryDocumentRecord): DocumentListIt
     ? `Application Attachment - ${document.application.applicantName}`
     : null;
   const proposalTitle = document.researchProposal?.title ?? null;
+  const ethicsTitle = document.ethicsApproval?.title ?? null;
   const thesisTitle = document.thesis?.title ?? null;
   const progressTitle = document.progressReport
     ? `Progress Report ${document.progressReport.periodLabel}`
@@ -620,6 +700,7 @@ function mapDocumentListItem(document: RepositoryDocumentRecord): DocumentListIt
     document.application?.statementOfPurpose ??
     null;
   const proposalSummary = document.researchProposal?.abstract ?? null;
+  const ethicsSummary = document.ethicsApproval?.summary ?? null;
   const thesisSummary = document.thesis?.abstract ?? null;
   const progressSummary = document.progressReport?.narrative ?? null;
   const correctionSummary = document.correctionDocument?.description ?? null;
@@ -628,10 +709,17 @@ function mapDocumentListItem(document: RepositoryDocumentRecord): DocumentListIt
     id: document.id,
     documentType: document.documentType,
     fileName: document.fileName,
-    title: applicationTitle ?? proposalTitle ?? thesisTitle ?? progressTitle ?? correctionTitle,
+    title:
+      applicationTitle ??
+      proposalTitle ??
+      ethicsTitle ??
+      thesisTitle ??
+      progressTitle ??
+      correctionTitle,
     summary:
       applicationSummary ??
       proposalSummary ??
+      ethicsSummary ??
       thesisSummary ??
       progressSummary ??
       correctionSummary,
@@ -644,6 +732,7 @@ function mapDocumentListItem(document: RepositoryDocumentRecord): DocumentListIt
     studentId: document.studentId,
     applicationId: document.applicationId,
     researchProposalId: document.researchProposalId,
+    ethicsApprovalId: document.ethicsApprovalId,
     progressReportId: document.progressReportId,
     thesisId: document.thesisId,
     correctionDocumentId: document.correctionDocumentId,
@@ -749,6 +838,7 @@ export async function searchDocuments(
       studentId: true,
       applicationId: true,
       researchProposalId: true,
+      ethicsApprovalId: true,
       progressReportId: true,
       thesisId: true,
       correctionDocumentId: true,
@@ -758,6 +848,13 @@ export async function searchDocuments(
         select: {
           title: true,
           abstract: true,
+          status: true,
+        },
+      },
+      ethicsApproval: {
+        select: {
+          title: true,
+          summary: true,
           status: true,
         },
       },

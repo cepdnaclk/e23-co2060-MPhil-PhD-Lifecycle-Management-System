@@ -123,7 +123,7 @@ export function DashboardNotificationsMenu({ trigger }: { trigger?: React.ReactN
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         {trigger || (
-          <Button variant="outline" className="relative">
+          <Button variant="outline" className="relative" aria-label="Notifications">
             <Bell className="h-4 w-4" />
             {visibleUnreadCount > 0 && (
               <Badge variant="destructive" className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full p-0">

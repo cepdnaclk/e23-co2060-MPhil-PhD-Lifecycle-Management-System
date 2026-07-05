@@ -66,9 +66,12 @@ function QuickActionCard({ action }: { action: DashboardQuickAction }) {
 
 export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
   return (
-    <div className="flex h-[400px] shrink-0 items-center justify-center rounded-md border border-dashed">
+    <div
+      data-testid="dashboard-empty-state"
+      className="flex h-[400px] shrink-0 items-center justify-center rounded-md border border-dashed"
+    >
       <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-        <h3 className="mt-4 text-lg font-semibold">No data available</h3>
+        <h3 className="mt-4 text-lg font-semibold">Nothing to show yet</h3>
         <p className="mb-4 mt-2 text-sm text-muted-foreground">
           This {roleLabel} dashboard will populate when workflow data is available.
         </p>
@@ -79,7 +82,10 @@ export function DashboardEmptyState({ roleLabel }: { roleLabel: string }) {
 
 export function DashboardSkeletonGrid() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div
+      data-testid="dashboard-skeleton-grid"
+      className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+    >
       {Array.from({ length: 4 }).map((_, index) => (
         <Card key={index} className="animate-pulse">
           <CardHeader className="space-y-0 pb-2">

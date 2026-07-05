@@ -27,6 +27,8 @@ vi.mock("@supabase/supabase-js", () => ({
 }));
 
 vi.mock("@/lib/email", () => ({
+  notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
+  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalStatusChange: vi.fn().mockResolvedValue({
     success: true,
   }),

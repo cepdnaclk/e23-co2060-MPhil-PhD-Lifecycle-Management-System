@@ -12,6 +12,8 @@
  * ─────────────────
  *  APPLICATION_STATUS_CHANGED
  *  PROPOSAL_STATUS_CHANGED
+ *  ETHICS_APPROVAL_SUBMITTED
+ *  ETHICS_APPROVAL_STATUS_CHANGED
  *  PROGRESS_REPORT_SUBMITTED   ← SLA: supervisor notified within 1 h (REQ-FN-019)
  *  REGISTRATION_EXPIRY_APPROACHING ← 14-day advance (REQ-FN-018)
  *  VIVA_SCHEDULED
@@ -22,6 +24,8 @@
 import { NotificationEvent } from "@prisma/client";
 
 import {
+  notifyEthicsApprovalStatusChanged,
+  notifyEthicsApprovalSubmittedToAdministrator,
   notifyApplicationStatusChanged,
   notifyCorrectionSubmittedToAdministrator,
   notifyProgressReportSubmitted,
@@ -53,6 +57,27 @@ export type ProposalStatusChangedPayload = {
   proposalTitle: string;
   statusLabel: string;
   feedback?: string;
+};
+
+export type EthicsApprovalSubmittedPayload = {
+  event: "ETHICS_APPROVAL_SUBMITTED";
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  studentName: string;
+  studentId: string;
+  applicationTitle: string;
+};
+
+export type EthicsApprovalStatusChangedPayload = {
+  event: "ETHICS_APPROVAL_STATUS_CHANGED";
+  recipientUserId: string;
+  to: string;
+  studentName: string;
+  studentId: string;
+  applicationTitle: string;
+  statusLabel: string;
+  reviewNotes?: string;
 };
 
 export type ProgressReportSubmittedPayload = {
@@ -105,6 +130,8 @@ export type CorrectionsRequiredPayload = {
 export type NotificationPayload =
   | ApplicationStatusChangedPayload
   | ProposalStatusChangedPayload
+  | EthicsApprovalSubmittedPayload
+  | EthicsApprovalStatusChangedPayload
   | ProgressReportSubmittedPayload
   | RegistrationExpiryPayload
   | ThesisArchivedPayload
@@ -178,6 +205,45 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         NotificationEvent.PROPOSAL_STATUS_CHANGED,
         `Proposal status updated: ${payload.statusLabel}`,
         `Your proposal "${payload.proposalTitle}" is now ${payload.statusLabel}.`,
+      );
+      break;
+    }
+
+    case "ETHICS_APPROVAL_SUBMITTED": {
+      await notifyEthicsApprovalSubmittedToAdministrator({
+        recipientUserId: payload.recipientUserId,
+        to: payload.to,
+        administratorName: payload.administratorName,
+        studentName: payload.studentName,
+        applicationTitle: payload.applicationTitle,
+      });
+
+      await writeInAppNotification(
+        payload.recipientUserId,
+        payload.studentId,
+        NotificationEvent.ETHICS_APPROVAL_SUBMITTED,
+        `Ethics approval submitted: ${payload.applicationTitle}`,
+        `${payload.studentName} submitted an ethics approval application for review.`,
+      );
+      break;
+    }
+
+    case "ETHICS_APPROVAL_STATUS_CHANGED": {
+      await notifyEthicsApprovalStatusChanged({
+        recipientUserId: payload.recipientUserId,
+        to: payload.to,
+        studentName: payload.studentName,
+        applicationTitle: payload.applicationTitle,
+        statusLabel: payload.statusLabel,
+        reviewNotes: payload.reviewNotes,
+      });
+
+      await writeInAppNotification(
+        payload.recipientUserId,
+        payload.studentId,
+        NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
+        `Ethics approval status updated: ${payload.statusLabel}`,
+        `Your ethics approval application "${payload.applicationTitle}" is now ${payload.statusLabel}.`,
       );
       break;
     }

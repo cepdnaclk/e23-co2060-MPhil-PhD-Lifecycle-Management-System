@@ -19,6 +19,8 @@ vi.mock("@/lib/firebase/admin", () => ({
 }));
 
 vi.mock("@/lib/email", () => ({
+  notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
+  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyWelcomeAccountCreated: vi.fn().mockResolvedValue({ success: true }),
 }));
 

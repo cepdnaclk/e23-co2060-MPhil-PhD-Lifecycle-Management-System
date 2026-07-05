@@ -68,7 +68,7 @@ describe("DashboardNotificationsMenu", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Alice has submitted a progress report/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /mark read/i }));
+    await user.click(screen.getByRole("button", { name: /mark all read/i }));
 
     expect(fetchMock).toHaveBeenLastCalledWith("/api/notifications", {
       method: "PATCH",
@@ -76,7 +76,7 @@ describe("DashboardNotificationsMenu", () => {
     });
 
     await waitFor(() => {
-      expect(menuButton).toHaveTextContent("Clear");
+      expect(menuButton).not.toHaveTextContent("1");
     });
   });
 });

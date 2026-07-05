@@ -49,6 +49,13 @@ enum ThesisStatus {
   CLOSED
 }
 
+enum EthicsApprovalStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum VivaOutcome {
   PASS
   MINOR_CORRECTIONS
@@ -66,6 +73,7 @@ enum AcademicStatus {
 enum DocumentType {
   APPLICATION_ATTACHMENT
   PROPOSAL
+  ETHICS_APPROVAL
   THESIS
   PROGRESS_REPORT
   CORRECTION
@@ -74,6 +82,8 @@ enum DocumentType {
 enum NotificationEvent {
   APPLICATION_STATUS_CHANGED
   PROPOSAL_STATUS_CHANGED
+  ETHICS_APPROVAL_SUBMITTED
+  ETHICS_APPROVAL_STATUS_CHANGED
   PROGRESS_REPORT_SUBMITTED
   PROGRESS_REPORT_SIGNED_OFF
   THESIS_DOWNLOADED
@@ -129,6 +139,7 @@ model Student {
   application           Application?
   registrations         Registration[]
   researchProposals     ResearchProposal[]
+  ethicsApprovals       EthicsApproval[]
   progressReports       ProgressReport[]
   theses                Thesis[]
   supervisorAssignments SupervisorAssignment[]
@@ -178,6 +189,7 @@ model Administrator {
   department            String?
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
   approvals             CorrectionDocument[]
+  ethicsReviews         EthicsApproval[]      @relation("EthicsApprovalsReviewedBy")
   supervisorAssignments SupervisorAssignment[] @relation("SupervisorAssignmentsAssignedBy")
   thesisExaminerAssignments ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
   createdAt             DateTime               @default(now())
@@ -254,6 +266,27 @@ model EvaluationForm {
 
   @@unique([researchProposalId, supervisorId])
   @@map("evaluation_forms")
+}
+
+model EthicsApproval {
+  id             String               @id @default(cuid())
+  studentId      String
+  title          String
+  summary        String
+  status         EthicsApprovalStatus @default(SUBMITTED)
+  reviewNotes    String?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  isArchived     Boolean              @default(false)
+  student        Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reviewedBy     Administrator?       @relation("EthicsApprovalsReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  documents      Document[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([studentId, status])
+  @@index([status, createdAt])
+  @@map("ethics_approvals")
 }
 
 model SupervisorAssignment {
@@ -443,12 +476,14 @@ model Document {
   applicationId        String?
   studentId            String?
   researchProposalId   String?
+  ethicsApprovalId     String?
   progressReportId     String?
   thesisId             String?
   correctionDocumentId String?
   application          Application?        @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   student              Student?            @relation(fields: [studentId], references: [id], onDelete: SetNull)
   researchProposal     ResearchProposal?   @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
+  ethicsApproval       EthicsApproval?     @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
   progressReport       ProgressReport?     @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
   thesis               Thesis?             @relation(fields: [thesisId], references: [id], onDelete: SetNull)
   correctionDocument   CorrectionDocument? @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
@@ -457,6 +492,7 @@ model Document {
 
   @@index([documentType, isDeleted])
   @@index([researchProposalId, version])
+  @@index([ethicsApprovalId])
   @@index([thesisId, version])
   @@map("documents")
 }

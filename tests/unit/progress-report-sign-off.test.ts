@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
+  notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
+  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProgressReportSignedOff: vi.fn().mockResolvedValue({
     success: true,
   }),

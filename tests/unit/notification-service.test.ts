@@ -8,6 +8,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/email", () => ({
   notifyApplicationStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalStatusChange: vi.fn().mockResolvedValue({ success: true }),
+  notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({
+    success: true,
+  }),
+  notifyEthicsApprovalStatusChanged: vi.fn().mockResolvedValue({ success: true }),
   notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
   notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
@@ -34,6 +38,8 @@ import {
   notifyApplicationStatusChanged,
   notifyProgressReportSubmitted,
   notifyProposalStatusChange,
+  notifyEthicsApprovalStatusChanged,
+  notifyEthicsApprovalSubmittedToAdministrator,
   notifyRegistrationExpiry,
   notifyThesisArchived,
   notifyVivaScheduled,
@@ -98,6 +104,65 @@ describe("NotificationService — event-to-template mapping", () => {
       expect.objectContaining({
         supervisorName: "Dr. Smith",
         periodLabel: "Q1 2026",
+      }),
+    );
+  });
+
+  it("dispatches ETHICS_APPROVAL_SUBMITTED to administrators", async () => {
+    await notify({
+      event: "ETHICS_APPROVAL_SUBMITTED",
+      recipientUserId: "admin-user-1",
+      to: "admin@example.com",
+      administratorName: "Admin One",
+      studentName: "Alice",
+      studentId: "student-1",
+      applicationTitle: "Interview ethics",
+    });
+
+    expect(notifyEthicsApprovalSubmittedToAdministrator).toHaveBeenCalledOnce();
+    expect(notifyEthicsApprovalSubmittedToAdministrator).toHaveBeenCalledWith(
+      expect.objectContaining({
+        administratorName: "Admin One",
+        applicationTitle: "Interview ethics",
+      }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "admin-user-1",
+          studentId: "student-1",
+          event: NotificationEvent.ETHICS_APPROVAL_SUBMITTED,
+        }),
+      }),
+    );
+  });
+
+  it("dispatches ETHICS_APPROVAL_STATUS_CHANGED to students", async () => {
+    await notify({
+      event: "ETHICS_APPROVAL_STATUS_CHANGED",
+      recipientUserId: "user-student-1",
+      to: "student@example.com",
+      studentName: "Alice",
+      studentId: "student-1",
+      applicationTitle: "Interview ethics",
+      statusLabel: "APPROVED",
+      reviewNotes: "Approved by committee.",
+    });
+
+    expect(notifyEthicsApprovalStatusChanged).toHaveBeenCalledOnce();
+    expect(notifyEthicsApprovalStatusChanged).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicationTitle: "Interview ethics",
+        statusLabel: "APPROVED",
+      }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          recipientId: "user-student-1",
+          studentId: "student-1",
+          event: NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
+        }),
       }),
     );
   });

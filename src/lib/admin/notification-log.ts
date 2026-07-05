@@ -54,6 +54,45 @@ export type NotificationLogPage = {
   pageCount: number;
 };
 
+function escapeCsvField(value: string | number | null) {
+  const text = value === null ? "" : String(value);
+
+  if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+    return `"${text.replaceAll("\"", "\"\"")}"`;
+  }
+
+  return text;
+}
+
+export function buildNotificationLogCsv(logs: NotificationLogItem[]) {
+  const headers = [
+    "Timestamp",
+    "Recipient ID",
+    "Recipient Name",
+    "Recipient Email",
+    "Event",
+    "Subject",
+    "Delivery Status",
+    "Failure Reason",
+  ];
+
+  const rows = logs.map((log) => [
+    log.createdAt.toISOString(),
+    log.recipientId,
+    log.recipientName,
+    log.recipientEmail,
+    log.event,
+    log.subject,
+    log.deliveryStatus,
+    log.failureReason,
+  ]);
+
+  return [
+    headers.join(","),
+    ...rows.map((row) => row.map(escapeCsvField).join(",")),
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------

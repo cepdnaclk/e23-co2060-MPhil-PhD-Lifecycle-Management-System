@@ -129,6 +129,7 @@ describe("searchDocuments", () => {
             in: [
               "APPLICATION_ATTACHMENT",
               "PROPOSAL",
+              "ETHICS_APPROVAL",
               "THESIS",
               "PROGRESS_REPORT",
               "CORRECTION",

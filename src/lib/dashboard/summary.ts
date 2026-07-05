@@ -1,6 +1,7 @@
 import {
   AcademicStatus,
   ApplicationStatus,
+  EthicsApprovalStatus,
   NotificationDeliveryStatus,
   ProposalStatus,
   RegistrationStatus,
@@ -69,6 +70,12 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           label: "View Proposal Status",
           description: "Check your current proposal status.",
           href: "/dashboard/student/proposals",
+        },
+        {
+          id: "submit-ethics-approval",
+          label: "Submit Ethics Approval",
+          description: "Upload ethics clearance after proposal approval.",
+          href: "/dashboard/student/ethics",
         },
         {
           id: "manage-thesis-documents",
@@ -146,6 +153,12 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/admin/proposals/evaluate",
         },
         {
+          id: "review-ethics-approvals",
+          label: "Review Ethics Approvals",
+          description: "Approve or reject student ethics submissions.",
+          href: "/dashboard/admin/ethics",
+        },
+        {
           id: "manage-assignments",
           label: "Manage Assignments",
           description: "Assign supervisors and examiners.",
@@ -210,6 +223,7 @@ async function buildStudentSummary(
   const [
     activeRegistrations,
     activeProposalReviews,
+    activeEthicsApprovals,
     overdueReports,
     openThesisMilestones,
   ] = await Promise.all([
@@ -224,6 +238,18 @@ async function buildStudentSummary(
         studentId: student.id,
         status: {
           in: [ProposalStatus.SUBMITTED, ProposalStatus.UNDER_REVIEW],
+        },
+      },
+    }),
+    prisma.ethicsApproval.count({
+      where: {
+        studentId: student.id,
+        isArchived: false,
+        status: {
+          in: [
+            EthicsApprovalStatus.SUBMITTED,
+            EthicsApprovalStatus.UNDER_REVIEW,
+          ],
         },
       },
     }),
@@ -270,6 +296,14 @@ async function buildStudentSummary(
         "Proposals awaiting a final decision.",
         activeProposalReviews > 0 ? "Needs attention" : "Clear",
         activeProposalReviews > 0 ? "warning" : "success",
+      ),
+      buildCard(
+        "student-ethics-approvals",
+        "Ethics Approvals",
+        activeEthicsApprovals,
+        "Ethics submissions awaiting administrator decision.",
+        activeEthicsApprovals > 0 ? "In review" : "Clear",
+        activeEthicsApprovals > 0 ? "warning" : "success",
       ),
       buildCard(
         "student-overdue-reports",
@@ -510,6 +544,7 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
     pendingApplications,
     archivedTheses,
     failedNotifications,
+    pendingEthicsApprovals,
     overdueProgressReports,
     studentsUnderReview,
   ] =
@@ -546,6 +581,17 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
       prisma.notificationLog.count({
         where: {
           deliveryStatus: NotificationDeliveryStatus.FAILED,
+        },
+      }),
+      prisma.ethicsApproval.count({
+        where: {
+          isArchived: false,
+          status: {
+            in: [
+              EthicsApprovalStatus.SUBMITTED,
+              EthicsApprovalStatus.UNDER_REVIEW,
+            ],
+          },
         },
       }),
       prisma.progressReport.count({
@@ -599,6 +645,14 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
         "Progress reports that need follow-up.",
         overdueProgressReports > 0 ? "Follow-up needed" : "Clear",
         overdueProgressReports > 0 ? "warning" : "success",
+      ),
+      buildCard(
+        "admin-pending-ethics-approvals",
+        "Pending Ethics Approvals",
+        pendingEthicsApprovals,
+        "Ethics submissions waiting for administrator decision.",
+        pendingEthicsApprovals > 0 ? "Review needed" : "Clear",
+        pendingEthicsApprovals > 0 ? "warning" : "success",
       ),
       buildCard(
         "admin-students-under-review",

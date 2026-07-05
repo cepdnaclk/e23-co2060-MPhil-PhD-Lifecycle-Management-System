@@ -58,6 +58,7 @@ const CATEGORY_OPTIONS = [
   { value: "", label: "All categories" },
   { value: "APPLICATION_ATTACHMENT", label: "Applications" },
   { value: "PROPOSAL", label: "Proposals" },
+  { value: "ETHICS_APPROVAL", label: "Ethics Approvals" },
   { value: "PROGRESS_REPORT", label: "Progress Reports" },
   { value: "THESIS", label: "Theses" },
   { value: "CORRECTION", label: "Corrections" },
@@ -66,6 +67,7 @@ const CATEGORY_OPTIONS = [
 const TAG_OPTIONS = [
   { value: "", label: "Any tag" },
   { value: "current", label: "Current version" },
+  { value: "ethics-approval", label: "Ethics approval" },
   { value: "submitted", label: "Submitted" },
   { value: "under-review", label: "Under review" },
   { value: "approved", label: "Approved" },

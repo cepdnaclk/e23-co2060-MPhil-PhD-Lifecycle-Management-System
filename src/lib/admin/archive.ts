@@ -130,6 +130,16 @@ export async function archiveStudentRecord(
       },
     });
 
+    await tx.ethicsApproval.updateMany({
+      where: {
+        studentId: student.id,
+        isArchived: false,
+      },
+      data: {
+        isArchived: true,
+      },
+    });
+
     return archivedStudent;
   });
 
@@ -140,7 +150,7 @@ export async function archiveStudentRecord(
 }
 
 export async function listArchivedRecords() {
-  const [students, applications, theses, progressReports, proposals] =
+  const [students, applications, theses, progressReports, proposals, ethicsApprovals] =
     await Promise.all([
       prisma.student.findMany({
         where: { isArchived: true },
@@ -227,6 +237,26 @@ export async function listArchivedRecords() {
           },
         },
       }),
+      prisma.ethicsApproval.findMany({
+        where: { isArchived: true },
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          updatedAt: true,
+          student: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
   return {
@@ -260,6 +290,14 @@ export async function listArchivedRecords() {
       studentId: proposal.student.id,
       studentName: proposal.student.user.displayName,
       updatedAt: proposal.updatedAt,
+    })),
+    ethicsApprovals: ethicsApprovals.map((approval) => ({
+      id: approval.id,
+      title: approval.title,
+      status: approval.status,
+      studentId: approval.student.id,
+      studentName: approval.student.user.displayName,
+      updatedAt: approval.updatedAt,
     })),
   };
 }

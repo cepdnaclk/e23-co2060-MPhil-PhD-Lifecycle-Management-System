@@ -34,6 +34,9 @@ vi.mock("@/lib/prisma/client", () => ({
     researchProposal: {
       findMany: vi.fn(),
     },
+    ethicsApproval: {
+      findMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -110,6 +113,9 @@ describe("student archive routes", () => {
         researchProposal: {
           updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         },
+        ethicsApproval: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
       };
 
       return callback(tx as never);
@@ -129,6 +135,7 @@ describe("student archive routes", () => {
     vi.mocked(prisma.thesis.findMany).mockResolvedValue([] as never);
     vi.mocked(prisma.progressReport.findMany).mockResolvedValue([] as never);
     vi.mocked(prisma.researchProposal.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.ethicsApproval.findMany).mockResolvedValue([] as never);
 
     const archiveResponse = await archiveStudent(
       new Request("http://localhost/api/students/student-1/archive", {

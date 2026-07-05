@@ -211,6 +211,18 @@ describe("GET /api/admin/notification-log — paginated results sorted by timest
     expect(failedLog).toBeDefined();
     expect(failedLog.failureReason).toBe("ECONNREFUSED");
   });
+
+  it("exports the filtered page as CSV for audit review", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue(adminAuth as never);
+
+    const response = await GET(makeGetRequest("?format=csv"), {} as never);
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(csv).toContain("Timestamp,Recipient ID,Recipient Name");
+    expect(csv).toContain("Progress report submitted for Q1 2026");
+  });
 });
 
 describe("GET /api/admin/notification-log — filter by recipientId (student ID)", () => {

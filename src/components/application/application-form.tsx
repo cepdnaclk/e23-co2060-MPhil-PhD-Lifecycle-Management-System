@@ -583,6 +583,7 @@ export function ApplicationForm() {
                         type="button"
                         variant="outline"
                         size="sm"
+                        aria-label="Remove uploaded file"
                         onClick={handleDocumentRemoval}
                         disabled={isRemovingDocument}
                       >

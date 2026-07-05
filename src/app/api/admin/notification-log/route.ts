@@ -1,7 +1,10 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { listNotificationLogs } from "@/lib/admin/notification-log";
+import {
+  buildNotificationLogCsv,
+  listNotificationLogs,
+} from "@/lib/admin/notification-log";
 import { withAuth } from "@/lib/firebase/with-auth";
 
 /**
@@ -10,6 +13,8 @@ import { withAuth } from "@/lib/firebase/with-auth";
  * Read-only. ADMINISTRATOR only.
  * Supports query params: recipientId, event, status, startDate, endDate, page, limit.
  *
+ * Add `format=csv` to export the current filtered page for audit review.
+ *
  * POST / PATCH / DELETE are intentionally NOT defined here — the NotificationLog
  * entity is immutable for audit integrity (REQ-FN-020).
  */
@@ -17,6 +22,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   const { searchParams } = request.nextUrl;
   const requestedPage = Number(searchParams.get("page") ?? "1");
   const requestedLimit = Number(searchParams.get("limit") ?? "50");
+  const format = searchParams.get("format");
 
   const query = {
     recipientId: searchParams.get("recipientId") ?? undefined,
@@ -33,6 +39,17 @@ export const GET = withAuth(async (request: NextRequest) => {
 
   try {
     const result = await listNotificationLogs(query);
+
+    if (format === "csv") {
+      return new Response(buildNotificationLogCsv(result.logs), {
+        status: 200,
+        headers: {
+          "content-type": "text/csv; charset=utf-8",
+          "content-disposition": 'attachment; filename="notification-log.csv"',
+        },
+      });
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("[GET /api/admin/notification-log] Error retrieving logs.", error);

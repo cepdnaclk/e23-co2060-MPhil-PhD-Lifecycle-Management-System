@@ -193,6 +193,59 @@ export function buildProposalStatusChangeTemplate(input: {
   return { subject, html, text };
 }
 
+export function buildEthicsApprovalSubmittedTemplate(input: {
+  administratorName: string;
+  studentName: string;
+  applicationTitle: string;
+}): EmailTemplate {
+  const subject = `Ethics approval submitted: ${input.applicationTitle}`;
+  const text = [
+    `Dear ${input.administratorName},`,
+    "",
+    `${input.studentName} has submitted an ethics approval application.`,
+    `Application title: ${input.applicationTitle}`,
+    "Please review the application in the ethics approval workflow.",
+  ].join("\n");
+  const html = `
+    <p>Dear ${input.administratorName},</p>
+    <p><strong>${input.studentName}</strong> has submitted an ethics approval application.</p>
+    <p><strong>Application title:</strong> ${input.applicationTitle}</p>
+    <p>Please review the application in the ethics approval workflow.</p>
+  `;
+
+  return { subject, html, text };
+}
+
+export function buildEthicsApprovalStatusChangedTemplate(input: {
+  studentName: string;
+  applicationTitle: string;
+  statusLabel: string;
+  reviewNotes?: string;
+}): EmailTemplate {
+  const subject = `Ethics approval status updated: ${input.statusLabel}`;
+  const notesText = input.reviewNotes
+    ? `\n\nReview notes:\n${input.reviewNotes}`
+    : "";
+  const notesHtml = input.reviewNotes
+    ? `<p><strong>Review notes:</strong><br />${input.reviewNotes}</p>`
+    : "";
+  const text = [
+    `Dear ${input.studentName},`,
+    "",
+    `Your ethics approval application "${input.applicationTitle}" is now ${input.statusLabel}.`,
+    notesText.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const html = `
+    <p>Dear ${input.studentName},</p>
+    <p>Your ethics approval application "<strong>${input.applicationTitle}</strong>" is now <strong>${input.statusLabel}</strong>.</p>
+    ${notesHtml}
+  `;
+
+  return { subject, html, text };
+}
+
 export function buildProgressReportSubmittedTemplate(input: {
   supervisorName: string;
   studentName: string;
@@ -446,6 +499,41 @@ export async function notifyProposalStatusChange(input: {
     to: input.to,
     recipientUserId: input.recipientUserId,
     event: NotificationEvent.PROPOSAL_STATUS_CHANGED,
+    ...template,
+  });
+}
+
+export async function notifyEthicsApprovalSubmittedToAdministrator(input: {
+  recipientUserId: string;
+  to: string;
+  administratorName: string;
+  studentName: string;
+  applicationTitle: string;
+}) {
+  const template = buildEthicsApprovalSubmittedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.ETHICS_APPROVAL_SUBMITTED,
+    ...template,
+  });
+}
+
+export async function notifyEthicsApprovalStatusChanged(input: {
+  recipientUserId: string;
+  to: string;
+  studentName: string;
+  applicationTitle: string;
+  statusLabel: string;
+  reviewNotes?: string;
+}) {
+  const template = buildEthicsApprovalStatusChangedTemplate(input);
+
+  return sendEmail({
+    to: input.to,
+    recipientUserId: input.recipientUserId,
+    event: NotificationEvent.ETHICS_APPROVAL_STATUS_CHANGED,
     ...template,
   });
 }

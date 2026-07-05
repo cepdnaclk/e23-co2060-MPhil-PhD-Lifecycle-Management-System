@@ -50,7 +50,7 @@ export function ProfileDropdown() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild variant="destructive">
+        <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
           <Link href="/logout">
             Sign out
             <DropdownMenuShortcut className="text-current">

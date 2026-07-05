@@ -47,7 +47,10 @@ vi.mock("@/lib/prisma/client", () => ({
 // Imports after mocks
 // ---------------------------------------------------------------------------
 
-import { listNotificationLogs } from "@/lib/admin/notification-log";
+import {
+  buildNotificationLogCsv,
+  listNotificationLogs,
+} from "@/lib/admin/notification-log";
 import { prisma } from "@/lib/prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -172,6 +175,17 @@ describe("listNotificationLogs — filter application", () => {
         orderBy: { createdAt: "desc" },
       }),
     );
+  });
+
+  it("builds a CSV export with visible audit columns", async () => {
+    const result = await listNotificationLogs({});
+    const csv = buildNotificationLogCsv(result.logs);
+
+    expect(csv).toContain(
+      "Timestamp,Recipient ID,Recipient Name,Recipient Email,Event,Subject,Delivery Status,Failure Reason",
+    );
+    expect(csv).toContain("Progress report submitted for Q1 2026");
+    expect(csv).toContain("ECONNREFUSED");
   });
 
   it("is exposed as a read-only service surface from the API route", async () => {

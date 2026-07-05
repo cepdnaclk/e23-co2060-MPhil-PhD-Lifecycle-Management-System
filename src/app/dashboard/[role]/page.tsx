@@ -31,7 +31,9 @@ export default function DashboardRolePage({ params }: DashboardPageProps) {
         </CardHeader>
         <CardContent>
           {isAdmin ? (
-            <Button className="mt-4 w-full" render={<Link href="/dashboard/admin/users">Open user management</Link>} />
+            <Button asChild className="mt-4 w-full">
+              <Link href="/dashboard/admin/users">Open user management</Link>
+            </Button>
           ) : null}
         </CardContent>
       </Card>

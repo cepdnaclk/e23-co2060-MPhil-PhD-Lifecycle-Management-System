@@ -36,6 +36,9 @@ vi.mock("@/lib/prisma/client", () => ({
     notificationLog: {
       count: vi.fn(),
     },
+    ethicsApproval: {
+      count: vi.fn(),
+    },
   },
 }));
 
@@ -56,6 +59,7 @@ describe("admin progress monitoring routes", () => {
     vi.mocked(prisma.application.count).mockResolvedValue(2 as never);
     vi.mocked(prisma.thesis.count).mockResolvedValue(1 as never);
     vi.mocked(prisma.notificationLog.count).mockResolvedValue(0 as never);
+    vi.mocked(prisma.ethicsApproval.count).mockResolvedValue(1 as never);
     vi.mocked(prisma.progressReport.count).mockResolvedValue(3 as never);
     vi.mocked(prisma.student.count).mockImplementation(async () => studentsUnderReviewCount as never);
     vi.mocked(prisma.student.update).mockImplementation(async () => {
