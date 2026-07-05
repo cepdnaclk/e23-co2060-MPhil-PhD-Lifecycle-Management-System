@@ -5,6 +5,7 @@ import { CheckCircle2, Download, RefreshCw, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import {
   Card,
   CardContent,
@@ -246,13 +247,13 @@ export function EthicsApprovalReviewPanel() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
           {error}
         </div>
       )}
 
       {message && (
-        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
+        <div className="rounded-md border border-green-500/50 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
           {message}
         </div>
       )}
@@ -312,8 +313,11 @@ export function EthicsApprovalReviewPanel() {
       <div className="space-y-4">
         {isLoading ? (
           <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">
-              Loading ethics approval submissions...
+            <CardContent className="p-12">
+              <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                <Loader />
+                <span>Loading ethics approval submissions...</span>
+              </div>
             </CardContent>
           </Card>
         ) : approvals.length === 0 ? (

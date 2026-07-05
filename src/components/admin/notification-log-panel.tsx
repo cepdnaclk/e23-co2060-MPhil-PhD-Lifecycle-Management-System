@@ -12,6 +12,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/ui/loader";
 import {
   Card,
   CardContent,
@@ -221,12 +222,11 @@ export function NotificationLogPanel() {
         </Button>
       </div>
 
-      {errorMessage ? (
-        <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <p>{errorMessage}</p>
+      {errorMessage && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+          {errorMessage}
         </div>
-      ) : null}
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -415,8 +415,11 @@ export function NotificationLogPanel() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    Loading notification logs...
+                  <TableCell colSpan={6} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                      <Loader />
+                      <span>Loading notification logs...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (

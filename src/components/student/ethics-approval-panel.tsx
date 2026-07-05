@@ -301,13 +301,13 @@ export function EthicsApprovalPanel() {
       </div>
 
       {errorMessage && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
           {errorMessage}
         </div>
       )}
 
       {successMessage && (
-        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
+        <div className="rounded-md border border-green-500/50 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
           {successMessage}
         </div>
       )}
