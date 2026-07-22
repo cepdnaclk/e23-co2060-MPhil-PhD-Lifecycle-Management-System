@@ -1,23 +1,22 @@
 {
-    "title": "MPhil/PhD Lifecycle Management System",
     "team": [
         {
-            "name": "D.K.G.P.C.B. Wijerathne",
+            "name": "Pasan Wijerathne",
             "email": "e23442@eng.pdn.ac.lk",
             "eNumber": "E/23/442"
         },
         {
-            "name": "D.A.A. Gunawardana",
+            "name": "Aravinda Gunawardana",
             "email": "e23118@eng.pdn.ac.lk",
             "eNumber": "E/23/118"
         },
         {
-            "name": "S.N.R. Kodituwakku",
+            "name": "Sandun Kodituwakku",
             "email": "e23178@eng.pdn.ac.lk",
             "eNumber": "E/23/178"
         },
         {
-            "name": "M.N.P.V.Aththanayake",
+            "name": "Prabhasara Vidulanka",
             "email": "e23023@eng.pdn.ac.lk",
             "eNumber": "E/23/023"
         }
@@ -33,6 +32,6 @@
         "Postgraduate",
         "Web"
     ],
-    "cover-image": "cover.png",
-    "thumbnail": "thumbnail.png"
+    "image": "../images/thumbnail.png",
+    "thumbnail": "../images/thumbnail.png"
 }
