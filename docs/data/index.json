@@ -1,0 +1,38 @@
+{
+    "title": "MPhil/PhD Lifecycle Management System",
+    "team": [
+        {
+            "name": "D.K.G.P.C.B. Wijerathne",
+            "email": "e23442@eng.pdn.ac.lk",
+            "eNumber": "E/23/442"
+        },
+        {
+            "name": "D.A.A. Gunawardana",
+            "email": "e23118@eng.pdn.ac.lk",
+            "eNumber": "E/23/118"
+        },
+        {
+            "name": "S.N.R. Kodituwakku",
+            "email": "e23178@eng.pdn.ac.lk",
+            "eNumber": "E/23/178"
+        },
+        {
+            "name": "M.N.P.V.Aththanayake",
+            "email": "e23023@eng.pdn.ac.lk",
+            "eNumber": "E/23/023"
+        }
+    ],
+    "supervisor": [
+        {
+            "name": "Dr. Upul Jayasinghe",
+            "email": "upul@eng.pdn.ac.lk"
+        }
+    ],
+    "tags": [
+        "Next.js",
+        "Postgraduate",
+        "Web"
+    ],
+    "cover-image": "cover.png",
+    "thumbnail": "thumbnail.png"
+}

@@ -1,0 +1,13 @@
+# Theme used by the Department of Computer Engineering project pages.
+# Based on the official eYY-4yp-project-template configuration.
+
+title: ""
+remote_theme: cepdnaclk/eYY-project-theme
+description: "Postgraduate Lifecycle Management System"
+markdown: kramdown
+
+kramdown:
+  parse_block_html: true
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false

@@ -169,3 +169,11 @@ session-activity*.log
 /session-debug/
 /ui-buffer/
 *.ui-buffer.tmp
+
+# Agent workspace customizations & output directories
+/.agents/
+/output/
+*.tex
+*.fls
+*.fdb_latexmk
+*.synctex.gz
