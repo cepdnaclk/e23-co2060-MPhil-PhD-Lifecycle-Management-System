@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
 type Supervisor = {
@@ -49,7 +49,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
 import {
   Select,

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("PB-010 login flow", () => {
+test.describe("PB-010 login flow", { tag: "@external" }, () => {
   test("sets the session cookie and redirects to the role dashboard", async ({
     page,
   }) => {

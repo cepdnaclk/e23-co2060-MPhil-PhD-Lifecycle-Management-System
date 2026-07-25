@@ -37,10 +37,7 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import {
-  assignExaminerToThesis,
-  ExaminerAssignmentError,
-} from "@/lib/assignments/examiners";
+import { assignExaminerToThesis } from "@/lib/assignments/examiners";
 import { prisma } from "@/lib/prisma/client";
 
 describe("examiner assignment rules", () => {
@@ -113,7 +110,7 @@ describe("examiner assignment rules", () => {
           email: "admin@example.com",
         },
       ),
-    ).rejects.toMatchObject<ExaminerAssignmentError>({
+    ).rejects.toMatchObject({
       status: 422,
       message:
         "The selected examiner cannot be assigned because they are already a supervisor for this student.",
@@ -163,7 +160,7 @@ describe("examiner assignment rules", () => {
           email: "admin@example.com",
         },
       ),
-    ).rejects.toMatchObject<ExaminerAssignmentError>({
+    ).rejects.toMatchObject({
       status: 422,
       message:
         "Examiner assignments are only allowed while the thesis is SUBMITTED or UNDER_EXAMINATION.",

@@ -51,7 +51,7 @@ export const GET = withAuth(
           },
         })),
       });
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Unable to load pending proposals for review." },
         { status: 500 },

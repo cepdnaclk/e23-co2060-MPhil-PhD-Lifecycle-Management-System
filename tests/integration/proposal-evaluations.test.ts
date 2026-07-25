@@ -30,10 +30,7 @@ vi.mock("@/lib/notifications", () => ({
 }));
 
 import { notify } from "@/lib/notifications";
-import {
-  createProposalEvaluation,
-  ProposalEvaluationError,
-} from "@/lib/proposals/evaluations";
+import { createProposalEvaluation } from "@/lib/proposals/evaluations";
 import { prisma } from "@/lib/prisma/client";
 
 describe("proposal evaluation integration", () => {
@@ -78,6 +75,7 @@ describe("proposal evaluation integration", () => {
         "proposal-1",
         {
           feedback: "This proposal needs a clearer methodology.",
+          documents: [],
         },
         {
           uid: "firebase-examiner-1",
@@ -87,7 +85,7 @@ describe("proposal evaluation integration", () => {
           email: "examiner1@example.com",
         },
       ),
-    ).rejects.toMatchObject<ProposalEvaluationError>({
+    ).rejects.toMatchObject({
       status: 403,
       message: "Assigned supervisors cannot review the same student's proposal.",
     });
@@ -149,6 +147,7 @@ describe("proposal evaluation integration", () => {
       {
         feedback:
           "The problem definition is strong and the research plan is feasible, with only moderate clarification needed.",
+        documents: [],
       },
       {
         uid: "firebase-examiner-1",

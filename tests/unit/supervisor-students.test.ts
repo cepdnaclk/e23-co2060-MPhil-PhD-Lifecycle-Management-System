@@ -12,10 +12,7 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import {
-  getSupervisorAssignedStudents,
-  SupervisorStudentsError,
-} from "@/lib/supervisor/students";
+import { getSupervisorAssignedStudents } from "@/lib/supervisor/students";
 import { prisma } from "@/lib/prisma/client";
 
 describe("supervisor student data access", () => {
@@ -103,7 +100,7 @@ describe("supervisor student data access", () => {
         role: "SUPERVISOR",
         email: "supervisor@example.com",
       }),
-    ).rejects.toMatchObject<SupervisorStudentsError>({
+    ).rejects.toMatchObject({
       status: 404,
       message: "Supervisor profile not found.",
     });

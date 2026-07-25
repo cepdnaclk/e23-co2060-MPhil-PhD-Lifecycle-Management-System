@@ -98,6 +98,7 @@ describe("progress report workflow", () => {
         periodLabel: "2026 Q1",
         narrative:
           "This progress narrative is intentionally long enough to pass the shared validation rule for progress reports.",
+        documents: [],
         document: {
           fileName: "report.pdf",
           mimeType: "application/pdf",

@@ -55,8 +55,10 @@ describe("proposal version integration", () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "mock-key");
     vi.stubEnv("SUPABASE_STORAGE_BUCKET", "demo-bucket");
 
-    vi.mocked(prisma.user.findUnique).mockImplementation(async (args: never) => {
-      const where = (args as { where: { firebaseUid?: string } }).where;
+    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+      where: { firebaseUid?: string };
+    }) => {
+      const { where } = args;
 
       if (where.firebaseUid === "firebase-supervisor-1") {
         return {
@@ -76,8 +78,8 @@ describe("proposal version integration", () => {
         } as never;
       }
 
-      return null as never;
-    });
+      return null;
+    }) as never);
 
     vi.mocked(getAuth).mockReturnValue({
       verifyIdToken: vi.fn().mockImplementation(async (token: string) => {

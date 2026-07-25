@@ -121,8 +121,10 @@ describe("thesis corrections and archive integration", () => {
   });
 
   it("applies the terminal graduated state and exposes the student profile as read-only", async () => {
-    vi.mocked(authenticateBearerRequest).mockImplementation(async (request: never) => {
-      const authHeader = (request as Request).headers.get("authorization");
+    vi.mocked(authenticateBearerRequest).mockImplementation((async (request: {
+      headers: Headers;
+    }) => {
+      const authHeader = request.headers.get("authorization");
 
       if (authHeader === "Bearer admin-token") {
         return {
@@ -140,8 +142,8 @@ describe("thesis corrections and archive integration", () => {
         firebaseUid: "firebase-student-1",
         role: "STUDENT",
         email: "student1@example.com",
-      } as never;
-    });
+      };
+    }) as never);
     vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
       id: "admin-1",
     } as never);

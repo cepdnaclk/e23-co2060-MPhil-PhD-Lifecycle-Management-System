@@ -28,10 +28,7 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import {
-  assignSupervisorToStudent,
-  SupervisorAssignmentError,
-} from "@/lib/assignments/supervisors";
+import { assignSupervisorToStudent } from "@/lib/assignments/supervisors";
 import { prisma } from "@/lib/prisma/client";
 
 describe("supervisor assignment rules", () => {
@@ -157,7 +154,7 @@ describe("supervisor assignment rules", () => {
           email: "admin@example.com",
         },
       ),
-    ).rejects.toMatchObject<SupervisorAssignmentError>({
+    ).rejects.toMatchObject({
       status: 400,
       message:
         "A supervisor cannot be assigned when the same user is already an examiner for this student.",

@@ -71,14 +71,6 @@ const adminAuth = {
   email: "admin@example.com",
 };
 
-const studentAuth = {
-  uid: "firebase-student",
-  userId: "user-student",
-  firebaseUid: "firebase-student",
-  role: UserRole.STUDENT,
-  email: "student@example.com",
-};
-
 function makeGetRequest(params = "") {
   return new NextRequest(`http://localhost/api/admin/notification-log${params}`, {
     method: "GET",

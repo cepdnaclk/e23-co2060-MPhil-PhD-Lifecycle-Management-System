@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma/client";
 import { getStudentProgressById } from "@/lib/students/progress";
 
 export default async function StudentProgressPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
     .map((cookie) => `${cookie.name}=${cookie.value}`)

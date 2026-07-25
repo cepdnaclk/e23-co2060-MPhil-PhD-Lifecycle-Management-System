@@ -1,7 +1,6 @@
 import {
   AcademicStatus,
   ProgramType,
-  ProposalStatus,
   ThesisStatus,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,7 +39,7 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import { assertValidThesisStatusTransition } from "@/lib/prisma/thesis-status";
 import { prisma } from "@/lib/prisma/client";
-import { submitThesis, ThesisSubmissionError } from "@/lib/theses/submission";
+import { submitThesis } from "@/lib/theses/submission";
 import { thesisSubmissionSchema } from "@/lib/theses/schemas";
 
 describe("thesis submission rules", () => {
@@ -86,7 +85,7 @@ describe("thesis submission rules", () => {
           email: "student1@example.com",
         },
       ),
-    ).rejects.toMatchObject<ThesisSubmissionError>({
+    ).rejects.toMatchObject({
       status: 409,
       message: "An approved research proposal is required before thesis submission.",
     });
@@ -128,7 +127,7 @@ describe("thesis submission rules", () => {
           email: "student1@example.com",
         },
       ),
-    ).rejects.toMatchObject<ThesisSubmissionError>({
+    ).rejects.toMatchObject({
       status: 400,
       message: "Upload one thesis document per submission.",
     });

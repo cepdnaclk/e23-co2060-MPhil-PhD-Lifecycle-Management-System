@@ -41,7 +41,6 @@ vi.mock("@/lib/prisma/client", () => ({
 import {
   approveCorrectionDocument,
   submitCorrectionDocument,
-  ThesisCorrectionError,
 } from "@/lib/theses/corrections";
 import { prisma } from "@/lib/prisma/client";
 
@@ -78,6 +77,7 @@ describe("thesis correction workflow", () => {
           {
             correctionType: CorrectionType.MINOR,
             description: "Updated chapter 4.",
+            documents: [],
             document: {
               fileName: "correction.pdf",
               mimeType: "application/pdf",
@@ -92,7 +92,7 @@ describe("thesis correction workflow", () => {
             email: "student1@example.com",
           },
         ),
-      ).rejects.toMatchObject<ThesisCorrectionError>({
+      ).rejects.toMatchObject({
         status: 409,
         message:
           "Correction uploads are only allowed while the thesis status is CORRECTIONS_REQUIRED.",

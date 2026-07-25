@@ -113,13 +113,7 @@ describe("GET /api/documents/[id] student access", () => {
     vi.mocked(prisma.document.findFirst).mockResolvedValue(null as never);
 
     const response = await getDocumentDownload(makeGetRequest("doc-student-1"), {
-      params: { id: "doc-student-1" },
-      auth: {
-        uid: "firebase-student-2",
-        userId: "user-student-2",
-        firebaseUid: "firebase-student-2",
-        role: "STUDENT",
-      },
+      params: Promise.resolve({ id: "doc-student-1" }),
     });
 
     expect(response.status).toBe(403);
@@ -140,7 +134,7 @@ describe("GET /api/documents/[id] student access", () => {
 
     const response = await getDocumentDownload(
       makeGetRequest("review-document-1"),
-      { params: { id: "review-document-1" } },
+      { params: Promise.resolve({ id: "review-document-1" }) },
     );
 
     expect(response.status).toBe(403);
@@ -164,7 +158,7 @@ describe("GET /api/documents/[id] student access", () => {
 
     const response = await getDocumentDownload(
       makeGetRequest("review-document-1"),
-      { params: { id: "review-document-1" } },
+      { params: Promise.resolve({ id: "review-document-1" }) },
     );
 
     expect(response.status).toBe(200);
@@ -211,13 +205,7 @@ describe("GET /api/documents/[id] soft-deleted visibility", () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(makeDeletedDoc() as never);
 
     const response = await getDocumentDownload(makeGetRequest("doc-deleted-1"), {
-      params: { id: "doc-deleted-1" },
-      auth: {
-        uid: "firebase-student-1",
-        userId: "user-student-1",
-        firebaseUid: "firebase-student-1",
-        role: "STUDENT",
-      },
+      params: Promise.resolve({ id: "doc-deleted-1" }),
     });
 
     expect(response.status).toBe(410);
@@ -233,13 +221,7 @@ describe("GET /api/documents/[id] soft-deleted visibility", () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(makeDeletedDoc() as never);
 
     const response = await getDocumentDownload(makeGetRequest("doc-deleted-1"), {
-      params: { id: "doc-deleted-1" },
-      auth: {
-        uid: "firebase-admin",
-        userId: "user-admin",
-        firebaseUid: "firebase-admin",
-        role: "ADMINISTRATOR",
-      },
+      params: Promise.resolve({ id: "doc-deleted-1" }),
     });
 
     expect(response.status).toBe(200);
@@ -264,13 +246,7 @@ describe("PATCH /api/documents/[id] soft-delete", () => {
     vi.mocked(prisma.document.findUnique).mockResolvedValue(makeOwnedDoc() as never);
 
     const response = await archiveDocument(makePatchRequest("doc-student-1"), {
-      params: { id: "doc-student-1" },
-      auth: {
-        uid: "firebase-admin",
-        userId: "user-admin",
-        firebaseUid: "firebase-admin",
-        role: "ADMINISTRATOR",
-      },
+      params: Promise.resolve({ id: "doc-student-1" }),
     });
 
     expect(response.status).toBe(200);

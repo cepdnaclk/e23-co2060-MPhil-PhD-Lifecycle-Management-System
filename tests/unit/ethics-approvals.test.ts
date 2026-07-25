@@ -37,7 +37,6 @@ vi.mock("@/lib/notifications", () => ({
 
 import {
   createEthicsApprovalUploadUrl,
-  EthicsApprovalError,
   submitEthicsApproval,
   updateEthicsApprovalDecision,
 } from "@/lib/ethics/approvals";
@@ -178,6 +177,7 @@ describe("ethics approval workflow", () => {
       {
         title: "Participant interview ethics",
         summary: "Ethics evidence summary for participant interview data collection.",
+        documents: [],
         document: {
           fileName: "ethics.pdf",
           storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
@@ -223,7 +223,7 @@ describe("ethics approval workflow", () => {
         { status: "APPROVED" },
         adminAuth,
       ),
-    ).rejects.toMatchObject<EthicsApprovalError>({
+    ).rejects.toMatchObject({
       status: 410,
       message: "Ethics is document-only. Approval or rejection decisions are not supported.",
     });

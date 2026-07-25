@@ -64,6 +64,7 @@ describe("withAuth", () => {
           authorization: "Bearer admin-token",
         },
       }) as never,
+      { params: Promise.resolve({}) },
     );
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -98,6 +99,7 @@ describe("withAuth", () => {
           authorization: "Bearer student-token",
         },
       }) as never,
+      { params: Promise.resolve({}) },
     );
 
     expect(handler).not.toHaveBeenCalled();
@@ -117,6 +119,7 @@ describe("withAuth", () => {
 
     const missingTokenResponse = await guardedHandler(
       new Request("http://localhost/api/test") as never,
+      { params: Promise.resolve({}) },
     );
 
     const invalidTokenResponse = await guardedHandler(
@@ -125,6 +128,7 @@ describe("withAuth", () => {
           authorization: "Bearer expired-token",
         },
       }) as never,
+      { params: Promise.resolve({}) },
     );
 
     expect(handler).not.toHaveBeenCalled();
@@ -168,6 +172,7 @@ describe("withAuth", () => {
           ).getTime()}`,
         },
       }) as never,
+      { params: Promise.resolve({}) },
     );
 
     expect(handler).toHaveBeenCalledTimes(1);
@@ -194,6 +199,7 @@ describe("withAuth", () => {
           cookie: `pglms_session=session-cookie-token; pglms_session_activity=${staleActivityAt}`,
         },
       }) as never,
+      { params: Promise.resolve({}) },
     );
 
     expect(handler).not.toHaveBeenCalled();

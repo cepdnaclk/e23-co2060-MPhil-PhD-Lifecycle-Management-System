@@ -100,9 +100,9 @@ describe("progress report sign-off route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "report-1",
-        },
+        }),
       },
     );
 
@@ -156,9 +156,9 @@ describe("progress report sign-off route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "report-2",
-        },
+        }),
       },
     );
 

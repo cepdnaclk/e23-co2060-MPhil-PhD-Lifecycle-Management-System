@@ -7,7 +7,7 @@ import { getDashboardSummaryForUser } from "@/lib/dashboard/summary";
 import { mapAppRoleToDashboardRole, type DashboardRole } from "@/types/dashboard";
 
 export async function getServerDashboardContext(role: DashboardRole) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
     .map((cookie) => `${cookie.name}=${cookie.value}`)

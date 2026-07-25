@@ -127,7 +127,7 @@ export function ProgressReportSubmissionForm() {
 
       router.push("/dashboard/student/progress-reports");
       router.refresh();
-    } catch (error) {
+    } catch {
       setErrorMessage("A network error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);

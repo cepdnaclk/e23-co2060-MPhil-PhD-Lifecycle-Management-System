@@ -27,8 +27,10 @@ describe("RBAC test route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(prisma.user.findUnique).mockImplementation(async (args: never) => {
-      const where = (args as { where: { firebaseUid?: string } }).where;
+    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+      where: { firebaseUid?: string };
+    }) => {
+      const { where } = args;
 
       if (where.firebaseUid === "firebase-admin-1") {
         return {
@@ -48,8 +50,8 @@ describe("RBAC test route", () => {
         } as never;
       }
 
-      return null as never;
-    });
+      return null;
+    }) as never);
 
     vi.mocked(getAuth).mockReturnValue({
       verifyIdToken: vi.fn().mockImplementation(async (token: string) => {

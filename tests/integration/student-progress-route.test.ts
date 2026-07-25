@@ -34,8 +34,10 @@ describe("student progress route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(prisma.user.findUnique).mockImplementation(async (args: never) => {
-      const where = (args as { where: { firebaseUid?: string } }).where;
+    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+      where: { firebaseUid?: string };
+    }) => {
+      const { where } = args;
 
       if (where.firebaseUid === "firebase-student-1") {
         return {
@@ -55,8 +57,8 @@ describe("student progress route", () => {
         } as never;
       }
 
-      return null as never;
-    });
+      return null;
+    }) as never);
 
     vi.mocked(getAuth).mockReturnValue({
       verifyIdToken: vi.fn().mockImplementation(async (token: string) => {
@@ -134,9 +136,9 @@ describe("student progress route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 
@@ -175,9 +177,9 @@ describe("student progress route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 
@@ -241,9 +243,9 @@ describe("student progress route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
     const durationMs = Date.now() - startedAt;

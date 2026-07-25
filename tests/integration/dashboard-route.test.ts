@@ -55,9 +55,9 @@ describe("GET /api/dashboard/[role]/summary", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           role: "supervisor",
-        },
+        }),
       },
     );
 
@@ -71,9 +71,9 @@ describe("GET /api/dashboard/[role]/summary", () => {
     const response = await GET(
       new Request("http://localhost/api/dashboard/guest/summary") as never,
       {
-        params: {
+        params: Promise.resolve({
           role: "guest",
-        },
+        }),
       },
     );
 
@@ -109,9 +109,9 @@ describe("GET /api/dashboard/[role]/summary", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           role: "admin",
-        },
+        }),
       },
     );
 

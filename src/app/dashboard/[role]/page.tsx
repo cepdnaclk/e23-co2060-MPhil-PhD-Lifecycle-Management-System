@@ -9,12 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 
 type DashboardPageProps = {
-  params: {
+  params: Promise<{
     role: string;
-  };
+  }>;
 };
 
-export default function DashboardRolePage({ params }: DashboardPageProps) {
+export default async function DashboardRolePage(props: DashboardPageProps) {
+  const params = await props.params;
   const isAdmin = params.role === "admin";
 
   return (

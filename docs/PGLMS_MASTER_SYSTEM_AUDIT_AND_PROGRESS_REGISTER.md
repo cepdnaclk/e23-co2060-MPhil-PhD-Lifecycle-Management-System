@@ -2,7 +2,7 @@
 
 **Document ID:** PGLMS-MASTER-001  
 **Implementation baseline version:** 1.0  
-**Report revision:** 1.2  
+**Report revision:** 1.3<br>
 **Audit date:** 18 July 2026  
 **Audited branch:** `main`  
 **Audited commit:** `653ff632e0cecb6114f50e6fb525ebe2cb592942` — “Implement postgraduate lifecycle workflow updates”  
@@ -10,7 +10,7 @@
 **Document status:** Current implementation baseline, prioritized remediation plan, and living progress register  
 **Canonical source:** This Markdown file.  
 **DOCX status:** The existing DOCX remains the revision 1.0 implementation snapshot and is intentionally deferred until the remediation programme is complete or an interim copy is requested.
-**Active remediation checkpoint:** WP-01 is implemented and verified in the local working tree as of 18 July 2026. Deployment, data/identity reconciliation, scheduler cutover, and runtime verification remain pending; the audited implementation baseline has not changed.
+**Active remediation checkpoint:** WP-01 is committed at `9949fb8` and remains pending deployment/reconciliation evidence. WP-02 is implemented and verified locally as of 25 July 2026; hosted branch protection, first CI/CodeQL runs, populated-data migration rehearsal, external-service E2E, and deployment evidence remain pending. The audited implementation baseline has not changed.
 
 > **Source-of-truth rule.** This report describes the behavior implemented at the audited commit. It supersedes the workflow claims in `docs/WORKFLOW_REPORT.md` and `output/pdf/pglms_admin_handover_report.*` where those documents conflict with the current code. Update the document control, capability matrix, change register, and risk register whenever the system changes.
 
@@ -21,11 +21,11 @@
 | Baseline owner | Project team | Assign a named product/technical owner after review. |
 | Implementation baseline | Commit `653ff632...` on `main` | Replace only after the revised code is verified. |
 | Requirements baseline | Observable behavior in source, schema, migrations, routes, UI, and tests | Add links to an approved SRS/BRD when one exists. |
-| Verification baseline | Audited commit: 79 files / 243 tests and production build passed. WP-01 local checkpoint: 82 files / 264 tests, Prisma validation, and production build passed on 18 July 2026. | Re-run after every material lifecycle change; distinguish local verification from deployed verification. |
+| Verification baseline | Audited commit: 79 files / 243 tests and production build passed. WP-01 committed checkpoint: 82 files / 264 tests, Prisma validation, and production build passed. WP-02 local checkpoint: clean install, lint/type checks, 81 files / 263 tests passed plus one real-database test, migration/drift checks, build, two browser smokes, and zero high/critical audit findings on 25 July 2026. | Re-run after every material lifecycle change; distinguish local verification from hosted/deployed verification. |
 | Review cadence | At each accepted change set and before a release | Record the date, owner, evidence, and changed capability/risk IDs. |
 | Change states | Proposed, Approved, In progress, Implemented, Verified, Deferred, Rejected | “Implemented” is not “Verified”; retain evidence for both. |
 | Capability states | Full, Partial, Backend-only, Retired, Missing, Operational verification required | Use the definitions below consistently. |
-| Remediation plan | Section 17, revision 1.2; WP-01 locally implemented, deployment pending | Execute work packages in dependency order; a risk closes only with the package's acceptance and deployment evidence. |
+| Remediation plan | Section 17, revision 1.3; WP-01 committed/deployment pending; WP-02 locally implemented/hosted enforcement pending | Execute work packages in dependency order; a risk closes only with the package's acceptance and required hosted/deployment evidence. |
 
 ### Capability status legend
 
@@ -57,7 +57,7 @@ The current version is **not yet a dependable end-to-end lifecycle implementatio
 
 > **WP-01 local checkpoint, not deployed.** The working-tree patch removes the public claims route, makes review-attachment access release- and parent-aware, converts maintenance to signed fail-closed POST with a database run ledger, and temporarily limits proposal/thesis submissions to one file. These changes have passed local verification, but findings 1–3 remain open operational risks until deployment and reconciliation are evidenced; RISK-003 also requires the WP-04 logical-version redesign for closure.
 
-Quality gates are encouraging but limited: at the audited commit, the production build completed and all 79 Vitest files / 243 tests passed. The WP-01 working tree subsequently passed all 82 files / 264 tests, Prisma schema validation, a focused 10-file / 49-test security-regression set, and a production build. The tests largely mock Prisma, Firebase, Supabase Storage, and SMTP. The four Playwright files are not part of `npm test`, and no live end-to-end environment, CI pipeline, deployment configuration, or runtime security-header evidence is present in the repository.
+Quality gates have materially improved but are not yet fully hosted: at the audited commit, the production build completed and all 79 Vitest files / 243 tests passed. WP-01 subsequently passed all 82 files / 264 tests, Prisma validation, a focused 10-file / 49-test security-regression set, and a production build before being committed at `9949fb8`. WP-02 adds strict lint/type gates, locked-install audits, disposable-PostgreSQL migration/drift testing, public Playwright/accessibility smoke tests, secret scanning, CodeQL, Dependabot, and a production build on Next.js 16. The 25 July local checkpoint passed 81 files / 263 ordinary tests, the separately gated real-database test, and two public browser smokes. Firebase, Supabase Storage, SMTP, authenticated browser flows, hosted repository settings, deployment, and runtime security-header evidence remain outside this local checkpoint.
 
 ### Baseline verdict
 
@@ -192,13 +192,13 @@ Source: `package.json:5-64`.
 | Maintenance | Optional `CRON_SECRET`; optional `PROGRESS_REPORT_OVERDUE_AFTER_DAYS` |
 | Sentry | `SENTRY_ORG`, `SENTRY_PROJECT`, and platform-provided Sentry configuration |
 
-Environment files are ignored, but the repository provides no `.env.example`; onboarding must be derived from the README and code (`.gitignore:26-30`).
+At the audited commit, environment files were ignored but no `.env.example` existed. WP-02 now supplies a placeholder-only `.env.example`, including separate development and guarded test-database settings; environment validation and secret provisioning remain deployment responsibilities.
 
 ### 4.4 Deployment and operations status
 
 - `npm run build` runs `prisma generate && next build`; `npm start` runs `next start` (`package.json:5-14`).
-- No Dockerfile, Vercel configuration, Kubernetes manifests, release workflow, environment template, or database-deployment pipeline was found.
-- `.github/workflows/sync.yml` is empty; there is no working CI quality gate.
+- No Dockerfile, Vercel configuration, Kubernetes manifests, or release/deployment workflow was found.
+- **WP-02 local checkpoint:** the empty sync workflow is removed and CI/CodeQL/Dependabot configuration now covers locked install, lint, type checking, unit/mocked integration tests, audits, build, disposable-PostgreSQL migrations/drift, one real-database test, public browser/accessibility smoke, secret scanning, and SAST. Required hosted checks and deployment automation remain to be configured/verified.
 - No scheduler definition was found for registration/progress maintenance.
 - No backup, restore, disaster-recovery, retention, or data-deletion policy is represented in the repository.
 - Security headers are not set in `next.config.mjs` or middleware. They may exist at a deployment edge and must be verified at runtime.
@@ -334,7 +334,7 @@ These must not be treated as interchangeable.
 | CAP-026 | Lifecycle/audit history | Missing | Status fields overwrite history; only email attempts and a subset of downloads are logged. |
 | CAP-027 | Automated maintenance | Operational verification required/partial | Endpoint exists; scheduler absent, secret fail-open, reminders not deduplicated. |
 | CAP-028 | Production monitoring | Operational verification required | Sentry wrapper exists, but deployed DSN, alerts, dashboards, and source-map exposure were not verified. |
-| CAP-029 | Automated quality gates | Partial | Unit/integration-style tests and build pass; no effective CI, live integration suite, or standard E2E script. |
+| CAP-029 | Automated quality gates | Partial | WP-02 adds CI/CodeQL/Dependabot definitions, strict static/test/build/audit gates, disposable PostgreSQL migrations/drift, one real-database test, and public browser/accessibility smoke. Hosted enforcement, external-service/authenticated E2E, and deployment evidence remain pending. |
 | CAP-030 | Accessibility/responsive baseline | Partial | Good component primitives and responsive grids; landmarks, labels, reduced motion, live regions, zoom, and mobile behavior need verification/fixes. |
 
 ## 7. Roles, responsibilities, and permissions
@@ -1056,11 +1056,11 @@ Direct affected packages included `next`, `nodemailer`, `firebase`, `firebase-ad
 | Control | Baseline state |
 |---|---|
 | Production build | Passed locally |
-| CI build/test gate | Missing |
+| CI build/test gate | WP-02 source implemented; first hosted run and branch protection pending |
 | Deployment manifest | Missing |
-| Environment template/validation | Missing/partial |
-| Database migration pipeline | Missing |
-| Live integration/E2E | Missing |
+| Environment template/validation | Placeholder template and test-database guard implemented; deployment validation pending |
+| Database migration pipeline | Empty-database CI and destructive-migration policy implemented; populated-data rehearsal/deployment pending |
+| Live integration/E2E | Public browser/accessibility and real PostgreSQL smoke added; Firebase/Supabase/SMTP/authenticated E2E pending |
 | Scheduler definition/health | Missing |
 | Email retry/outbox | Missing |
 | Security headers | Not visible; verify edge |
@@ -1101,6 +1101,7 @@ Direct affected packages included `next`, `nodemailer`, `firebase`, `firebase-ad
 | 1.0 | 18 Jul 2026 | Initial full repository audit and implementation baseline | Codex audit; project owner to confirm | Full Vitest and production build passed; source audits completed |
 | 1.1 | 18 Jul 2026 | Added dependency-ordered remediation plan, corrected change-to-risk ownership, recorded CERPS policy-alignment evidence, and scheduled shared UI templates after lifecycle approval | Codex planning; project owner to approve | All RISK-001–034 mapped exactly once; official University/CERPS sources checked; Markdown consistency checks passed |
 | 1.2 | 18 Jul 2026 | Implemented the WP-01 local hotfix: removed public claims mutation, added release/parent-aware review-document authorization, hardened maintenance execution, and added a temporary one-file submission guard | Codex implementation; project owner/deployer pending | Focused 10 files / 49 tests, full 82 files / 264 tests, Prisma validation, and production build passed locally; deployment and reconciliation remain pending |
+| 1.3 | 25 Jul 2026 | Implemented WP-02 dependency stabilization and repository quality gates: supported Next/React/runtime baseline, strict lint/type checks, CI/CodeQL/Dependabot, guarded migrations/database tests, public browser/accessibility smoke, and placeholder environment contract | Codex implementation; project owner/repository administrator/deployer pending | Clean install; audits with zero high/critical; lint/type; 81/263 ordinary tests plus one disposable-PostgreSQL test; four migrations/drift check; build; and 2/2 browser smokes passed locally |
 
 ### 15.2 Remediation work-package register
 
@@ -1108,8 +1109,8 @@ This register is the working index. `CHG-001` through `CHG-015` correspond one-t
 
 | Change ID | Related risks/capabilities | Proposed outcome | Priority | Status | Owner | Acceptance evidence |
 |---|---|---|---|---|---|---|
-| CHG-001 | RISK-001/002/006 | Emergency privilege, confidential-review, and scheduler containment | P0 | Implemented (local; deployment pending) | Codex (code); project owner/deployer pending | Local: focused 10/49, full 82/264, Prisma validation, and build pass. Remaining: migration, scheduler cutover, reconciliation, and deployed exploit-path smoke evidence |
-| CHG-002 | RISK-010/029, CAP-029 | CI safety net and supported dependency baseline | P1 enabler | Proposed | Unassigned | Required CI blocks a failing test/migration; no unaccepted reachable critical/high advisory |
+| CHG-001 | RISK-001/002/006 | Emergency privilege, confidential-review, and scheduler containment | P0 | Implemented (committed; deployment pending) | Codex (code); project owner/deployer pending | Commit `9949fb8`; focused 10/49, full 82/264, Prisma validation, and build pass. Remaining: migration, scheduler cutover, reconciliation, and deployed exploit-path smoke evidence |
+| CHG-002 | RISK-010/029, CAP-029 | CI safety net and supported dependency baseline | P1 enabler | Implemented (local; hosted enforcement pending) | Codex (code/docs); repository administrator/deployer pending | Clean install; zero high/critical audit; lint/type; 81/263 ordinary tests plus one real-DB test; empty migration/drift; build; 2/2 browser smokes. Remaining: protected checks, first hosted run, populated-data rehearsal, external-service E2E, and deployment evidence |
 | CHG-003 | RISK-004/005/008/009/017 | Identity, session, CSRF, email, headers, and onboarding hardening | P1 | Proposed | Unassigned | Role mismatch/session/CSRF/header/email/invitation security suite passes |
 | CHG-004 | RISK-003/007/015/026, CAP-001/006/009/013/018/021 | Logical multi-file versions, central document policy, and staged uploads | P0/P1 | Proposed | Unassigned | 1–10 file logical versions, uniform ACL, verified finalize/retry, scan, and migration checks pass |
 | CHG-005 | RISK-016/020, CAP-022/023/026 | Append-only lifecycle audit and transactional outbox | P1 | Proposed | Unassigned | Atomic transition/outbox, immutability, retry, deduplication, and recovery tests pass |
@@ -1147,7 +1148,7 @@ Known residuals and ownership:
 
 - The maintenance ledger prevents an ordinary duplicate daily run, but it cannot make individual notifications/emails exactly-once across a partial crash. A failed run also cannot safely resume under the same daily key. Per-effect/outbox idempotency belongs to WP-05; scheduler monitoring and recovery drills belong to WP-14.
 - Two concurrent or replayed valid one-file proposal/thesis requests can still create competing current documents because the database lacks the final logical-version/current-version invariant. The temporary guard prevents one request from containing several files; RISK-003 remains open for WP-04.
-- Standalone `npx tsc --noEmit` encounters pre-existing test-typing issues even though the Next.js production build's application type check passes. A clean explicit type-check gate belongs to WP-02/RISK-029.
+- The former standalone TypeScript failures are resolved by WP-02's Next.js route-type migration and explicit `next typegen && tsc --noEmit --incremental false` gate.
 
 | Risk | Local disposition | Closure condition |
 |---|---|---|
@@ -1155,6 +1156,44 @@ Known residuals and ownership:
 | RISK-002 | Code fix implemented; risk open | Deploy, reconcile malformed review documents, and verify role/release access against production-like data |
 | RISK-006 | Code fix implemented; risk open | Apply migration, cut scheduler to signed POST, verify fail-closed/replay behavior, and establish recovery monitoring |
 | RISK-003 | Temporary mitigation implemented; risk open | Complete WP-04 logical-version, uniqueness, concurrency, and data-migration acceptance |
+
+#### WP-02 implementation checkpoint — local, hosted enforcement pending
+
+Implemented changes:
+
+- Upgraded the application to Node.js 24, Next.js 16, React 19, current Firebase/Firebase Admin, Nodemailer, Sentry, Playwright, Vitest, ESLint, and related supported tooling; migrated Next.js request APIs, route handler types, Sentry instrumentation, and ESLint flat configuration.
+- Added reproducible runtime/package metadata, a placeholder-only `.env.example`, clean strict lint/type scripts, separate unit/integration/database/browser/external-browser commands, and production/all-dependency audit gates.
+- Added GitHub Actions for quality, disposable PostgreSQL migrations/drift, public Chromium/accessibility smoke, verified-secret scanning, and CodeQL, plus weekly Dependabot updates. Actions are pinned to immutable commit SHAs.
+- Added a checksum-enforced migration policy. The inherited destructive July migration is permitted only for empty-database validation and remains explicitly blocked for populated production data.
+- Guarded the real database integration test so it requires `TEST_DATABASE_URL`, a `test`/`ci` database name, and explicit opt-in for a remote host.
+- Added the operating and rollout procedure in `docs/operations/CI_AND_MIGRATION_GATES.md`.
+
+Local verification on 25 July 2026:
+
+| Gate | Result |
+|---|---|
+| Clean dependency install | Passed with `npm ci --no-audit --no-fund` |
+| Dependency audits | Passed at high threshold; 0 critical/high, 9 documented moderate findings (6 production, 3 development-only) |
+| Static checks | Strict ESLint and explicit Next.js/TypeScript type checking passed |
+| Ordinary automated tests | 81 files / 263 tests passed; the guarded database test was skipped without `TEST_DATABASE_URL` |
+| Disposable PostgreSQL | All four migrations applied; status current; zero schema drift; real database test 1/1 passed |
+| Migration policy | Passed with one known checksum-pinned production blocker covering 21 destructive statements |
+| Production build | Next.js 16.2.11 build passed; 67 static-page-generation units completed |
+| Browser/accessibility | 2/2 Chromium smokes passed against the production server; no serious/critical axe finding on the public application page |
+| Workflow structure | CI, CodeQL, and Dependabot YAML parsed successfully |
+
+Required evidence before CHG-002 can be `Verified`:
+
+1. Require `CI / Quality`, `CI / Database migrations`, `CI / Browser smoke`, `CI / Secret scan`, and `CodeQL / Analyze JavaScript and TypeScript` on the protected `main` branch and record a green first hosted run.
+2. Enable and record GitHub secret scanning, push protection, Dependabot alerts, and security updates.
+3. Rework or formally approve the blocked destructive migration only after a sanitized populated-data rehearsal, preservation checks, backup/restore timing, and named approval.
+4. Add isolated Firebase, Supabase, SMTP, and authenticated role E2E environments; the default smoke set deliberately excludes tests tagged `@external`.
+5. Record deployment, runtime smoke, and rollback/recovery evidence. WP-02 does not supply a deployment platform or close the WP-14 backup/monitoring work.
+
+| Risk | Local disposition | Closure condition |
+|---|---|---|
+| RISK-010 | Major code/dependency remediation implemented; risk reduced, not closed | Hosted audits remain required; review the nine moderate residuals by 25 Aug 2026 or on upstream release; demonstrate deployed compatibility |
+| RISK-029 | Repository CI/database/browser/security gates implemented; risk reduced, not closed | Required branch protection and first hosted checks pass; populated-data rehearsal, external-service E2E, and deployment evidence are recorded |
 
 ### 15.3 Update procedure
 
@@ -1295,6 +1334,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Fix:** Create an upgrade branch, update Next.js and direct packages to supported patched versions, regenerate lockfile, run full regression/migration/E2E tests, review breaking changes, and configure continuous dependency alerts/audit gates.
 - **Mitigation:** Assess advisory reachability, disable unused vulnerable features, apply edge controls, and document time-bounded exceptions.
 - **False-positive notes:** Audit totals include transitive packages and possibly unreachable paths; do not dismiss without reachability analysis.
+- **WP-02 remediation status (25 Jul 2026):** The local dependency graph now reports zero critical/high findings. Six moderate production findings remain in Firebase Admin's Google Cloud Storage/UUID chain and three development-only moderate findings remain in the `shadcn` MCP/Hono chain; their paths, current reachability assessment, and 25 August review date are recorded in the WP-02 operations guide. **Reduced, not closed** pending hosted audit enforcement, ongoing review, and deployed compatibility evidence.
 
 ### 16.3 Lifecycle, data-integrity, UI, and operational risks
 
@@ -1318,7 +1358,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 | RISK-026 | P2 | Specialized thesis service denies Supervisor downloads while general repository grants assigned-student thesis access; download audit covers only one path. | Central document authorization policy reused by every download path; product-approved Supervisor policy; unified immutable access audit. | Same authorization result across all paths; every sensitive download creates one audit event. |
 | RISK-027 | P2 | Correction type is self-selected and not linked to viva result; resubmitting thesis while corrections required bypasses correction approval; one approved package can ignore pending items. | Create correction requirement/order tied to viva/version with type, instructions, due date, reviewer, disposition; block alternate state bypasses. | State-machine tests enforce required order, matching type, all mandatory items resolved. |
 | RISK-028 | P2 | Application under-review items disappear from current admin list; no applicant tracking/reference/notifications. | Admin work queue across Submitted/Under Review with owner/SLA; public opaque reference and secure status channel; decision reasons/notices. | Under-review remains discoverable; applicant receives correct event without exposing internal data. |
-| RISK-029 | P2 | No working CI/deploy/migration/E2E pipeline; Playwright is outside `npm test`; integration tests mock external services. | Required CI checks with `npm ci`, audit/SAST, build, migrations, disposable Postgres/Supabase/Firebase emulators, Playwright and accessibility scan. | Protected branch cannot merge/deploy unless all required checks pass. |
+| RISK-029 | P2 | **WP-02 reduced:** repository workflows now cover locked install, lint/type/test/build, audits, CodeQL, secret scan, disposable PostgreSQL migrations/drift, a real database test, and public Playwright/accessibility smoke. Hosted protection, deployment automation, populated-data rehearsal, and Firebase/Supabase/SMTP/authenticated E2E remain absent or unverified. | Require the checked-in CI/CodeQL checks on `main`; add isolated external-service E2E and deployment/recovery evidence; keep the destructive migration blocked until populated-data rehearsal is approved. | Protected branch cannot merge/deploy unless all required checks pass; hosted/external/deployment evidence is recorded. |
 | RISK-030 | P2 | No scheduler health, backup/restore, retention, privacy/deletion, recovery, or operational runbooks are visible. | Define infrastructure as code, job monitoring, backup/restore drills, retention/legal hold, incident/recovery runbooks, RPO/RTO. | Runtime evidence and successful restore/job-failure drills documented. |
 | RISK-031 | P2 | Accessibility gaps: missing live regions/labels/skip link, nested mains, motion, 360px minimum, icon label, mobile drawer uncertainty. | Shared accessible patterns; reduced-motion support; semantic landmarks/labels; browser testing at keyboard, 320px, 400% zoom, contrast. | WCAG 2.2 AA audit findings resolved or explicitly accepted with evidence. |
 | RISK-032 | P3 | Empty route file, production test route, retired models/routes, duplicated student progress route, stale documentation create developer confusion. | Remove/quarantine test/empty/retired artifacts after migration; redirect duplicates; keep one generated route/workflow catalogue. | Route inventory contains no inert/stale surface; docs match tests and state model. |
@@ -1340,8 +1380,9 @@ The project team should not mark a risk “closed” solely because code was mer
 ## 17. Prioritized remediation and modernization plan
 
 **Planning revision:** 1.2, updated 18 July 2026  
-**Planning status:** WP-01 authorized and locally implemented; WP-02–WP-15 remain proposed for project-owner sequencing  
-**Implementation status:** WP-01 passed local automated/build verification; deployment, reconciliation, and runtime verification remain pending  
+**Planning status:** WP-01 and WP-02 authorized/implemented; WP-03–WP-15 remain proposed for project-owner sequencing
+
+**Implementation status:** WP-01 is committed with deployment/reconciliation pending. WP-02 passed local dependency, static, automated, database, migration, build, and browser gates; hosted enforcement, populated-data rehearsal, external-service E2E, and deployment evidence remain pending.
 **Canonical tracking rule:** Update this Markdown after each accepted fix. Regenerate the DOCX after the complete programme unless the project owner requests an interim release.
 
 This section converts every current risk in Section 16 into a dependency-ordered work package. The order is intentional:
@@ -1421,6 +1462,8 @@ Safe parallelism after WP-02 is limited to separately coordinated branches for W
 6. Require the checks for protected-branch merge and deployment; document any time-bounded, owner-approved exception.
 
 **Verification and rollout:** A clean checkout succeeds with `npm ci`; deliberate test and migration failures block delivery; migrations pass on an empty database and a sanitized current-schema copy; no unaccepted reachable critical/high advisory remains. Retain the prior deploy artifact and lockfile for application rollback, but retain the CI gates.
+
+**Checkpoint:** The supported dependency baseline, clean local gates, empty-database migration/drift checks, real PostgreSQL smoke, browser/accessibility smoke, CI/CodeQL/Dependabot definitions, environment template, and migration policy are implemented and locally verified. The inherited destructive migration remains correctly blocked for populated production data. See Section 15.2 and `docs/operations/CI_AND_MIGRATION_GATES.md`. WP-02 is not `Verified` until hosted protections/runs, sanitized populated-data rehearsal, external-service E2E, and deployment evidence are recorded.
 
 #### WP-03 — Identity, request, email, header, and onboarding hardening
 
@@ -1731,8 +1774,8 @@ This matrix accounts for RISK-001 through RISK-034 with no missing or duplicate 
 
 | Package | Status | Owner | Issue/branch/PR | Migration/backfill class | Verification/deployment evidence |
 |---|---|---|---|---|---|
-| WP-01 | Implemented (local; deployment pending) | Codex (code); project owner/deployer pending | `main` working tree; no commit/PR yet | Additive `MaintenanceRun` ledger plus identity/document/data reconciliation; no destructive schema change | Focused 10/49, full 82/264, Prisma validation, and build pass locally; migration, scheduler cutover, reconciliation, and deployed smoke evidence pending |
-| WP-02 | Proposed | Unassigned | — | Dependency/CI; migration validation infrastructure | — |
+| WP-01 | Implemented (committed; deployment pending) | Codex (code); project owner/deployer pending | Commit `9949fb8` on `main` | Additive `MaintenanceRun` ledger plus identity/document/data reconciliation; no destructive schema change | Focused 10/49, full 82/264, Prisma validation, and build pass locally; migration, scheduler cutover, reconciliation, and deployed smoke evidence pending |
+| WP-02 | Implemented (local; hosted enforcement pending) | Codex (code/docs); repository administrator/deployer pending | `main` working tree; commit/PR pending | Supported dependency/CI baseline; guarded empty-database migration validation; populated destructive migration remains blocked | Clean install; 0 critical/high audit; lint/type; 81/263 ordinary tests + 1 real-DB test; four migrations/drift; build; 2/2 browser smokes. Hosted protections/runs, populated rehearsal, external-service E2E, and deployment evidence pending |
 | WP-03 | Proposed | Unassigned | — | Auth/session and optional invitation/session-version expansion | — |
 | WP-04 | Proposed | Unassigned | — | Expand → backfill → dual operation → cutover → WP-15 contract | — |
 | WP-05 | Proposed | Unassigned | — | Additive audit/outbox; dual logging then worker cutover | — |

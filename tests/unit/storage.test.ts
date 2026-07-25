@@ -17,7 +17,6 @@ vi.mock("@supabase/supabase-js", () => ({
 
 import {
   MAX_STORAGE_FILE_SIZE_BYTES,
-  STORAGE_URL_EXPIRATION_MS,
   assertFileUploadConstraints,
   buildProposalStoragePath,
   generateUploadSignedUrl,

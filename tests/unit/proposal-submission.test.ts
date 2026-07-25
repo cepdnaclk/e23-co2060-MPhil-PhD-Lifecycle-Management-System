@@ -23,7 +23,6 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 import {
-  ProposalSubmissionError,
   proposalSubmissionSchema,
   submitResearchProposal,
   updateResearchProposalStatus,
@@ -89,7 +88,7 @@ describe("proposal submission utilities", () => {
           email: "student@example.com",
         },
       ),
-    ).rejects.toMatchObject<ProposalSubmissionError>({
+    ).rejects.toMatchObject({
       status: 400,
       message: "Upload one proposal document per submission.",
     });
@@ -140,7 +139,7 @@ describe("proposal submission utilities", () => {
       },
     );
 
-    await expect(promise).rejects.toMatchObject<ProposalSubmissionError>({
+    await expect(promise).rejects.toMatchObject({
       status: 403,
     });
     await expect(promise).rejects.toThrow(

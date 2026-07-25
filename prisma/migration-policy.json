@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "knownRisks": {
+    "20260709090000_lifecycle_examiner_reviews_and_multi_uploads": {
+      "sha256": "f838fde0f2998e0e4430717d1016d6b1eaf98cd340edc03abb504a2300536cef",
+      "productionDeploymentBlocked": true,
+      "reason": "Inherited migration deletes evaluation data and drops populated columns. It may be tested on an empty CI database, but it must not be applied to a populated environment until an approved preservation/backfill migration and rollback rehearsal exist."
+    }
+  }
+}

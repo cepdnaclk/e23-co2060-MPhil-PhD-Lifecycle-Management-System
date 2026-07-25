@@ -88,11 +88,6 @@ type StudentDocumentRecord = {
   } | null;
 };
 
-type ApprovedDocumentSnapshot = {
-  milestoneId: ProgressMilestoneId;
-  approvedAt: Date;
-};
-
 export class StudentProgressError extends Error {
   status: 400 | 403 | 404 | 500;
 
@@ -388,42 +383,6 @@ export function calculateStageCompletionPercentages(input: {
     "proposal" | "ethics" | "dataCollection" | "thesis",
     StageProgressSummary
   >;
-}
-
-function toApprovedDocumentSnapshot(
-  document: StudentDocumentRecord,
-  _approvedProgressIndex: number,
-): ApprovedDocumentSnapshot | null {
-  if (isProposalDocumentApproved(document)) {
-    return {
-      milestoneId: "proposal-approval",
-      approvedAt: document.updatedAt,
-    };
-  }
-
-  if (isProgressDocumentApproved(document)) {
-    return {
-      milestoneId: "data-collection",
-      approvedAt: document.updatedAt,
-    };
-  }
-
-  if (isThesisDocumentApproved(document)) {
-    return {
-      milestoneId: "thesis-submission",
-      approvedAt: document.updatedAt,
-    };
-  }
-
-  if (isCorrectionDocumentReleased(document)) {
-    return {
-      milestoneId: "examiner-feedback",
-      approvedAt:
-        document.correctionDocument?.approvedAt ?? document.updatedAt,
-    };
-  }
-
-  return null;
 }
 
 export function determineCurrentMilestone(input: {

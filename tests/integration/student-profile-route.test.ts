@@ -63,9 +63,9 @@ describe("student profile route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 
@@ -113,9 +113,9 @@ describe("student profile route", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 
@@ -163,9 +163,9 @@ describe("student profile route", () => {
         }),
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 
@@ -220,9 +220,9 @@ describe("student profile route", () => {
         }),
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "student-1",
-        },
+        }),
       },
     );
 

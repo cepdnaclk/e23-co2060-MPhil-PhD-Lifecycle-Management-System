@@ -13,9 +13,9 @@ type RouteParams = {
 
 export async function GET(
   request: NextRequest,
-  context: { params?: RouteParams },
+  context: { params: Promise<RouteParams> },
 ) {
-  const requestedRole = context.params?.role;
+  const requestedRole = (await context.params).role;
 
   if (!requestedRole) {
     return NextResponse.json({ error: "Dashboard role is required." }, { status: 400 });

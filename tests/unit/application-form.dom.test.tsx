@@ -6,10 +6,11 @@ import "@testing-library/jest-dom/vitest";
 
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const push = vi.fn();
+const fetchMock = vi.fn<typeof fetch>();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -20,16 +21,22 @@ vi.mock("next/navigation", () => ({
 import { ApplicationForm } from "@/components/application/application-form";
 
 function createJsonResponse(payload: unknown, ok = true) {
-  return {
-    ok,
-    json: vi.fn().mockResolvedValue(payload),
-  } as Response;
+  return new Response(JSON.stringify(payload), {
+    status: ok ? 200 : 400,
+    headers: { "content-type": "application/json" },
+  });
 }
 
 async function moveToDocumentsStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByPlaceholderText("Applicant full name"), "Jane Doe");
-  await user.type(screen.getByPlaceholderText("name@example.com"), "jane@example.com");
-  await user.type(screen.getByPlaceholderText("+94 7X XXX XXXX"), "+94771234567");
+  fireEvent.change(screen.getByPlaceholderText("Applicant full name"), {
+    target: { value: "Jane Doe" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("name@example.com"), {
+    target: { value: "jane@example.com" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("+94 7X XXX XXXX"), {
+    target: { value: "+94771234567" },
+  });
   await user.click(screen.getByRole("button", { name: "Continue" }));
 
   await waitFor(() => {
@@ -38,15 +45,18 @@ async function moveToDocumentsStep(user: ReturnType<typeof userEvent.setup>) {
     ).toBeInTheDocument();
   });
 
-  await user.type(
-    screen.getByPlaceholderText("Machine Learning for Education"),
-    "Machine Learning",
-  );
-  await user.type(
+  fireEvent.change(screen.getByPlaceholderText("Machine Learning for Education"), {
+    target: { value: "Machine Learning" },
+  });
+  fireEvent.change(
     screen.getByPlaceholderText(
       "Describe your motivation, proposed area, and fit for the programme.",
     ),
-    "I want to explore applied AI research for postgraduate study.",
+    {
+      target: {
+        value: "I want to explore applied AI research for postgraduate study.",
+      },
+    },
   );
   await user.click(screen.getByRole("button", { name: "Continue" }));
 
@@ -60,18 +70,19 @@ async function moveToDocumentsStep(user: ReturnType<typeof userEvent.setup>) {
 describe("ApplicationForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    fetchMock.mockReset();
+    global.fetch = fetchMock;
   });
 
   it("lets applicants jump back and forth with the step boxes after reaching review", async () => {
     const user = userEvent.setup();
-    vi.mocked(global.fetch as never).mockResolvedValueOnce(
+    fetchMock.mockResolvedValueOnce(
       createJsonResponse({
         storagePath: "applications/application-1/proposal.pdf",
         fileName: "proposal.pdf",
         mimeType: "application/pdf",
         sizeBytes: 4096,
-      }) as never,
+      }),
     );
 
     const { container } = render(<ApplicationForm />);
@@ -118,16 +129,16 @@ describe("ApplicationForm", () => {
 
   it("removes an uploaded file so another PDF can be selected", async () => {
     const user = userEvent.setup();
-    vi.mocked(global.fetch as never)
+    fetchMock
       .mockResolvedValueOnce(
         createJsonResponse({
           storagePath: "applications/application-1/proposal.pdf",
           fileName: "proposal.pdf",
           mimeType: "application/pdf",
           sizeBytes: 4096,
-        }) as never,
+        }),
       )
-      .mockResolvedValueOnce(createJsonResponse({ ok: true }) as never);
+      .mockResolvedValueOnce(createJsonResponse({ ok: true }));
 
     const { container } = render(<ApplicationForm />);
 

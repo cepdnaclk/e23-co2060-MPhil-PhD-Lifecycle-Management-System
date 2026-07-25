@@ -11,6 +11,7 @@ import userEvent from "@testing-library/user-event";
 
 const push = vi.fn();
 const refresh = vi.fn();
+const fetchMock = vi.fn<typeof fetch>();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -36,7 +37,8 @@ import {
 describe("LoginForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    fetchMock.mockReset();
+    global.fetch = fetchMock;
   });
 
   it("redirects to the matching dashboard after a successful login", async () => {
@@ -51,7 +53,7 @@ describe("LoginForm", () => {
     vi.mocked(getUserIdTokenResult).mockResolvedValue({
       claims: { role: "STUDENT" },
     } as never);
-    vi.mocked(global.fetch as never).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue({ ok: true }),
     } as never);
@@ -140,7 +142,7 @@ describe("LoginForm", () => {
     vi.mocked(getUserIdTokenResult).mockResolvedValue({
       claims: { role: "SUPERVISOR" },
     } as never);
-    vi.mocked(global.fetch as never).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: false,
       json: vi.fn().mockResolvedValue({
         error: "Your account is inactive. Please contact an administrator.",

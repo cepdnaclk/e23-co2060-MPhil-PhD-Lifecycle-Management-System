@@ -31,7 +31,6 @@ vi.mock("@/lib/notifications", () => ({
 import {
   createProposalEvaluation,
   proposalEvaluationSchema,
-  ProposalEvaluationError,
 } from "@/lib/proposals/evaluations";
 
 describe("proposal evaluation utilities", () => {
@@ -56,6 +55,7 @@ describe("proposal evaluation utilities", () => {
         "proposal-1",
         {
           feedback: "Text review.",
+          documents: [],
         },
         {
           uid: "firebase-supervisor-1",
@@ -65,7 +65,7 @@ describe("proposal evaluation utilities", () => {
           email: "supervisor@example.com",
         },
       ),
-    ).rejects.toMatchObject<ProposalEvaluationError>({
+    ).rejects.toMatchObject({
       status: 403,
       message: "Only examiners can submit proposal reviews.",
     });

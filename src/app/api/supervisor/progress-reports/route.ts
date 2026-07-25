@@ -75,7 +75,7 @@ export const GET = withAuth(
           },
         })),
       });
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Unable to load progress reports." },
         { status: 500 },

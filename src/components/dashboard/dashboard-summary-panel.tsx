@@ -6,9 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Activity, AlertTriangle, CheckCircle2, Info, Circle } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 
 import type {
   DashboardKpiCard,

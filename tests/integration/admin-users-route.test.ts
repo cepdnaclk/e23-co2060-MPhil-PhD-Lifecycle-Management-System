@@ -143,9 +143,9 @@ describe("admin user routes", () => {
         },
       }) as never,
       {
-        params: {
+        params: Promise.resolve({
           id: "user-archive-1",
-        },
+        }),
       },
     );
 

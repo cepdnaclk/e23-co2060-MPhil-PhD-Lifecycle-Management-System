@@ -104,13 +104,15 @@ describe("review panel management and dashboard integration", () => {
     vi.mocked(prisma.ethicsApproval.count).mockResolvedValue(0 as never);
     vi.mocked(prisma.progressReport.count).mockResolvedValue(0 as never);
     vi.mocked(prisma.student.count).mockImplementation(async () => studentsUnderReview as never);
-    vi.mocked(prisma.student.update).mockImplementation(async () => {
-      studentsUnderReview = 1;
-      return {
-        id: "student-1",
-        academicStatus: "UNDER_REVIEW",
-      } as never;
-    });
+    vi.mocked(prisma.student.update).mockImplementation(
+      (async () => {
+        studentsUnderReview = 1;
+        return {
+          id: "student-1",
+          academicStatus: "UNDER_REVIEW",
+        };
+      }) as never,
+    );
   });
 
   it("returns 410 when an administrator tries to create a retired review panel", async () => {
@@ -147,7 +149,7 @@ describe("review panel management and dashboard integration", () => {
           studentIds: ["student-1"],
         }),
       }) as never,
-      {},
+      { params: Promise.resolve({}) },
     );
 
     expect(response.status).toBe(410);

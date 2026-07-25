@@ -18,7 +18,6 @@ import {
   type DashboardStatusTone,
   type DashboardSummary,
 } from "@/types/dashboard";
-import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 
 export class DashboardAccessError extends Error {
   status: number;

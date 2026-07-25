@@ -150,7 +150,7 @@ describe("thesis submission route", () => {
           ],
         }),
       }) as never,
-      {},
+      { params: Promise.resolve({}) },
     );
 
     expect(response.status).toBe(201);
@@ -219,7 +219,7 @@ describe("thesis submission route", () => {
           ],
         }),
       }) as never,
-      {},
+      { params: Promise.resolve({}) },
     );
 
     expect(response.status).toBe(403);
@@ -253,7 +253,7 @@ describe("thesis submission route", () => {
           ],
         }),
       }) as never,
-      {},
+      { params: Promise.resolve({}) },
     );
 
     expect(response.status).toBe(400);

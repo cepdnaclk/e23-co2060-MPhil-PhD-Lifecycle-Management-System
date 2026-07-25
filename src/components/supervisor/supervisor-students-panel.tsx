@@ -6,9 +6,6 @@ import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,10 +72,6 @@ function getRegistrationLabel(
   return registration?.status ?? "UNKNOWN";
 }
 
-function getProposalLabel(proposal: SupervisorStudentListItem["latestProposal"]) {
-  return proposal?.status ?? "NO_PROPOSAL";
-}
-
 export function SupervisorStudentsPanel({
   initialStudents = EMPTY_STUDENTS,
 }: {
@@ -114,7 +107,7 @@ export function SupervisorStudentsPanel({
         
         try {
           payload = JSON.parse(responseText);
-        } catch (e) {
+        } catch {
           console.error("Failed to parse supervisor students response:", responseText);
           throw new Error(`Invalid response from server (${response.status}). Please check console logs.`);
         }
@@ -177,7 +170,9 @@ export function SupervisorStudentsPanel({
           <Label>Program Type</Label>
           <Select
             value={programFilter}
-            onValueChange={(val: any) => setProgramFilter(val)}
+            onValueChange={(value) =>
+              setProgramFilter(value as typeof programFilter)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="All programmes" />
@@ -194,7 +189,9 @@ export function SupervisorStudentsPanel({
           <Label>Registration Status</Label>
           <Select
             value={registrationFilter}
-            onValueChange={(val: any) => setRegistrationFilter(val)}
+            onValueChange={(value) =>
+              setRegistrationFilter(value as typeof registrationFilter)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="All registrations" />
@@ -249,8 +246,6 @@ export function SupervisorStudentsPanel({
               ) : (
                 filteredStudents.map((entry) => {
                   const registrationLabel = getRegistrationLabel(entry.currentRegistration);
-                  const proposalLabel = getProposalLabel(entry.latestProposal);
-
                   return (
                     <TableRow key={entry.assignmentId}>
                       <TableCell className="px-6">

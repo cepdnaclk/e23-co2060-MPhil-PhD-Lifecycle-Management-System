@@ -5,7 +5,7 @@ import {
   ALLOWED_DOCUMENT_MIME_TYPES,
   MAX_STORAGE_FILE_SIZE_BYTES,
 } from "@/lib/validation/uploads";
-import { optionalSanitizedString, sanitizedString } from "@/lib/validation/schemas";
+import { sanitizedString } from "@/lib/validation/schemas";
 
 const uploadedProposalDocumentSchema = z.object({
   fileName: sanitizedString.min(1, "A file name is required."),

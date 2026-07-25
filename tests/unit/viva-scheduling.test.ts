@@ -17,7 +17,7 @@ vi.mock("@/lib/notifications", () => ({
 }));
 
 import { prisma } from "@/lib/prisma/client";
-import { scheduleViva, VivaWorkflowError } from "@/lib/vivas";
+import { scheduleViva } from "@/lib/vivas";
 
 describe("viva scheduling rules", () => {
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe("viva scheduling rules", () => {
         },
         authContext,
       ),
-    ).rejects.toMatchObject<VivaWorkflowError>({
+    ).rejects.toMatchObject({
       status: 400,
       message:
         "A viva can only be scheduled if the thesis is UNDER_EXAMINATION.",
@@ -76,7 +76,7 @@ describe("viva scheduling rules", () => {
         },
         authContext,
       ),
-    ).rejects.toMatchObject<VivaWorkflowError>({
+    ).rejects.toMatchObject({
       status: 400,
       message: "Scheduled date must be in the future",
     });

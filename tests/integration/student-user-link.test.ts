@@ -3,7 +3,42 @@ import { beforeAll, afterAll, describe, expect, it } from "vitest";
 
 import { createStudentWithUser } from "@/lib/prisma/student-repository";
 
-const describeIfDatabase = process.env.DATABASE_URL ? describe : describe.skip;
+function getSafeTestDatabaseUrl() {
+  const value = process.env.TEST_DATABASE_URL?.trim();
+
+  if (!value) {
+    return undefined;
+  }
+
+  const url = new URL(value);
+  const databaseName = decodeURIComponent(url.pathname.replace(/^\//, "")).toLowerCase();
+  const hasTestDatabaseName =
+    databaseName === "test" ||
+    databaseName === "ci" ||
+    /(?:^|[-_])(test|ci)(?:[-_]|$)/.test(databaseName);
+
+  if (!hasTestDatabaseName) {
+    throw new Error(
+      "TEST_DATABASE_URL must name a dedicated test database containing 'test' or 'ci'.",
+    );
+  }
+
+  const isLocalHost = ["127.0.0.1", "localhost", "::1"].includes(url.hostname);
+  if (!isLocalHost && process.env.ALLOW_REMOTE_TEST_DATABASE !== "true") {
+    throw new Error(
+      "Remote test databases require ALLOW_REMOTE_TEST_DATABASE=true and an explicitly isolated database.",
+    );
+  }
+
+  return value;
+}
+
+const testDatabaseUrl = getSafeTestDatabaseUrl();
+if (testDatabaseUrl) {
+  process.env.DATABASE_URL = testDatabaseUrl;
+}
+
+const describeIfDatabase = testDatabaseUrl ? describe : describe.skip;
 
 describeIfDatabase("createStudentWithUser", () => {
   const prisma = new PrismaClient();

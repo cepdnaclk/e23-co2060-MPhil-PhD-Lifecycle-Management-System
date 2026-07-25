@@ -10,5 +10,7 @@ test("public application form is reachable and exposes the submission flow", asy
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByText("Current step")).toBeVisible();
+  await expect(
+    page.locator("form").getByText("Current step", { exact: true }),
+  ).toBeVisible();
 });

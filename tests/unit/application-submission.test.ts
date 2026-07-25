@@ -40,7 +40,6 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 import {
-  ApplicationSubmissionError,
   applicationSubmissionSchema,
   assertValidApplicationUploadFile,
   updateApplicationStatus,
@@ -138,7 +137,7 @@ describe("application submission utilities", () => {
 
     await expect(
       updateApplicationStatus("application-1", ApplicationStatus.SUBMITTED),
-    ).rejects.toMatchObject<ApplicationSubmissionError>({
+    ).rejects.toMatchObject({
       status: 400,
       message: "Invalid application status transition: REJECTED -> SUBMITTED",
     });
@@ -162,7 +161,7 @@ describe("application submission utilities", () => {
 
     await expect(
       updateApplicationStatus("application-admit-1", ApplicationStatus.ADMITTED),
-    ).rejects.toMatchObject<ApplicationSubmissionError>({
+    ).rejects.toMatchObject({
       status: 500,
       message: "DB transaction failed",
     });

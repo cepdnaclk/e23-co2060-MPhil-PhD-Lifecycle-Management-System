@@ -283,7 +283,7 @@ export function assertCanAccessStoragePath(
 
 export async function generateUploadSignedUrl(
   path: string,
-  contentType: string,
+  _contentType: string,
 ): Promise<string> {
   const normalizedPath = normalizeStoragePath(path);
   const supabase = getSupabaseClient();

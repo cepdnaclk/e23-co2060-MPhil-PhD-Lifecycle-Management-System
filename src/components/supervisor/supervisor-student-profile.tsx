@@ -63,7 +63,7 @@ export function SupervisorStudentProfile({
 
         try {
           payload = JSON.parse(responseText);
-        } catch (e) {
+        } catch {
           console.error("Failed to parse student profile response:", responseText);
           throw new Error(`Invalid response from server (${response.status}). Please check console logs.`);
         }

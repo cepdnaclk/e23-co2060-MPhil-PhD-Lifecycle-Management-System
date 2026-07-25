@@ -56,7 +56,7 @@ async function testSupabaseConnection() {
   console.log(`\nAttempting to query bucket: '${bucketName}'...`);
   
   // Test 1: Check if bucket exists/is accessible by listing contents of a non-existent folder
-  const { data, error } = await supabase.storage.from(bucketName).list('test-connection-path-do-not-create', {
+  const { error } = await supabase.storage.from(bucketName).list('test-connection-path-do-not-create', {
     limit: 1,
     offset: 0,
   });
@@ -70,7 +70,7 @@ async function testSupabaseConnection() {
   console.log("✅ Connection successful! The bucket is accessible with the provided credentials.");
   
   // Test 2: Attempt to generate a signed upload URL to ensure signing key is valid
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from(bucketName)
     .createSignedUploadUrl('test-connection/test-file.txt');
     

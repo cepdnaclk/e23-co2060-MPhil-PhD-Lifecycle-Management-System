@@ -1,4 +1,5 @@
 import { ApplicationStatus } from "@prisma/client";
+import { describe, expect, it } from "vitest";
 
 import { assertValidApplicationStatusTransition } from "@/lib/prisma/application-status";
 

@@ -12,7 +12,7 @@ export const GET = withAuth(async (request: NextRequest, context) => {
   try {
     const students = await getAllStudentAssignments(context.auth);
     return NextResponse.json({ students });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Unable to load student assignments." },
       { status: 500 },

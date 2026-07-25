@@ -16,7 +16,6 @@ vi.mock("@/lib/prisma/client", () => ({
 import {
   mapVivaOutcomeToThesisStatus,
   recordVivaOutcome,
-  VivaWorkflowError,
 } from "@/lib/vivas";
 import { prisma } from "@/lib/prisma/client";
 
@@ -84,7 +83,7 @@ describe("viva workflow rules", () => {
           email: "examiner@example.com",
         },
       ),
-    ).rejects.toMatchObject<VivaWorkflowError>({
+    ).rejects.toMatchObject({
       status: 409,
       message:
         "Viva outcomes can only be recorded while the thesis is UNDER_EXAMINATION.",

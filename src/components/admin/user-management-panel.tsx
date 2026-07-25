@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import {
   optionalSanitizedString,
@@ -234,7 +234,10 @@ export function UserManagementPanel() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={selectedRole} onValueChange={(val) => setSelectedRole(val as any)}>
+          <Select
+            value={selectedRole}
+            onValueChange={(value) => setSelectedRole(value as AdminManagedRole)}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select role" />
             </SelectTrigger>

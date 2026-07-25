@@ -27,7 +27,6 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import {
   forwardProgressReportToPanel,
-  ProgressReportSignOffError,
   signOffProgressReport,
 } from "@/lib/progress-reports/sign-off";
 import { prisma } from "@/lib/prisma/client";
@@ -78,7 +77,7 @@ describe("progress report sign-off rules", () => {
           email: "primary@example.com",
         },
       ),
-    ).rejects.toMatchObject<ProgressReportSignOffError>({
+    ).rejects.toMatchObject({
       status: 410,
       message:
         "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",
@@ -87,19 +86,8 @@ describe("progress report sign-off rules", () => {
 
   it("rejects forwarding progress reports to retired supervisor panels", async () => {
     await expect(
-      forwardProgressReportToPanel({
-        report: {
-          periodLabel: "2026 Q1",
-          isSupervisorSignedOff: false,
-          student: {
-            user: {
-              displayName: "Student One",
-            },
-          },
-        },
-        supervisorName: "Dr. Primary",
-      }),
-    ).rejects.toMatchObject<ProgressReportSignOffError>({
+      forwardProgressReportToPanel(),
+    ).rejects.toMatchObject({
       status: 410,
       message:
         "Supervisor progress-report sign-off has been removed. Supervisors can view and monitor submitted reports only.",

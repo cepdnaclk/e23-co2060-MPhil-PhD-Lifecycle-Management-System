@@ -373,7 +373,7 @@ describe("getDocumentDownloadUrl", () => {
 
     await expect(
       getDocumentDownloadUrl("review-document-1", mockStudentAuth),
-    ).rejects.toMatchObject<DocumentRepositoryError>({ status: 403 });
+    ).rejects.toMatchObject({ status: 403 });
 
     const repositoryScope = repositoryScopeFromWhere(
       findFirstSpy.mock.calls[0]?.[0]?.where,

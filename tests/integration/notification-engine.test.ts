@@ -93,7 +93,7 @@ describe("GET /api/notifications - in-app display", () => {
   it("returns the authenticated user's notifications", async () => {
     vi.mocked(authenticateBearerRequest).mockResolvedValue(supervisorAuth as never);
 
-    const response = await GET(makeRequest(), { auth: supervisorAuth });
+    const response = await GET(makeRequest());
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -104,7 +104,7 @@ describe("GET /api/notifications - in-app display", () => {
   it("filters by recipientId of the authenticated user", async () => {
     vi.mocked(authenticateBearerRequest).mockResolvedValue(supervisorAuth as never);
 
-    await GET(makeRequest(), { auth: supervisorAuth });
+    await GET(makeRequest());
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -122,7 +122,7 @@ describe("PATCH /api/notifications - bulk mark as read", () => {
   it("marks all unread notifications as read for the current user", async () => {
     vi.mocked(authenticateBearerRequest).mockResolvedValue(supervisorAuth as never);
 
-    const response = await PATCH(makeRequest("PATCH"), { auth: supervisorAuth });
+    const response = await PATCH(makeRequest("PATCH"));
 
     expect(response.status).toBe(200);
     expect(prisma.notification.updateMany).toHaveBeenCalledWith(

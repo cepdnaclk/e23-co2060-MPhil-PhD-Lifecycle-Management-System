@@ -26,7 +26,6 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import {
   hasTwoConsecutiveFailingEvaluations,
-  ReviewPanelError,
   submitPanelEvaluation,
 } from "@/lib/review-panels";
 import { prisma } from "@/lib/prisma/client";
@@ -45,17 +44,11 @@ describe("review panel workflow rules", () => {
 
   it("does not calculate retired supervisor panel outcomes", () => {
     expect(
-      hasTwoConsecutiveFailingEvaluations([
-        { result: "needs revision" },
-        { result: "still needs revision" },
-      ]),
+      hasTwoConsecutiveFailingEvaluations(),
     ).toBe(false);
 
     expect(
-      hasTwoConsecutiveFailingEvaluations([
-        { result: "needs revision" },
-        { result: "satisfactory" },
-      ]),
+      hasTwoConsecutiveFailingEvaluations(),
     ).toBe(false);
   });
 
@@ -85,7 +78,7 @@ describe("review panel workflow rules", () => {
           email: "panel@example.com",
         },
       ),
-    ).rejects.toMatchObject<ReviewPanelError>({
+    ).rejects.toMatchObject({
       status: 410,
       message:
         "Supervisor review panels have been replaced by examiner review assignments.",

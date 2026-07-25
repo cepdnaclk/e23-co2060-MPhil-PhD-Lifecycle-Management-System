@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -69,7 +68,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     void fetchDetails();
   }, [applicationId]);
 
-  const handleDownload = async (docId: string, fileName: string) => {
+  const handleDownload = async (docId: string) => {
     try {
       const res = await fetch(`/api/applications/${applicationId}/documents/${docId}/download`);
       if (!res.ok) throw new Error("Failed to get download link");
@@ -77,7 +76,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
 
       // Open the signed URL in a new tab
       window.open(data.downloadUrl, "_blank");
-    } catch (err) {
+    } catch {
       alert("Failed to download document. Please try again.");
     }
   };
@@ -230,7 +229,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownload(doc.id, doc.fileName)}
+                          onClick={() => handleDownload(doc.id)}
                         >
                           Download
                         </Button>

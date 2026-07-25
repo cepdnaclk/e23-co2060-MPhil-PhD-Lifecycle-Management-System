@@ -13,7 +13,7 @@ function loadEnv() {
         process.env[match[1]] = match[2].replace(/(^['"]|['"]$)/g, '');
       }
     }
-  } catch (error) {}
+  } catch {}
 }
 
 async function testUpload() {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
+import { ApplicationStatus, Prisma, UserRole } from "@prisma/client";
 
 import { withAuth } from "@/lib/firebase/with-auth";
 import { prisma } from "@/lib/prisma/client";
@@ -43,10 +43,20 @@ export const GET = withAuth(
     try {
       const { searchParams } = new URL(request.url);
       const statusParam = searchParams.get("status");
+      const status = statusParam
+        ? Object.values(ApplicationStatus).find((value) => value === statusParam)
+        : undefined;
 
-      const whereClause = {
+      if (statusParam && !status) {
+        return NextResponse.json(
+          { error: "Invalid application status." },
+          { status: 400 },
+        );
+      }
+
+      const whereClause: Prisma.ApplicationWhereInput = {
         isArchived: false,
-        ...(statusParam ? { status: statusParam as any } : {}),
+        ...(status ? { status } : {}),
       };
 
       const applications = await prisma.application.findMany({

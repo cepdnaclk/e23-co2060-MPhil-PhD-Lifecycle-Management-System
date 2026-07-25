@@ -13,7 +13,7 @@ export type WithAuthContext<TParams = Record<string, string>> = {
 };
 
 type BaseRouteContext<TParams = Record<string, string>> = {
-  params?: TParams;
+  params: Promise<TParams>;
 };
 
 export type AuthenticatedRouteHandler<TParams = Record<string, string>> = (
@@ -21,19 +21,28 @@ export type AuthenticatedRouteHandler<TParams = Record<string, string>> = (
   context: WithAuthContext<TParams>,
 ) => Response | Promise<Response>;
 
+type AuthenticatedRoute<TParams = Record<string, string>> = {
+  (request: NextRequest): Promise<Response>;
+  (
+    request: NextRequest,
+    context: BaseRouteContext<TParams>,
+  ): Promise<Response>;
+};
+
 export function withAuth<TParams = Record<string, string>>(
   handler: AuthenticatedRouteHandler<TParams>,
   allowedRoles: AppUserRole[],
-) {
-  return async (
+): AuthenticatedRoute<TParams> {
+  const authenticatedRoute = async (
     request: NextRequest,
-    context: BaseRouteContext<TParams> = {},
+    context?: BaseRouteContext<TParams>,
   ): Promise<Response> => {
     try {
       const auth = await authenticateBearerRequest(request, allowedRoles);
+      const params = await context?.params;
 
       return handler(request, {
-        ...context,
+        params,
         auth,
       });
     } catch (error) {
@@ -54,4 +63,6 @@ export function withAuth<TParams = Record<string, string>>(
       });
     }
   };
+
+  return authenticatedRoute as AuthenticatedRoute<TParams>;
 }

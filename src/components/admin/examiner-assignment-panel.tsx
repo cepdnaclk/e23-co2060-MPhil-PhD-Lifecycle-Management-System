@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState, useRef, useEffect, type FormEvent } from "react";
+import React, { useState, type FormEvent } from "react";
 
 type ThesisOption = {
   id: string;

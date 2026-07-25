@@ -62,13 +62,15 @@ describe("admin progress monitoring routes", () => {
     vi.mocked(prisma.ethicsApproval.count).mockResolvedValue(1 as never);
     vi.mocked(prisma.progressReport.count).mockResolvedValue(3 as never);
     vi.mocked(prisma.student.count).mockImplementation(async () => studentsUnderReviewCount as never);
-    vi.mocked(prisma.student.update).mockImplementation(async () => {
-      studentsUnderReviewCount = 1;
-      return {
-        id: "student-1",
-        academicStatus: AcademicStatus.UNDER_REVIEW,
-      } as never;
-    });
+    vi.mocked(prisma.student.update).mockImplementation(
+      (async () => {
+        studentsUnderReviewCount = 1;
+        return {
+          id: "student-1",
+          academicStatus: AcademicStatus.UNDER_REVIEW,
+        };
+      }) as never,
+    );
   });
 
   it("returns 403 for student and supervisor access to monitoring endpoints", async () => {
