@@ -54,23 +54,23 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
-    "@playwright/test": "1.61.1",
-    "@testing-library/jest-dom": "6.6.3",
+    "@playwright/test": "1.62.0",
+    "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
-    "@types/node": "24.13.3",
+    "@types/node": "26.1.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "autoprefixer": "10.4.21",
-    "eslint": "9.39.5",
+    "autoprefixer": "10.5.4",
+    "eslint": "10.8.0",
     "eslint-config-next": "16.2.11",
-    "jsdom": "26.0.0",
+    "jsdom": "29.1.1",
     "postcss": "8.5.23",
-    "prisma": "5.22.0",
+    "prisma": "7.9.0",
     "shadcn": "4.14.1",
-    "tailwindcss": "3.4.17",
-    "typescript": "5.8.3",
-    "vitest": "3.2.7"
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
   },
   "engines": {
     "node": ">=24.15.0 <25"
