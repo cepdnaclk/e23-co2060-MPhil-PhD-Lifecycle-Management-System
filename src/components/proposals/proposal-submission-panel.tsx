@@ -58,8 +58,6 @@ type ProposalOverviewResponse = {
 type UploadedProposalDocument = {
   fileName: string;
   storagePath: string;
-  mimeType: string;
-  sizeBytes: number;
 };
 
 async function loadProposalOverview(): Promise<ProposalOverviewResponse> {
@@ -103,6 +101,7 @@ export function ProposalSubmissionPanel() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedProposalDocument[]>([]);
+  const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,8 +149,8 @@ export function ProposalSubmissionPanel() {
       return;
     }
 
-    if (selectedFiles.length > 1) {
-      setErrorMessage("Upload one proposal document per submission.");
+    if (selectedFiles.length > 10) {
+      setErrorMessage("Upload no more than 10 proposal documents in one version.");
       event.target.value = "";
       return;
     }
@@ -159,13 +158,25 @@ export function ProposalSubmissionPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsUploading(true);
+    let preparedSessionId: string | null = null;
 
     try {
-      const file = selectedFiles[0];
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        setUploadSessionId(null);
+        setUploadedDocuments([]);
+      }
+
       const parsedUploadRequest = proposalUploadRequestSchema.safeParse({
-        fileName: file.name,
-        contentType: file.type,
-        fileSizeBytes: file.size,
+        idempotencyKey: crypto.randomUUID(),
+        files: selectedFiles.map((file) => ({
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        })),
       });
 
       if (!parsedUploadRequest.success) {
@@ -181,53 +192,64 @@ export function ProposalSubmissionPanel() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          fileName: parsedUploadRequest.data.fileName,
-          contentType: parsedUploadRequest.data.contentType,
-          fileSizeBytes: parsedUploadRequest.data.fileSizeBytes,
-        }),
+        body: JSON.stringify(parsedUploadRequest.data),
       });
       const uploadUrlPayload = (await uploadUrlResponse.json()) as {
         error?: string;
-        signedUrl?: string;
-        storagePath?: string;
+        uploadSessionId?: string;
+        uploads?: Array<{
+          fileId: string;
+          fileName: string;
+          signedUrl: string | null;
+          storagePath: string;
+        }>;
       };
 
       if (
         !uploadUrlResponse.ok ||
-        !uploadUrlPayload.signedUrl ||
-        !uploadUrlPayload.storagePath
+        !uploadUrlPayload.uploadSessionId ||
+        uploadUrlPayload.uploads?.length !== selectedFiles.length
       ) {
         throw new Error(uploadUrlPayload.error ?? "Unable to prepare the proposal upload.");
       }
+      preparedSessionId = uploadUrlPayload.uploadSessionId;
 
-      const uploadResponse = await secureFetch(uploadUrlPayload.signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Proposal file upload failed.");
+      for (const [index, file] of selectedFiles.entries()) {
+        const target = uploadUrlPayload.uploads[index];
+        if (!target?.signedUrl) {
+          throw new Error(`No upload target was returned for ${file.name}.`);
+        }
+        const uploadResponse = await secureFetch(target.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!uploadResponse.ok) {
+          throw new Error(`Proposal file upload failed for ${file.name}.`);
+        }
       }
 
-      setUploadedDocuments([
-        {
-          fileName: file.name,
-          storagePath: uploadUrlPayload.storagePath,
-          mimeType: file.type,
-          sizeBytes: file.size,
-        },
-      ]);
+      setUploadSessionId(uploadUrlPayload.uploadSessionId);
+      setUploadedDocuments(
+        uploadUrlPayload.uploads.map((target) => ({
+          fileName: target.fileName,
+          storagePath: target.storagePath,
+        })),
+      );
     } catch (error) {
+      if (preparedSessionId) {
+        await secureFetch(`/api/uploads/${preparedSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "Unable to upload the proposal documents.",
       );
       setUploadedDocuments([]);
+      setUploadSessionId(null);
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -239,15 +261,15 @@ export function ProposalSubmissionPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (uploadedDocuments.length === 0) {
-      setErrorMessage("Upload one PDF or ZIP proposal document before submitting.");
+    if (uploadedDocuments.length === 0 || !uploadSessionId) {
+      setErrorMessage("Upload at least one PDF or ZIP proposal document before submitting.");
       return;
     }
 
     const parsedSubmission = proposalSubmissionSchema.safeParse({
       title,
       abstract,
-      documents: uploadedDocuments,
+      uploadSessionId,
     });
 
     if (!parsedSubmission.success) {
@@ -284,6 +306,7 @@ export function ProposalSubmissionPanel() {
           : "Proposal submitted successfully.",
       );
       setUploadedDocuments([]);
+      setUploadSessionId(null);
       await refreshOverview();
     } catch (error) {
       setErrorMessage(
@@ -379,11 +402,12 @@ export function ProposalSubmissionPanel() {
                       </Label>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Upload one PDF, or one ZIP containing the complete proposal package.
-                      Selecting another file replaces the current selection.
+                      Upload 1–10 PDF or ZIP files as one proposal version.
+                      Selecting again creates a replacement upload session.
                     </p>
                     <Input
                       type="file"
+                      multiple
                       accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
                       onChange={handleFileUpload}
                       disabled={

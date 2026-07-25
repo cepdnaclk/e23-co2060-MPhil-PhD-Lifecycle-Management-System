@@ -78,6 +78,12 @@ describe("ApplicationForm", () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
       createJsonResponse({
+        draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+        draftToken: "a".repeat(43),
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({
         storagePath: "applications/application-1/proposal.pdf",
         fileName: "proposal.pdf",
         mimeType: "application/pdf",
@@ -132,6 +138,12 @@ describe("ApplicationForm", () => {
     fetchMock
       .mockResolvedValueOnce(
         createJsonResponse({
+          draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+          draftToken: "a".repeat(43),
+        }),
+      )
+      .mockResolvedValueOnce(
+        createJsonResponse({
           storagePath: "applications/application-1/proposal.pdf",
           fileName: "proposal.pdf",
           mimeType: "application/pdf",
@@ -169,7 +181,7 @@ describe("ApplicationForm", () => {
 
     expect(fileInput).not.toBeDisabled();
     expect(global.fetch).toHaveBeenNthCalledWith(
-      2,
+      3,
       "/api/applications/upload",
       expect.objectContaining({
         method: "DELETE",

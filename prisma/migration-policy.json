@@ -5,6 +5,11 @@
       "sha256": "f838fde0f2998e0e4430717d1016d6b1eaf98cd340edc03abb504a2300536cef",
       "productionDeploymentBlocked": true,
       "reason": "Inherited migration deletes evaluation data and drops populated columns. It may be tested on an empty CI database, but it must not be applied to a populated environment until an approved preservation/backfill migration and rollback rehearsal exist."
+    },
+    "20260726120000_add_logical_document_versions": {
+      "sha256": "4d43e9ef0c5a1925308d85904cf0fd045afac17075bd81faec52a41c964e9ed8",
+      "productionDeploymentBlocked": true,
+      "reason": "WP-04 expands and backfills logical proposal/thesis versions, updates legacy relationships, and replaces the proposal evaluation uniqueness index. It must not be applied to populated production data until a sanitized rehearsal confirms the backfill, ambiguous records are reviewed, and rollback/roll-forward evidence is approved."
     }
   }
 }

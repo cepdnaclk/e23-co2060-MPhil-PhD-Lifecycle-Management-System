@@ -1,21 +1,26 @@
+import { randomUUID } from "node:crypto";
+
 import {
   ApplicationStatus,
+  DocumentVerificationStatus,
   DocumentType,
   ProposalStatus,
   RegistrationStatus,
+  UploadPurpose,
+  UploadSessionStatus,
   UserRole,
 } from "@prisma/client";
 
 import { notify } from "@/lib/notifications";
 import { assertValidProposalStatusTransition } from "@/lib/prisma/proposal-status";
 import { prisma } from "@/lib/prisma/client";
+import { withSerializableRetry } from "@/lib/prisma/transactions";
 import {
-  assertFileUploadConstraints,
-  buildProposalStoragePath,
-  generateUploadSignedUrl,
-  normalizeStoragePath,
-  StorageAccessError,
-} from "@/lib/storage";
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 import {
@@ -56,11 +61,11 @@ type ProposalRecord = {
 };
 
 export class ProposalSubmissionError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 500;
 
   constructor(
     message: string,
-    status: 400 | 403 | 404 | 409 | 413 | 500 = 400,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 500 = 400,
   ) {
     super(message);
     this.name = "ProposalSubmissionError";
@@ -195,31 +200,6 @@ async function findStudentProposalContext(
   });
 }
 
-function assertProposalDocumentUpload(input: {
-  contentType: string;
-  fileSizeBytes: number;
-  path: string;
-}) {
-  try {
-    assertFileUploadConstraints(input);
-  } catch (error) {
-    if (error instanceof StorageAccessError) {
-      throw new ProposalSubmissionError(error.message, error.status);
-    }
-
-    throw error;
-  }
-
-  const normalizedPath = normalizeStoragePath(input.path);
-
-  if (!normalizedPath.startsWith("proposals/")) {
-    throw new ProposalSubmissionError(
-      "Proposal documents must be uploaded to the proposals directory.",
-      400,
-    );
-  }
-}
-
 function getExpectedNextVersion(proposal: ProposalRecord | null): number {
   if (!proposal) {
     return 1;
@@ -268,28 +248,6 @@ async function requireStudentProposalContext(
   return student as StudentProposalSubmissionContext;
 }
 
-export function assertValidProposalUploadFile(input: {
-  studentId: string;
-  version: number;
-  fileName: string;
-  contentType: string;
-  fileSizeBytes: number;
-}) {
-  const storagePath = buildProposalStoragePath(
-    input.studentId,
-    input.version,
-    input.fileName,
-  );
-
-  assertProposalDocumentUpload({
-    contentType: input.contentType,
-    fileSizeBytes: input.fileSizeBytes,
-    path: storagePath,
-  });
-
-  return storagePath;
-}
-
 export async function createProposalUploadUrl(
   input: ProposalUploadRequest,
   auth: AuthenticatedUserContext,
@@ -304,22 +262,24 @@ export async function createProposalUploadUrl(
   }
 
   const student = await requireStudentProposalContext(auth, true);
-  const version = getExpectedNextVersion(student.application.researchProposal);
-  const storagePath = assertValidProposalUploadFile({
-    studentId: student.id,
-    version,
-    fileName: parsed.data.fileName,
-    contentType: parsed.data.contentType,
-    fileSizeBytes: parsed.data.fileSizeBytes,
-  });
-  const signedUrl = await generateUploadSignedUrl(storagePath, parsed.data.contentType);
+  getExpectedNextVersion(student.application.researchProposal);
 
-  return {
-    signedUrl,
-    storagePath,
-    version,
-    expiresInMinutes: 15,
-  };
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.PROPOSAL,
+        idempotencyKey: parsed.data.idempotencyKey,
+        files: parsed.data.files,
+      },
+      auth,
+      student.id,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ProposalSubmissionError(error.message, error.status);
+    }
+    throw error;
+  }
 }
 
 export async function submitResearchProposal(
@@ -336,116 +296,25 @@ export async function submitResearchProposal(
   }
 
   const student = await requireStudentProposalContext(auth, true);
-  const existingProposal = student.application.researchProposal;
-  const nextVersion = getExpectedNextVersion(existingProposal);
+  getExpectedNextVersion(student.application.researchProposal);
   const nextStatus = resolveInitialProposalStatus(student);
-  const documents = parsed.data.documents?.length
-    ? parsed.data.documents
-    : parsed.data.document
-      ? [parsed.data.document]
-      : [];
-
-  for (const document of documents) {
-    const expectedStoragePath = assertValidProposalUploadFile({
-      studentId: student.id,
-      version: nextVersion,
-      fileName: document.fileName,
-      contentType: document.mimeType,
-      fileSizeBytes: document.sizeBytes,
-    });
-
-    if (document.storagePath !== expectedStoragePath) {
-      throw new ProposalSubmissionError(
-        "The uploaded proposal file does not match the expected storage path.",
-        409,
-      );
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      parsed.data.uploadSessionId,
+      UploadPurpose.PROPOSAL,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ProposalSubmissionError(error.message, error.status);
     }
+    throw error;
   }
 
-  const proposal = await prisma.$transaction(async (tx) => {
-    if (!existingProposal) {
-      return tx.researchProposal.create({
-        data: {
-          studentId: student.id,
-          applicationId: student.application.id,
-          title: parsed.data.title,
-          abstract: parsed.data.abstract,
-          status: nextStatus,
-          currentVersion: 1,
-          documents: {
-            create: documents.map((document) => ({
-              studentId: student.id,
-              documentType: DocumentType.PROPOSAL,
-              fileName: document.fileName,
-              storagePath: document.storagePath,
-              mimeType: document.mimeType,
-              version: 1,
-              isCurrentVersion: true,
-            })),
-          },
-        },
-        select: {
-          id: true,
-          title: true,
-          abstract: true,
-          status: true,
-          currentVersion: true,
-          applicationId: true,
-          createdAt: true,
-          updatedAt: true,
-          documents: {
-            where: {
-              isDeleted: false,
-            },
-            orderBy: {
-              version: "desc",
-            },
-            select: {
-              id: true,
-              fileName: true,
-              storagePath: true,
-              mimeType: true,
-              version: true,
-              isCurrentVersion: true,
-              createdAt: true,
-            },
-          },
-        },
-      });
-    }
-
-    await tx.document.updateMany({
-      where: {
-        researchProposalId: existingProposal.id,
-        isCurrentVersion: true,
-        isDeleted: false,
-      },
-      data: {
-        isCurrentVersion: false,
-      },
-    });
-
-    return tx.researchProposal.update({
-      where: {
-        id: existingProposal.id,
-      },
-      data: {
-        title: parsed.data.title,
-        abstract: parsed.data.abstract,
-        status: nextStatus,
-        currentVersion: nextVersion,
-        documents: {
-          create: documents.map((document) => ({
-            studentId: student.id,
-            documentType: DocumentType.PROPOSAL,
-            fileName: document.fileName,
-            storagePath: document.storagePath,
-            mimeType: document.mimeType,
-            version: nextVersion,
-            isCurrentVersion: true,
-          })),
-        },
-      },
+  if (verification.state === "FINALIZED") {
+    const existing = await prisma.researchProposal.findUnique({
+      where: { id: verification.finalizedEntityId },
       select: {
         id: true,
         title: true,
@@ -456,12 +325,8 @@ export async function submitResearchProposal(
         createdAt: true,
         updatedAt: true,
         documents: {
-          where: {
-            isDeleted: false,
-          },
-          orderBy: {
-            version: "desc",
-          },
+          where: { isDeleted: false },
+          orderBy: [{ version: "desc" }, { createdAt: "asc" }],
           select: {
             id: true,
             fileName: true,
@@ -474,7 +339,161 @@ export async function submitResearchProposal(
         },
       },
     });
+    if (!existing) {
+      throw new ProposalSubmissionError(
+        "Finalized proposal record could not be loaded.",
+        500,
+      );
+    }
+    return mapProposalRecord(existing);
+  }
+
+  const verifiedSession = verification.session;
+  let proposalId: string;
+
+  try {
+    proposalId = await withSerializableRetry(async (tx) => {
+      let proposal = await tx.researchProposal.findUnique({
+        where: { applicationId: student.application.id },
+        select: { id: true, status: true },
+      });
+
+      if (proposal && proposal.status !== ProposalStatus.REJECTED) {
+        throw new ProposalSubmissionError(
+          "A revised proposal can only be uploaded after the current proposal is rejected.",
+          409,
+        );
+      }
+
+      if (!proposal) {
+        proposal = await tx.researchProposal.create({
+          data: {
+            studentId: student.id,
+            applicationId: student.application.id,
+            title: parsed.data.title,
+            abstract: parsed.data.abstract,
+            status: nextStatus,
+            currentVersion: 1,
+          },
+          select: { id: true, status: true },
+        });
+      }
+
+      const latest = await tx.proposalVersion.aggregate({
+        where: { researchProposalId: proposal.id },
+        _max: { versionNumber: true },
+      });
+      const nextVersion = (latest._max.versionNumber ?? 0) + 1;
+      const versionId = randomUUID();
+      const documentIds = verifiedSession.files.map(() => randomUUID());
+
+      await tx.proposalVersion.updateMany({
+        where: { researchProposalId: proposal.id, isCurrent: true },
+        data: { isCurrent: false },
+      });
+      await tx.document.updateMany({
+        where: {
+          researchProposalId: proposal.id,
+          isCurrentVersion: true,
+          isDeleted: false,
+        },
+        data: { isCurrentVersion: false },
+      });
+
+      await tx.proposalVersion.create({
+        data: {
+          id: versionId,
+          researchProposalId: proposal.id,
+          versionNumber: nextVersion,
+          isCurrent: true,
+          manifestHash: verifiedSession.manifestHash,
+          submittedByUserId: auth.userId,
+          documents: {
+            create: verifiedSession.files.map((document, index) => ({
+              id: documentIds[index],
+              studentId: student.id,
+              researchProposalId: proposal.id,
+              documentType: DocumentType.PROPOSAL,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              checksumSha256: document.checksumSha256,
+              verificationStatus: DocumentVerificationStatus.VERIFIED,
+              verifiedAt: new Date(),
+              version: nextVersion,
+              isCurrentVersion: true,
+            })),
+          },
+        },
+      });
+
+      await tx.researchProposal.update({
+        where: { id: proposal.id },
+        data: {
+          title: parsed.data.title,
+          abstract: parsed.data.abstract,
+          status: nextStatus,
+          currentVersion: nextVersion,
+        },
+      });
+
+      for (const [index, file] of verifiedSession.files.entries()) {
+        await tx.stagedUploadFile.update({
+          where: { id: file.id },
+          data: { documentId: documentIds[index] },
+        });
+      }
+
+      await tx.uploadSession.update({
+        where: { id: verifiedSession.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: proposal.id,
+          result: { proposalVersionId: versionId, versionNumber: nextVersion },
+        },
+      });
+
+      return proposal.id;
+    });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Proposal finalization failed.",
+    );
+    throw error;
+  }
+
+  const proposal = await prisma.researchProposal.findUnique({
+    where: { id: proposalId },
+    select: {
+      id: true,
+      title: true,
+      abstract: true,
+      status: true,
+      currentVersion: true,
+      applicationId: true,
+      createdAt: true,
+      updatedAt: true,
+      documents: {
+        where: { isDeleted: false },
+        orderBy: [{ version: "desc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          fileName: true,
+          storagePath: true,
+          mimeType: true,
+          version: true,
+          isCurrentVersion: true,
+          createdAt: true,
+        },
+      },
+    },
   });
+  if (!proposal) {
+    throw new ProposalSubmissionError("Finalized proposal could not be loaded.", 500);
+  }
 
   return mapProposalRecord(proposal);
 }

@@ -1,10 +1,15 @@
+import { randomUUID } from "node:crypto";
+
 import {
   AcademicStatus,
+  DocumentVerificationStatus,
   DocumentType,
   ProgramType,
   ProposalStatus,
   RegistrationStatus,
   ThesisStatus,
+  UploadPurpose,
+  UploadSessionStatus,
   UserRole,
 } from "@prisma/client";
 
@@ -14,16 +19,20 @@ import {
 } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import {
-  assertFileUploadConstraints,
-  buildVersionedThesisStoragePath,
-  generateUploadSignedUrl,
-  normalizeStoragePath,
-  StorageAccessError,
-} from "@/lib/storage";
+  withSerializableRetry,
+} from "@/lib/prisma/transactions";
 import {
   thesisSubmissionSchema,
+  thesisUploadRequestSchema,
   type ThesisSubmissionInput,
+  type ThesisUploadRequest,
 } from "@/lib/theses/schemas";
+import {
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 type ThesisDocumentRecord = {
@@ -75,9 +84,12 @@ type ThesisStudentContext = {
 };
 
 export class ThesisSubmissionError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 500 = 400,
+  ) {
     super(message);
     this.name = "ThesisSubmissionError";
     this.status = status;
@@ -294,61 +306,6 @@ async function requireStudentThesisContext(auth: AuthenticatedUserContext) {
   };
 }
 
-function assertThesisDocumentUpload(input: {
-  contentType: string;
-  fileSizeBytes: number;
-  path: string;
-}) {
-  try {
-    assertFileUploadConstraints(input);
-  } catch (error) {
-    if (error instanceof StorageAccessError) {
-      throw new ThesisSubmissionError(error.message, error.status);
-    }
-
-    throw error;
-  }
-
-  const normalizedPath = normalizeStoragePath(input.path);
-
-  if (!normalizedPath.startsWith("theses/")) {
-    throw new ThesisSubmissionError(
-      "Thesis documents must be uploaded to the theses directory.",
-      400,
-    );
-  }
-}
-
-function getExpectedNextVersion(thesis: ActiveThesisRecord | null) {
-  if (!thesis) {
-    return 1;
-  }
-
-  return Math.max(0, thesis.documents[0]?.version ?? 0) + 1;
-}
-
-export function assertValidThesisUploadFile(input: {
-  studentId: string;
-  version: number;
-  fileName: string;
-  contentType: string;
-  fileSizeBytes: number;
-}) {
-  const storagePath = buildVersionedThesisStoragePath(
-    input.studentId,
-    input.version,
-    input.fileName,
-  );
-
-  assertThesisDocumentUpload({
-    contentType: input.contentType,
-    fileSizeBytes: input.fileSizeBytes,
-    path: storagePath,
-  });
-
-  return storagePath;
-}
-
 function formatProgramType(programType: ProgramType) {
   return programType === ProgramType.PHD ? "PhD" : programType;
 }
@@ -406,6 +363,37 @@ async function notifyAssignedSupervisorsOfThesisSubmission(input: {
   );
 }
 
+export async function createThesisUploadUrl(
+  input: ThesisUploadRequest,
+  auth: AuthenticatedUserContext,
+) {
+  const parsed = thesisUploadRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ThesisSubmissionError(
+      parsed.error.issues[0]?.message ?? "Invalid thesis upload request.",
+      400,
+    );
+  }
+
+  const student = await requireStudentThesisContext(auth);
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.THESIS,
+        idempotencyKey: parsed.data.idempotencyKey,
+        files: parsed.data.files,
+      },
+      auth,
+      student.id,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ThesisSubmissionError(error.message, error.status);
+    }
+    throw error;
+  }
+}
+
 export async function submitThesis(
   input: ThesisSubmissionInput,
   auth: AuthenticatedUserContext,
@@ -420,103 +408,23 @@ export async function submitThesis(
   }
 
   const student = await requireStudentThesisContext(auth);
-  const nextVersion = getExpectedNextVersion(student.activeThesis);
-  const documents = parsed.data.documents.map((document) => {
-    const storagePath = assertValidThesisUploadFile({
-      studentId: student.id,
-      version: nextVersion,
-      fileName: document.fileName,
-      contentType: document.mimeType,
-      fileSizeBytes: document.sizeBytes,
-    });
-
-    return {
-      ...document,
-      storagePath,
-    };
-  });
-
-  const thesis = await prisma.$transaction(async (tx) => {
-    if (!student.activeThesis) {
-      return tx.thesis.create({
-        data: {
-          studentId: student.id,
-          title: parsed.data.title,
-          abstract: parsed.data.abstract,
-          status: ThesisStatus.SUBMITTED,
-          documents: {
-            create: documents.map((document) => ({
-              studentId: student.id,
-              documentType: DocumentType.THESIS,
-              fileName: document.fileName,
-              storagePath: document.storagePath,
-              mimeType: document.mimeType,
-              version: 1,
-              isCurrentVersion: true,
-            })),
-          },
-        },
-        select: {
-          id: true,
-          title: true,
-          abstract: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          documents: {
-            where: {
-              isDeleted: false,
-              documentType: DocumentType.THESIS,
-            },
-            orderBy: {
-              version: "desc",
-            },
-            select: {
-              id: true,
-              fileName: true,
-              storagePath: true,
-              mimeType: true,
-              version: true,
-              isCurrentVersion: true,
-              createdAt: true,
-            },
-          },
-        },
-      });
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      parsed.data.uploadSessionId,
+      UploadPurpose.THESIS,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ThesisSubmissionError(error.message, error.status);
     }
+    throw error;
+  }
 
-    await tx.document.updateMany({
-      where: {
-        thesisId: student.activeThesis.id,
-        documentType: DocumentType.THESIS,
-        isCurrentVersion: true,
-        isDeleted: false,
-      },
-      data: {
-        isCurrentVersion: false,
-      },
-    });
-
-    return tx.thesis.update({
-      where: {
-        id: student.activeThesis.id,
-      },
-      data: {
-        title: parsed.data.title,
-        abstract: parsed.data.abstract,
-        status: ThesisStatus.SUBMITTED,
-        documents: {
-          create: documents.map((document) => ({
-            studentId: student.id,
-            documentType: DocumentType.THESIS,
-            fileName: document.fileName,
-            storagePath: document.storagePath,
-            mimeType: document.mimeType,
-            version: nextVersion,
-            isCurrentVersion: true,
-          })),
-        },
-      },
+  if (verification.state === "FINALIZED") {
+    const existing = await prisma.thesis.findUnique({
+      where: { id: verification.finalizedEntityId },
       select: {
         id: true,
         title: true,
@@ -525,13 +433,8 @@ export async function submitThesis(
         createdAt: true,
         updatedAt: true,
         documents: {
-          where: {
-            isDeleted: false,
-            documentType: DocumentType.THESIS,
-          },
-          orderBy: {
-            version: "desc",
-          },
+          where: { isDeleted: false, documentType: DocumentType.THESIS },
+          orderBy: [{ version: "desc" }, { createdAt: "asc" }],
           select: {
             id: true,
             fileName: true,
@@ -544,7 +447,166 @@ export async function submitThesis(
         },
       },
     });
+    if (!existing) {
+      throw new ThesisSubmissionError(
+        "Finalized thesis record could not be loaded.",
+        500,
+      );
+    }
+    return { thesis: mapThesisRecord(existing) };
+  }
+
+  const verifiedSession = verification.session;
+  let thesisId: string;
+  try {
+    thesisId = await withSerializableRetry(async (tx) => {
+      let thesis = await tx.thesis.findFirst({
+        where: {
+          studentId: student.id,
+          isArchived: false,
+          status: {
+            in: [
+              ThesisStatus.SUBMITTED,
+              ThesisStatus.UNDER_EXAMINATION,
+              ThesisStatus.CORRECTIONS_REQUIRED,
+            ],
+          },
+        },
+        select: { id: true, status: true },
+      });
+
+      if (thesis && thesis.status !== ThesisStatus.CORRECTIONS_REQUIRED) {
+        throw new ThesisSubmissionError(
+          "Only one active thesis submission is allowed at a time.",
+          409,
+        );
+      }
+
+      if (!thesis) {
+        thesis = await tx.thesis.create({
+          data: {
+            studentId: student.id,
+            title: parsed.data.title,
+            abstract: parsed.data.abstract,
+            status: ThesisStatus.SUBMITTED,
+          },
+          select: { id: true, status: true },
+        });
+      }
+
+      const latest = await tx.thesisVersion.aggregate({
+        where: { thesisId: thesis.id },
+        _max: { versionNumber: true },
+      });
+      const nextVersion = (latest._max.versionNumber ?? 0) + 1;
+      const versionId = randomUUID();
+      const documentIds = verifiedSession.files.map(() => randomUUID());
+
+      await tx.thesisVersion.updateMany({
+        where: { thesisId: thesis.id, isCurrent: true },
+        data: { isCurrent: false },
+      });
+      await tx.document.updateMany({
+        where: {
+          thesisId: thesis.id,
+          documentType: DocumentType.THESIS,
+          isCurrentVersion: true,
+          isDeleted: false,
+        },
+        data: { isCurrentVersion: false },
+      });
+
+      await tx.thesisVersion.create({
+        data: {
+          id: versionId,
+          thesisId: thesis.id,
+          versionNumber: nextVersion,
+          isCurrent: true,
+          manifestHash: verifiedSession.manifestHash,
+          submittedByUserId: auth.userId,
+          documents: {
+            create: verifiedSession.files.map((document, index) => ({
+              id: documentIds[index],
+              studentId: student.id,
+              thesisId: thesis.id,
+              documentType: DocumentType.THESIS,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              checksumSha256: document.checksumSha256,
+              verificationStatus: DocumentVerificationStatus.VERIFIED,
+              verifiedAt: new Date(),
+              version: nextVersion,
+              isCurrentVersion: true,
+            })),
+          },
+        },
+      });
+
+      await tx.thesis.update({
+        where: { id: thesis.id },
+        data: {
+          title: parsed.data.title,
+          abstract: parsed.data.abstract,
+          status: ThesisStatus.SUBMITTED,
+        },
+      });
+
+      for (const [index, file] of verifiedSession.files.entries()) {
+        await tx.stagedUploadFile.update({
+          where: { id: file.id },
+          data: { documentId: documentIds[index] },
+        });
+      }
+
+      await tx.uploadSession.update({
+        where: { id: verifiedSession.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: thesis.id,
+          result: { thesisVersionId: versionId, versionNumber: nextVersion },
+        },
+      });
+
+      return thesis.id;
+    });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Thesis finalization failed.",
+    );
+    throw error;
+  }
+
+  const thesis = await prisma.thesis.findUnique({
+    where: { id: thesisId },
+    select: {
+      id: true,
+      title: true,
+      abstract: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      documents: {
+        where: { isDeleted: false, documentType: DocumentType.THESIS },
+        orderBy: [{ version: "desc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          fileName: true,
+          storagePath: true,
+          mimeType: true,
+          version: true,
+          isCurrentVersion: true,
+          createdAt: true,
+        },
+      },
+    },
   });
+  if (!thesis) {
+    throw new ThesisSubmissionError("Finalized thesis could not be loaded.", 500);
+  }
 
   await notifyAdministratorsOfThesisSubmission({
     studentName: student.user.displayName,
@@ -557,21 +619,7 @@ export async function submitThesis(
     thesisTitle: thesis.title,
   });
 
-  const uploads = await Promise.all(
-    documents.map(async (document) => ({
-      signedUrl: await generateUploadSignedUrl(
-        document.storagePath,
-        document.mimeType,
-      ),
-      storagePath: document.storagePath,
-      version: nextVersion,
-      expiresInMinutes: 15,
-    })),
-  );
-
   return {
     thesis: mapThesisRecord(thesis),
-    upload: uploads[0] ?? null,
-    uploads,
   };
 }

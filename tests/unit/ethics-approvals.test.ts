@@ -3,32 +3,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
-    student: {
-      findUnique: vi.fn(),
-    },
+    student: { findUnique: vi.fn() },
     ethicsApproval: {
-      create: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
     },
-    administrator: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findMany: vi.fn(),
-    },
+    administrator: { findUnique: vi.fn() },
+    user: { findMany: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
-vi.mock("@/lib/storage", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/storage")>();
-
-  return {
-    ...actual,
-    generateUploadSignedUrl: vi.fn().mockResolvedValue("https://storage.test/upload"),
-  };
-});
+vi.mock("@/lib/uploads/sessions", () => ({
+  createStagedUploadSession: vi.fn(),
+  reopenUploadSessionAfterFinalizeFailure: vi.fn(),
+  verifyUploadSessionForFinalize: vi.fn(),
+  UploadSessionError: class UploadSessionError extends Error {
+    status = 409;
+  },
+}));
 
 vi.mock("@/lib/notifications", () => ({
   notify: vi.fn().mockResolvedValue(undefined),
@@ -42,7 +36,10 @@ import {
 } from "@/lib/ethics/approvals";
 import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
-import { generateUploadSignedUrl } from "@/lib/storage";
+import {
+  createStagedUploadSession,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 const studentAuth: AuthenticatedUserContext = {
@@ -87,7 +84,8 @@ function makeApproval() {
       {
         id: "doc-1",
         fileName: "ethics.pdf",
-        storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
+        storagePath:
+          "ethics-approvals/student-1/staged/session-1/file-1/ethics.pdf",
         mimeType: "application/pdf",
         version: 1,
         isCurrentVersion: true,
@@ -114,32 +112,39 @@ describe("ethics approval workflow", () => {
     );
   });
 
-  it("creates upload URLs under the ethics approval storage root", async () => {
+  it("creates a sealed staged upload session", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue(
       makeStudentContext() as never,
     );
+    vi.mocked(createStagedUploadSession).mockResolvedValue({
+      uploadSessionId: "session-1",
+      uploads: [{ signedUrl: "https://storage.test/upload" }],
+    } as never);
 
-    const result = await createEthicsApprovalUploadUrl(
-      {
-        fileName: "ethics.pdf",
-        contentType: "application/pdf",
-        fileSizeBytes: 1024,
-      },
+    await expect(
+      createEthicsApprovalUploadUrl(
+        {
+          idempotencyKey: "72910895-0d9f-4f2a-a0d9-c4998b7f0228",
+          files: [
+            {
+              fileName: "ethics.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024,
+            },
+          ],
+        },
+        studentAuth,
+      ),
+    ).resolves.toMatchObject({ uploadSessionId: "session-1" });
+
+    expect(createStagedUploadSession).toHaveBeenCalledWith(
+      expect.objectContaining({ purpose: "ETHICS_APPROVAL" }),
       studentAuth,
-    );
-
-    expect(result).toMatchObject({
-      approvalId: "approval-1",
-      storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
-      signedUrl: "https://storage.test/upload",
-    });
-    expect(generateUploadSignedUrl).toHaveBeenCalledWith(
-      "ethics-approvals/student-1/approval-1/ethics.pdf",
-      "application/pdf",
+      "student-1",
     );
   });
 
-  it("blocks ethics submission until the proposal is approved", async () => {
+  it("blocks ethics uploads until the proposal is approved", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue(
       makeStudentContext({ researchProposals: [] }) as never,
     );
@@ -147,9 +152,14 @@ describe("ethics approval workflow", () => {
     await expect(
       createEthicsApprovalUploadUrl(
         {
-          fileName: "ethics.pdf",
-          contentType: "application/pdf",
-          fileSizeBytes: 1024,
+          idempotencyKey: "72910895-0d9f-4f2a-a0d9-c4998b7f0228",
+          files: [
+            {
+              fileName: "ethics.pdf",
+              mimeType: "application/pdf",
+              sizeBytes: 1024,
+            },
+          ],
         },
         studentAuth,
       ),
@@ -158,11 +168,38 @@ describe("ethics approval workflow", () => {
     });
   });
 
-  it("creates an ethics approval record and linked document", async () => {
+  it("finalizes verified bytes and then notifies administrators", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue(
       makeStudentContext() as never,
     );
-    vi.mocked(prisma.ethicsApproval.create).mockResolvedValue(
+    vi.mocked(verifyUploadSessionForFinalize).mockResolvedValue({
+      state: "VERIFIED",
+      session: {
+        id: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+        manifestHash: "manifest-1",
+        files: [
+          {
+            id: "staged-1",
+            ordinal: 0,
+            fileName: "ethics.pdf",
+            storagePath:
+              "ethics-approvals/student-1/staged/session-1/file-1/ethics.pdf",
+            mimeType: "application/pdf",
+            sizeBytes: 1024,
+            checksumSha256: "a".repeat(64),
+          },
+        ],
+      },
+    } as never);
+    const ethicsApprovalCreate = vi.fn().mockResolvedValue({ id: "approval-1" });
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        ethicsApproval: { create: ethicsApprovalCreate },
+        stagedUploadFile: { update: vi.fn().mockResolvedValue({}) },
+        uploadSession: { update: vi.fn().mockResolvedValue({}) },
+      } as never),
+    );
+    vi.mocked(prisma.ethicsApproval.findUnique).mockResolvedValue(
       makeApproval() as never,
     );
     vi.mocked(prisma.user.findMany).mockResolvedValue([
@@ -177,37 +214,26 @@ describe("ethics approval workflow", () => {
       {
         title: "Participant interview ethics",
         summary: "Ethics evidence summary for participant interview data collection.",
-        documents: [],
-        document: {
-          fileName: "ethics.pdf",
-          storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
-          mimeType: "application/pdf",
-          sizeBytes: 1024,
-        },
+        uploadSessionId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
       },
       studentAuth,
     );
 
-    expect(approval.documents).toContainEqual(
-      expect.objectContaining({
-        storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
-      }),
-    );
-    expect(prisma.ethicsApproval.create).toHaveBeenCalledWith(
+    expect(ethicsApprovalCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          id: "approval-1",
           documents: {
             create: [
               expect.objectContaining({
                 documentType: DocumentType.ETHICS_APPROVAL,
-                storagePath: "ethics-approvals/student-1/approval-1/ethics.pdf",
+                verificationStatus: "VERIFIED",
               }),
             ],
           },
         }),
       }),
     );
+    expect(approval.documents).toHaveLength(1);
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "ETHICS_APPROVAL_SUBMITTED",

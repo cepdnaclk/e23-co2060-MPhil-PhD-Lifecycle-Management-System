@@ -54,7 +54,6 @@ type EthicsOverview = {
 
 type UploadedEthicsDocument = {
   fileName: string;
-  storagePath: string;
   mimeType: string;
   sizeBytes: number;
 };
@@ -91,6 +90,7 @@ export function EthicsApprovalPanel() {
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedEthicsDocument[]>([]);
+  const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -131,73 +131,62 @@ export function EthicsApprovalPanel() {
     setIsUploading(true);
 
     try {
-      const nextDocuments: UploadedEthicsDocument[] = [];
-      let approvalId: string | undefined;
-
-      for (const file of selectedFiles) {
-        const parsedUploadRequest = ethicsApprovalUploadRequestSchema.safeParse({
-          approvalId,
+      const parsedUploadRequest = ethicsApprovalUploadRequestSchema.safeParse({
+        idempotencyKey: crypto.randomUUID(),
+        files: selectedFiles.map((file) => ({
           fileName: file.name,
-          contentType: file.type,
-          fileSizeBytes: file.size,
-        });
-
-        if (!parsedUploadRequest.success) {
-          throw new Error(
-            parsedUploadRequest.error.issues[0]?.message ??
-              "Unable to upload the ethics document.",
-          );
+          mimeType: file.type,
+          sizeBytes: file.size,
+        })),
+      });
+      if (!parsedUploadRequest.success) {
+        throw new Error(
+          parsedUploadRequest.error.issues[0]?.message ??
+            "Unable to upload the ethics documents.",
+        );
+      }
+      const uploadUrlResponse = await secureFetch("/api/ethics/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(parsedUploadRequest.data),
+      });
+      const uploadUrlPayload = (await uploadUrlResponse.json()) as {
+        error?: string;
+        uploadSessionId?: string;
+        uploads?: Array<{ signedUrl: string | null }>;
+      };
+      if (
+        !uploadUrlResponse.ok ||
+        !uploadUrlPayload.uploadSessionId ||
+        uploadUrlPayload.uploads?.length !== selectedFiles.length
+      ) {
+        throw new Error(
+          uploadUrlPayload.error ?? "Unable to prepare the ethics document upload.",
+        );
+      }
+      for (const [index, file] of selectedFiles.entries()) {
+        const signedUrl = uploadUrlPayload.uploads[index]?.signedUrl;
+        if (!signedUrl) {
+          throw new Error("An ethics document upload target was not available.");
         }
-
-        const uploadUrlResponse = await secureFetch("/api/ethics/upload-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(parsedUploadRequest.data),
-        });
-        const uploadUrlPayload = (await uploadUrlResponse.json()) as {
-          error?: string;
-          approvalId?: string;
-          signedUrl?: string;
-          storagePath?: string;
-        };
-
-        if (
-          !uploadUrlResponse.ok ||
-          !uploadUrlPayload.signedUrl ||
-          !uploadUrlPayload.storagePath ||
-          !uploadUrlPayload.approvalId
-        ) {
-          throw new Error(
-            uploadUrlPayload.error ?? "Unable to prepare the ethics document upload.",
-          );
-        }
-
-        approvalId = uploadUrlPayload.approvalId;
-
-        const uploadResponse = await secureFetch(uploadUrlPayload.signedUrl, {
+        const uploadResponse = await secureFetch(signedUrl, {
           method: "PUT",
-          headers: {
-            "Content-Type": file.type,
-          },
+          headers: { "Content-Type": file.type },
           body: file,
         });
-
         if (!uploadResponse.ok) {
           throw new Error("Ethics document upload failed.");
         }
-
-        nextDocuments.push({
+      }
+      setUploadSessionId(uploadUrlPayload.uploadSessionId);
+      setUploadedDocuments(
+        selectedFiles.map((file) => ({
           fileName: file.name,
-          storagePath: uploadUrlPayload.storagePath,
           mimeType: file.type,
           sizeBytes: file.size,
-        });
-      }
-
-      setUploadedDocuments(nextDocuments);
+        })),
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -205,6 +194,7 @@ export function EthicsApprovalPanel() {
           : "Unable to upload the ethics documents.",
       );
       setUploadedDocuments([]);
+      setUploadSessionId(null);
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -216,7 +206,7 @@ export function EthicsApprovalPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (uploadedDocuments.length === 0) {
+    if (uploadedDocuments.length === 0 || !uploadSessionId) {
       setErrorMessage("Upload at least one PDF or ZIP ethics document before submitting.");
       return;
     }
@@ -224,7 +214,7 @@ export function EthicsApprovalPanel() {
     const parsedSubmission = ethicsApprovalSubmissionSchema.safeParse({
       title,
       summary,
-      documents: uploadedDocuments,
+      uploadSessionId,
     });
 
     if (!parsedSubmission.success) {
@@ -259,6 +249,7 @@ export function EthicsApprovalPanel() {
       setTitle("");
       setSummary("");
       setUploadedDocuments([]);
+      setUploadSessionId(null);
       await refreshOverview();
     } catch (error) {
       setErrorMessage(
@@ -361,7 +352,7 @@ export function EthicsApprovalPanel() {
                     {uploadedDocuments.length > 0 && (
                       <div className="mt-4 space-y-2">
                         {uploadedDocuments.map((document) => (
-                          <div key={document.storagePath} className="rounded-md border bg-muted/30 p-2 text-sm font-medium">
+                          <div key={`${document.fileName}-${document.sizeBytes}`} className="rounded-md border bg-muted/30 p-2 text-sm font-medium">
                             {document.fileName}
                           </div>
                         ))}

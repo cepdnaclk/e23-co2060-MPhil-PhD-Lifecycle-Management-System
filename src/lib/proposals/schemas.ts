@@ -2,39 +2,23 @@ import { ProposalStatus } from "@prisma/client";
 import { z } from "zod";
 
 import {
-  ALLOWED_DOCUMENT_MIME_TYPES,
-  MAX_STORAGE_FILE_SIZE_BYTES,
-} from "@/lib/validation/uploads";
+  stagedUploadFileSchema,
+} from "@/lib/uploads/schemas";
 import { sanitizedString } from "@/lib/validation/schemas";
 
-const uploadedProposalDocumentSchema = z.object({
-  fileName: sanitizedString.min(1, "A file name is required."),
-  storagePath: sanitizedString.min(1, "A storage path is required."),
-  mimeType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
-  sizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
-});
-
 export const proposalUploadRequestSchema = z.object({
-  fileName: sanitizedString.min(1, "A file name is required."),
-  contentType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
-  fileSizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
+  idempotencyKey: z.string().uuid("A valid upload idempotency key is required."),
+  files: z
+    .array(stagedUploadFileSchema)
+    .min(1, "Upload at least one proposal document.")
+    .max(10, "Upload no more than 10 proposal documents in one version."),
 });
 
-export const proposalSubmissionSchema = z
-  .object({
-    title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
-    abstract: sanitizedString.min(1, "Proposal abstract is required."),
-    document: uploadedProposalDocumentSchema.optional(),
-    documents: z
-      .array(uploadedProposalDocumentSchema)
-      .max(1, "Upload one proposal document per submission.")
-      .optional(),
-  })
-  .refine(
-    (value) =>
-      (value.document ? 1 : 0) + (value.documents?.length ?? 0) === 1,
-    "Upload exactly one proposal document.",
-  );
+export const proposalSubmissionSchema = z.object({
+  title: sanitizedString.min(5, "Proposal title must be at least 5 characters long."),
+  abstract: sanitizedString.min(1, "Proposal abstract is required."),
+  uploadSessionId: z.string().uuid("A valid upload session ID is required."),
+});
 
 export const proposalStatusUpdateSchema = z.object({
   status: z.enum([

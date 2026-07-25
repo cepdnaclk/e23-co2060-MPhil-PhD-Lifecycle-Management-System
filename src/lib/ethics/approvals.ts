@@ -1,20 +1,24 @@
 import {
+  DocumentVerificationStatus,
   DocumentType,
   ProposalStatus,
   RegistrationStatus,
+  UploadPurpose,
+  UploadSessionStatus,
   UserRole,
   type Prisma,
 } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 
 import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
+import { withSerializableRetry } from "@/lib/prisma/transactions";
 import {
-  assertFileUploadConstraints,
-  buildEthicsApprovalStoragePath,
-  generateUploadSignedUrl,
-  normalizeStoragePath,
-  StorageAccessError,
-} from "@/lib/storage";
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 import {
@@ -124,31 +128,6 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
   };
 }
 
-function assertEthicsDocumentUpload(input: {
-  contentType: string;
-  fileSizeBytes: number;
-  path: string;
-}) {
-  try {
-    assertFileUploadConstraints(input);
-  } catch (error) {
-    if (error instanceof StorageAccessError) {
-      throw new EthicsApprovalError(error.message, error.status);
-    }
-
-    throw error;
-  }
-
-  const normalizedPath = normalizeStoragePath(input.path);
-
-  if (!normalizedPath.startsWith("ethics-approvals/")) {
-    throw new EthicsApprovalError(
-      "Ethics documents must be uploaded to the ethics-approvals directory.",
-      400,
-    );
-  }
-}
-
 async function findStudentEthicsContext(
   auth: AuthenticatedUserContext,
 ): Promise<StudentEthicsContext | null> {
@@ -242,20 +221,6 @@ async function requireStudentEthicsContext(auth: AuthenticatedUserContext) {
   return student;
 }
 
-function resolveApprovalIdFromStoragePath(studentId: string, storagePath: string) {
-  const normalizedPath = normalizeStoragePath(storagePath);
-  const [root, ownerId, approvalId] = normalizedPath.split("/");
-
-  if (root !== "ethics-approvals" || ownerId !== studentId || !approvalId) {
-    throw new EthicsApprovalError(
-      "The uploaded ethics document does not match the expected storage path.",
-      409,
-    );
-  }
-
-  return approvalId;
-}
-
 async function notifyAdministratorsOfEthicsSubmission(input: {
   studentId: string;
   studentName: string;
@@ -310,30 +275,22 @@ export async function createEthicsApprovalUploadUrl(
     throw new EthicsApprovalError(blockedReason, 409);
   }
 
-  const approvalId = parsed.data.approvalId ?? crypto.randomUUID();
-  const storagePath = buildEthicsApprovalStoragePath(
-    student.id,
-    approvalId,
-    parsed.data.fileName,
-  );
-
-  assertEthicsDocumentUpload({
-    contentType: parsed.data.contentType,
-    fileSizeBytes: parsed.data.fileSizeBytes,
-    path: storagePath,
-  });
-
-  const signedUrl = await generateUploadSignedUrl(
-    storagePath,
-    parsed.data.contentType,
-  );
-
-  return {
-    approvalId,
-    signedUrl,
-    storagePath,
-    expiresInMinutes: 15,
-  };
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.ETHICS_APPROVAL,
+        idempotencyKey: parsed.data.idempotencyKey,
+        files: parsed.data.files,
+      },
+      auth,
+      student.id,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new EthicsApprovalError(error.message, error.status);
+    }
+    throw error;
+  }
 }
 
 export async function submitEthicsApproval(
@@ -350,62 +307,103 @@ export async function submitEthicsApproval(
   }
 
   const student = await requireStudentEthicsContext(auth);
-  const blockedReason = getEthicsSubmissionBlockedReason(student);
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      parsed.data.uploadSessionId,
+      UploadPurpose.ETHICS_APPROVAL,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new EthicsApprovalError(error.message, error.status);
+    }
+    throw error;
+  }
 
+  if (verification.state === "FINALIZED") {
+    const existing = await prisma.ethicsApproval.findUnique({
+      where: { id: verification.finalizedEntityId },
+      select: ethicsApprovalSelect,
+    });
+    if (!existing) {
+      throw new EthicsApprovalError(
+        "Finalized ethics submission could not be loaded.",
+        500,
+      );
+    }
+    return mapEthicsApproval(existing);
+  }
+
+  const blockedReason = getEthicsSubmissionBlockedReason(student);
   if (blockedReason) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verification.session.id,
+      blockedReason,
+    );
     throw new EthicsApprovalError(blockedReason, 409);
   }
 
-  const approvalId = resolveApprovalIdFromStoragePath(
-    student.id,
-    parsed.data.documents[0].storagePath,
-  );
-
-  for (const document of parsed.data.documents) {
-    const documentApprovalId = resolveApprovalIdFromStoragePath(
-      student.id,
-      document.storagePath,
-    );
-    const expectedStoragePath = buildEthicsApprovalStoragePath(
-      student.id,
-      approvalId,
-      document.fileName,
-    );
-
-    if (documentApprovalId !== approvalId || document.storagePath !== expectedStoragePath) {
-      throw new EthicsApprovalError(
-        "All uploaded ethics documents must belong to the same submission package.",
-        409,
-      );
-    }
-
-    assertEthicsDocumentUpload({
-      contentType: document.mimeType,
-      fileSizeBytes: document.sizeBytes,
-      path: expectedStoragePath,
+  const verifiedSession = verification.session;
+  const approvalId = randomUUID();
+  const documentIds = verifiedSession.files.map(() => randomUUID());
+  try {
+    await withSerializableRetry(async (tx) => {
+      await tx.ethicsApproval.create({
+        data: {
+          id: approvalId,
+          studentId: student.id,
+          title: parsed.data.title,
+          summary: parsed.data.summary,
+          documents: {
+            create: verifiedSession.files.map((document, index) => ({
+              id: documentIds[index],
+              documentType: DocumentType.ETHICS_APPROVAL,
+              studentId: student.id,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              checksumSha256: document.checksumSha256,
+              verificationStatus: DocumentVerificationStatus.VERIFIED,
+              verifiedAt: new Date(),
+              version: 1,
+              isCurrentVersion: true,
+            })),
+          },
+        },
+      });
+      for (const [index, file] of verifiedSession.files.entries()) {
+        await tx.stagedUploadFile.update({
+          where: { id: file.id },
+          data: { documentId: documentIds[index] },
+        });
+      }
+      await tx.uploadSession.update({
+        where: { id: verifiedSession.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: approvalId,
+          result: { documentCount: verifiedSession.files.length },
+        },
+      });
     });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Ethics finalization failed.",
+    );
+    throw error;
   }
 
-  const approval = await prisma.ethicsApproval.create({
-    data: {
-      id: approvalId,
-      studentId: student.id,
-      title: parsed.data.title,
-      summary: parsed.data.summary,
-      documents: {
-        create: parsed.data.documents.map((document) => ({
-          documentType: DocumentType.ETHICS_APPROVAL,
-          studentId: student.id,
-          fileName: document.fileName,
-          storagePath: document.storagePath,
-          mimeType: document.mimeType,
-          version: 1,
-          isCurrentVersion: true,
-        })),
-      },
-    },
+  const approval = await prisma.ethicsApproval.findUnique({
+    where: { id: approvalId },
     select: ethicsApprovalSelect,
   });
+  if (!approval) {
+    throw new EthicsApprovalError("Submitted ethics record could not be loaded.", 500);
+  }
 
   await notifyAdministratorsOfEthicsSubmission({
     studentId: student.id,

@@ -7,6 +7,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 
 import {
   thesisSubmissionSchema,
+  thesisUploadRequestSchema,
   uploadedPdfDocumentSchema,
 } from "@/lib/theses/schemas";
 import {
@@ -63,32 +64,33 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       return;
     }
 
-    if (nextFiles.length > 1) {
-      setError("Choose one thesis document per submission.");
+    if (nextFiles.length > 10) {
+      setError("Choose no more than 10 thesis documents per submission.");
       setFiles([]);
       event.target.value = "";
       return;
     }
 
-    const nextFile = nextFiles[0];
-    const parsedDocument = uploadedPdfDocumentSchema.safeParse({
-      fileName: nextFile.name,
-      mimeType: nextFile.type,
-      sizeBytes: nextFile.size,
-    });
+    for (const nextFile of nextFiles) {
+      const parsedDocument = uploadedPdfDocumentSchema.safeParse({
+        fileName: nextFile.name,
+        mimeType: nextFile.type,
+        sizeBytes: nextFile.size,
+      });
 
-    if (!parsedDocument.success) {
-      setError(
-        parsedDocument.error.issues[0]?.message ??
-          "Choose a valid PDF or ZIP thesis document.",
-      );
-      setFiles([]);
-      event.target.value = "";
-      return;
+      if (!parsedDocument.success) {
+        setError(
+          parsedDocument.error.issues[0]?.message ??
+            "Choose valid PDF or ZIP thesis documents.",
+        );
+        setFiles([]);
+        event.target.value = "";
+        return;
+      }
     }
 
     setError(null);
-    setFiles([nextFile]);
+    setFiles(nextFiles);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -97,31 +99,85 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
     setError(null);
 
     if (files.length === 0) {
-      setError("Choose one PDF or ZIP thesis document first.");
+      setError("Choose at least one PDF or ZIP thesis document first.");
       return;
     }
 
-    const parsedSubmission = thesisSubmissionSchema.safeParse({
-      title,
-      abstract,
-      documents: files.map((file) => ({
+    const parsedUpload = thesisUploadRequestSchema.safeParse({
+      idempotencyKey: crypto.randomUUID(),
+      files: files.map((file) => ({
         fileName: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
       })),
     });
 
-    if (!parsedSubmission.success) {
+    if (!parsedUpload.success) {
       setError(
-        parsedSubmission.error.issues[0]?.message ??
+        parsedUpload.error.issues[0]?.message ??
           "Invalid thesis submission details.",
       );
       return;
     }
 
     setIsSubmitting(true);
+    let uploadSessionId: string | null = null;
 
     try {
+      const prepareResponse = await secureFetch("/api/theses/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(parsedUpload.data),
+      });
+      const preparePayload = (await prepareResponse.json()) as {
+        error?: string;
+        uploads?: Array<{
+          signedUrl: string | null;
+          storagePath: string;
+        }>;
+        uploadSessionId?: string;
+      };
+
+      if (
+        !prepareResponse.ok ||
+        !preparePayload.uploadSessionId ||
+        preparePayload.uploads?.length !== files.length
+      ) {
+        throw new Error(
+          preparePayload.error ?? "Unable to prepare the thesis upload.",
+        );
+      }
+      uploadSessionId = preparePayload.uploadSessionId;
+
+      for (const [index, file] of files.entries()) {
+        const uploadTarget = preparePayload.uploads[index];
+        if (!uploadTarget?.signedUrl) {
+          throw new Error(`No upload target was returned for ${file.name}.`);
+        }
+        const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error(`Thesis file upload failed for ${file.name}.`);
+        }
+      }
+
+      const parsedSubmission = thesisSubmissionSchema.safeParse({
+        title,
+        abstract,
+        uploadSessionId,
+      });
+      if (!parsedSubmission.success) {
+        throw new Error(
+          parsedSubmission.error.issues[0]?.message ??
+            "Invalid thesis submission details.",
+        );
+      }
+
       const response = await secureFetch("/api/theses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,34 +186,30 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
       });
       const payload = (await response.json()) as {
         error?: string;
-        uploads?: Array<{
-          signedUrl: string;
-          storagePath: string;
-          version: number;
-        }>;
+        thesis?: {
+          documents: Array<{ version: number; isCurrentVersion: boolean }>;
+        };
       };
-
-      if (!response.ok || !payload.uploads || payload.uploads.length !== files.length) {
+      if (!response.ok || !payload.thesis) {
         throw new Error(payload.error ?? "Unable to submit the thesis.");
       }
 
-      for (const [index, file] of files.entries()) {
-        const uploadTarget = payload.uploads[index];
-        const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
-          method: "PUT",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("The thesis record was created, but a document upload failed.");
-        }
-      }
-
-      setMessage(`Thesis version ${payload.uploads[0]?.version ?? ""} submitted successfully.`);
+      const currentVersion = payload.thesis.documents.find(
+        (document) => document.isCurrentVersion,
+      )?.version;
+      setMessage(
+        `Thesis version ${currentVersion ?? ""} submitted successfully.`,
+      );
       setFiles([]);
+      uploadSessionId = null;
       router.refresh();
     } catch (caught) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
       setError(caught instanceof Error ? caught.message : "Thesis submission failed.");
     } finally {
       setIsSubmitting(false);
@@ -223,10 +275,11 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                 <div className="space-y-2">
                   <Label>Thesis Document</Label>
                   <p className="text-sm text-muted-foreground">
-                    Upload one PDF, or one ZIP containing the complete thesis package.
+                    Upload 1–10 PDF or ZIP files as one thesis version.
                   </p>
                   <Input
                     type="file"
+                    multiple
                     accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
                     onChange={handleFileChange}
                     disabled={isSubmitting}

@@ -22,6 +22,13 @@ vi.mock("@/lib/progress-reports/maintenance", () => ({
   markOverdueProgressReports: vi.fn(),
 }));
 
+vi.mock("@/lib/uploads/sessions", () => ({
+  cleanupExpiredUploadSessions: vi.fn().mockResolvedValue({
+    expiredSessionCount: 0,
+    deletedObjectCount: 0,
+  }),
+}));
+
 vi.mock("@/lib/registrations", () => ({
   runRegistrationMaintenance: vi.fn(),
 }));
@@ -138,6 +145,10 @@ describe("POST /api/cron/check-registrations", () => {
           lapsedCount: 2,
           reminderCount: 3,
           overdueProgressReports: 4,
+          uploadMaintenance: {
+            expiredSessionCount: 0,
+            deletedObjectCount: 0,
+          },
         },
       }),
     });
@@ -147,6 +158,10 @@ describe("POST /api/cron/check-registrations", () => {
       lapsedCount: 2,
       reminderCount: 3,
       overdueProgressReports: 4,
+      uploadMaintenance: {
+        expiredSessionCount: 0,
+        deletedObjectCount: 0,
+      },
     });
   });
 

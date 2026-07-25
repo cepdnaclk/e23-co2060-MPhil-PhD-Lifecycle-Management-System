@@ -1,44 +1,23 @@
 import { z } from "zod";
 
+import { stagedUploadFileSchema } from "@/lib/uploads/schemas";
 import { sanitizedString } from "@/lib/validation/schemas";
-import {
-  ALLOWED_DOCUMENT_MIME_TYPES,
-  MAX_STORAGE_FILE_SIZE_BYTES,
-} from "@/lib/validation/uploads";
 
 export const ethicsApprovalUploadRequestSchema = z.object({
-  approvalId: sanitizedString.min(1).optional(),
-  fileName: sanitizedString.min(1, "A file name is required."),
-  contentType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
-  fileSizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
+  idempotencyKey: z.string().uuid("A valid upload idempotency key is required."),
+  files: z
+    .array(stagedUploadFileSchema)
+    .min(1, "Upload at least one ethics document.")
+    .max(10, "Upload no more than 10 ethics documents."),
 });
 
-export const uploadedEthicsDocumentSchema = z.object({
-  fileName: sanitizedString.min(1, "A file name is required."),
-  storagePath: sanitizedString.min(1, "A storage path is required."),
-  mimeType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
-  sizeBytes: z.number().int().positive().max(MAX_STORAGE_FILE_SIZE_BYTES),
-});
+export const uploadedEthicsDocumentSchema = stagedUploadFileSchema;
 
-export const ethicsApprovalSubmissionSchema = z
-  .object({
-    title: sanitizedString.min(1, "Ethics document title is required."),
-    summary: sanitizedString.min(1, "Ethics document summary is required."),
-    document: uploadedEthicsDocumentSchema.optional(),
-    documents: z.array(uploadedEthicsDocumentSchema).max(10).optional(),
-  })
-  .refine(
-    (value) => Boolean(value.document) || Boolean(value.documents?.length),
-    "Upload at least one ethics document.",
-  )
-  .transform((value) => ({
-    ...value,
-    documents: value.documents?.length
-      ? value.documents
-      : value.document
-        ? [value.document]
-        : [],
-  }));
+export const ethicsApprovalSubmissionSchema = z.object({
+  title: sanitizedString.min(1, "Ethics document title is required."),
+  summary: sanitizedString.min(1, "Ethics document summary is required."),
+  uploadSessionId: z.string().uuid("A valid upload session ID is required."),
+});
 
 export type EthicsApprovalUploadRequest = z.infer<
   typeof ethicsApprovalUploadRequestSchema

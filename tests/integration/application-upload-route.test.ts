@@ -35,6 +35,7 @@ describe("application upload route", () => {
 
     const formData = new FormData();
     formData.append("draftId", "application-1");
+    formData.append("draftToken", "draft-token");
     formData.append("file", new File(["pdf"], "cv.pdf", { type: "application/pdf" }));
 
     const response = await POST(
@@ -48,6 +49,7 @@ describe("application upload route", () => {
     expect(uploadApplicationDocument).toHaveBeenCalledWith(
       expect.objectContaining({
         draftId: "application-1",
+        draftToken: "draft-token",
       }),
     );
   });
@@ -59,6 +61,7 @@ describe("application upload route", () => {
 
     const formData = new FormData();
     formData.append("draftId", "application-1");
+    formData.append("draftToken", "draft-token");
     formData.append("file", new File(["text"], "notes.txt", { type: "text/plain" }));
 
     const response = await POST(
@@ -85,6 +88,7 @@ describe("application upload route", () => {
         },
         body: JSON.stringify({
           draftId: "application-1",
+          draftToken: "draft-token",
           storagePath: "applications/application-1/cv.pdf",
         }),
       }),
@@ -93,6 +97,7 @@ describe("application upload route", () => {
     expect(response.status).toBe(200);
     expect(deleteUploadedApplicationDocument).toHaveBeenCalledWith({
       draftId: "application-1",
+      draftToken: "draft-token",
       storagePath: "applications/application-1/cv.pdf",
     });
     await expect(response.json()).resolves.toMatchObject({ ok: true });

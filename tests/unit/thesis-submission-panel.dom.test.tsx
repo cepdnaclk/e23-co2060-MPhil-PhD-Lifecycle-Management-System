@@ -14,12 +14,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
-describe("ThesisSubmissionPanel one-file guard", () => {
+describe("ThesisSubmissionPanel staged multi-file flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("presents a single-file picker and rejects a synthetic multi-file selection", async () => {
+  it("presents a multi-file picker and accepts a two-file logical version", async () => {
     const { container } = render(<ThesisSubmissionPanel thesis={null} />);
     const input = container.querySelector(
       'input[type="file"]',
@@ -27,11 +27,11 @@ describe("ThesisSubmissionPanel one-file guard", () => {
 
     expect(
       screen.getByText(
-        /Upload one PDF, or one ZIP containing the complete thesis package/i,
+        /Upload 1–10 PDF or ZIP files as one thesis version/i,
       ),
     ).toBeInTheDocument();
     expect(input).toBeInTheDocument();
-    expect(input).not.toHaveAttribute("multiple");
+    expect(input).toHaveAttribute("multiple");
 
     fireEvent.change(input, {
       target: {
@@ -42,9 +42,8 @@ describe("ThesisSubmissionPanel one-file guard", () => {
       },
     });
 
-    expect(
-      await screen.findByText("Choose one thesis document per submission."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("thesis.pdf")).toBeInTheDocument();
+    expect(await screen.findByText("appendix.zip")).toBeInTheDocument();
   });
 
   it("locks thesis fields and file replacement while submission is in flight", async () => {

@@ -29,10 +29,13 @@ const uploadedApplicationDocumentSchema = z.object({
 
 export const applicationDocumentDeleteRequestSchema = z.object({
   draftId: sanitizedString.min(1, "A draft id is required."),
+  draftToken: sanitizedString.min(32, "A draft capability token is required."),
   storagePath: sanitizedString.min(1, "A storage path is required."),
 });
 
 export const applicationSubmissionSchema = z.object({
+  draftId: z.string().uuid("A valid application draft ID is required."),
+  draftToken: sanitizedString.min(32, "A draft capability token is required."),
   applicantName: sanitizedString.min(3, "Applicant name must be at least 3 characters long."),
   applicantEmail: sanitizedEmail,
   applicantPhone: sanitizedString
@@ -57,7 +60,8 @@ export const applicationSubmissionSchema = z.object({
 });
 
 export const applicationUploadRequestSchema = z.object({
-  draftId: sanitizedString.min(1, "A draft id is required."),
+  draftId: z.string().uuid("A valid application draft ID is required."),
+  draftToken: sanitizedString.min(32, "A draft capability token is required."),
   fileName: sanitizedString.min(1, "A file name is required."),
   contentType: z.enum(ALLOWED_DOCUMENT_MIME_TYPES),
   fileSizeBytes: z.number().int().positive().max(APPLICATION_ATTACHMENT_MAX_SIZE_BYTES),

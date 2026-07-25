@@ -106,56 +106,80 @@ export function ThesisCorrectionPanel({
       return;
     }
 
-    const parsedSubmission = correctionSubmissionSchema.safeParse({
-      correctionType,
-      description,
-      documents: files.map((file) => ({
-        fileName: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-      })),
-    });
-
-    if (!parsedSubmission.success) {
-      setError(
-        parsedSubmission.error.issues[0]?.message ??
-          "Invalid correction submission details.",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
+    let uploadSessionId: string | null = null;
 
     try {
-      const response = await secureFetch(`/api/theses/${thesis.id}/corrections`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(parsedSubmission.data),
-      });
-      const payload = (await response.json()) as {
+      const prepareResponse = await secureFetch(
+        `/api/theses/${thesis.id}/corrections/upload-url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            idempotencyKey: crypto.randomUUID(),
+            files: files.map((file) => ({
+              fileName: file.name,
+              mimeType: file.type,
+              sizeBytes: file.size,
+            })),
+          }),
+        },
+      );
+      const preparePayload = (await prepareResponse.json()) as {
         error?: string;
-        uploads?: Array<{
-          signedUrl: string;
-          storagePath: string;
-        }>;
+        uploadSessionId?: string;
+        uploads?: Array<{ signedUrl: string | null }>;
       };
-
-      if (!response.ok || !payload.uploads || payload.uploads.length !== files.length) {
-        throw new Error(payload.error ?? "Unable to submit corrections.");
+      if (
+        !prepareResponse.ok ||
+        !preparePayload.uploadSessionId ||
+        preparePayload.uploads?.length !== files.length
+      ) {
+        throw new Error(
+          preparePayload.error ?? "Unable to prepare correction uploads.",
+        );
       }
-
+      uploadSessionId = preparePayload.uploadSessionId;
       for (const [index, file] of files.entries()) {
-        const uploadTarget = payload.uploads[index];
-        const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
+        const signedUrl = preparePayload.uploads[index]?.signedUrl;
+        if (!signedUrl) {
+          throw new Error("A correction upload target was not available.");
+        }
+        const uploadResponse = await secureFetch(signedUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,
         });
-
         if (!uploadResponse.ok) {
-          throw new Error("The correction record was created, but a document upload failed.");
+          throw new Error("A correction document upload failed.");
         }
+      }
+
+      const parsedFinalization = correctionSubmissionSchema.safeParse({
+        correctionType,
+        description,
+        uploadSessionId,
+      });
+      if (!parsedFinalization.success) {
+        throw new Error(
+          parsedFinalization.error.issues[0]?.message ??
+            "Invalid correction submission details.",
+        );
+      }
+      const response = await secureFetch(`/api/theses/${thesis.id}/corrections`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(parsedFinalization.data),
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        correction?: Correction;
+      };
+
+      if (!response.ok || !payload.correction) {
+        throw new Error(payload.error ?? "Unable to submit corrections.");
       }
 
       setMessage("Correction document submitted for administrator approval.");
@@ -163,6 +187,11 @@ export function ThesisCorrectionPanel({
       setFiles([]);
       router.refresh();
     } catch (caught) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+        }).catch(() => undefined);
+      }
       setError(caught instanceof Error ? caught.message : "Correction submission failed.");
     } finally {
       setIsSubmitting(false);

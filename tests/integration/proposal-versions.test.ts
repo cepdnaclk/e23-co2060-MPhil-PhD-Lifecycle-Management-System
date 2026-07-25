@@ -40,6 +40,14 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
+vi.mock("@/lib/documents", () => ({
+  assertDocumentsAccessible: vi.fn().mockResolvedValue(undefined),
+  getDocumentDownloadUrl: vi
+    .fn()
+    .mockResolvedValue("https://storage.example.test/read?proposal=1"),
+  DocumentRepositoryError: class DocumentRepositoryError extends Error {},
+}));
+
 import { getAuth } from "firebase-admin/auth";
 
 import { GET as downloadProposalVersion } from "@/app/api/proposals/[id]/versions/[v]/download/route";
@@ -146,6 +154,7 @@ describe("proposal version integration", () => {
           createdAt: new Date("2026-04-30T10:00:00.000Z"),
         },
       ],
+      versions: [],
     } as never);
 
     const response = await downloadProposalVersion(
@@ -165,9 +174,14 @@ describe("proposal version integration", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       version: {
-        version: 1,
-        isCurrentVersion: false,
-        storagePath: "proposals/student-1/1/proposal-v1.pdf",
+        versionNumber: 1,
+        isCurrent: false,
+        documents: [
+          expect.objectContaining({
+            version: 1,
+            storagePath: "proposals/student-1/1/proposal-v1.pdf",
+          }),
+        ],
       },
       expiresInMinutes: 15,
     });

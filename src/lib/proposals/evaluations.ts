@@ -68,6 +68,10 @@ type ProposalEvaluationView = {
     }>;
   };
   evaluations: EvaluationRecord[];
+  versions: Array<{
+    id: string;
+    manifestHash: string;
+  }>;
 };
 
 type ExaminerContext = {
@@ -177,6 +181,14 @@ async function findProposalForEvaluation(
               createdAt: true,
             },
           },
+        },
+      },
+      versions: {
+        where: { isCurrent: true },
+        take: 2,
+        select: {
+          id: true,
+          manifestHash: true,
         },
       },
     },
@@ -335,6 +347,14 @@ export async function createProposalEvaluation(
   assertExaminerNotAssignedSupervisor(proposal, examiner);
   assertProposalUnderReview(proposal);
 
+  if (proposal.versions.length !== 1) {
+    throw new ProposalEvaluationError(
+      "Exactly one current logical proposal version is required for review.",
+      409,
+    );
+  }
+  const proposalVersion = proposal.versions[0];
+
   const existingEvaluation = proposal.evaluations.find(
     (evaluation) => evaluation.examiner.id === examiner.id,
   );
@@ -357,8 +377,10 @@ export async function createProposalEvaluation(
   const evaluation = await prisma.evaluationForm.create({
     data: {
       researchProposalId: proposal.id,
+      proposalVersionId: proposalVersion.id,
       examinerId: examiner.id,
       feedback: parsed.data.feedback,
+      evidenceManifestHash: proposalVersion.manifestHash,
       submissionDate: new Date(),
       documents: {
         create: parsed.data.documents.map((document) => ({

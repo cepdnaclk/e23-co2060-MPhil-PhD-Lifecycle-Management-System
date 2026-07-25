@@ -1,31 +1,40 @@
 import {
   AcademicStatus,
   CorrectionType,
+  DocumentVerificationStatus,
   DocumentType,
   ThesisStatus,
+  UploadPurpose,
+  UploadSessionStatus,
   UserRole,
 } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 
 import { notify, notifyInBackground } from "@/lib/notifications";
+import { withSerializableRetry } from "@/lib/prisma/transactions";
 import { assertValidThesisStatusTransition } from "@/lib/prisma/thesis-status";
 import { prisma } from "@/lib/prisma/client";
 import {
-  assertFileUploadConstraints,
-  buildCorrectionStoragePath,
-  generateUploadSignedUrl,
-  normalizeStoragePath,
-  StorageAccessError,
-} from "@/lib/storage";
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import {
+  correctionUploadRequestSchema,
   correctionSubmissionSchema,
+  type CorrectionUploadRequest,
   type CorrectionSubmissionInput,
 } from "@/lib/theses/schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export class ThesisCorrectionError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 500 = 400,
+  ) {
     super(message);
     this.name = "ThesisCorrectionError";
     this.status = status;
@@ -178,31 +187,6 @@ async function requireCorrectionSubmissionContext(
   return student as ThesisCorrectionSubmissionContext;
 }
 
-function assertCorrectionDocumentUpload(input: {
-  contentType: string;
-  fileSizeBytes: number;
-  path: string;
-}) {
-  try {
-    assertFileUploadConstraints(input);
-  } catch (error) {
-    if (error instanceof StorageAccessError) {
-      throw new ThesisCorrectionError(error.message, error.status);
-    }
-
-    throw error;
-  }
-
-  const normalizedPath = normalizeStoragePath(input.path);
-
-  if (!normalizedPath.startsWith("corrections/")) {
-    throw new ThesisCorrectionError(
-      "Correction documents must be uploaded to the corrections directory.",
-      400,
-    );
-  }
-}
-
 function formatCorrectionTypeLabel(correctionType: CorrectionType) {
   return correctionType === CorrectionType.MINOR ? "Minor" : "Major";
 }
@@ -257,9 +241,48 @@ export async function submitCorrectionDocument(
 
   const student = await requireCorrectionSubmissionContext(thesisId, auth);
 
-  const correction = await prisma.$transaction(async (tx) => {
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      parsed.data.uploadSessionId,
+      UploadPurpose.CORRECTION,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ThesisCorrectionError(error.message, error.status);
+    }
+    throw error;
+  }
+
+  if (verification.state === "FINALIZED") {
+    const existing = await prisma.correctionDocument.findUnique({
+      where: { id: verification.finalizedEntityId },
+      include: { documents: { where: { isDeleted: false } } },
+    });
+    if (!existing) {
+      throw new ThesisCorrectionError(
+        "Finalized correction submission could not be loaded.",
+        500,
+      );
+    }
+    return {
+      correction: {
+        ...existing,
+        document: existing.documents[0] ?? null,
+      },
+    };
+  }
+
+  const verifiedSession = verification.session;
+  const correctionId = randomUUID();
+  const documentIds = verifiedSession.files.map(() => randomUUID());
+  let correction;
+  try {
+    correction = await withSerializableRetry(async (tx) => {
     const createdCorrection = await tx.correctionDocument.create({
       data: {
+        id: correctionId,
         thesisId: student.thesis.id,
         correctionType: parsed.data.correctionType,
         description: parsed.data.description,
@@ -272,28 +295,21 @@ export async function submitCorrectionDocument(
     });
 
     const documents = await Promise.all(
-      parsed.data.documents.map((document) => {
-        const storagePath = buildCorrectionStoragePath(
-          student.id,
-          student.thesis.id,
-          `${createdCorrection.id}-${document.fileName}`,
-        );
-
-        assertCorrectionDocumentUpload({
-          contentType: document.mimeType,
-          fileSizeBytes: document.sizeBytes,
-          path: storagePath,
-        });
-
+      verifiedSession.files.map((document, index) => {
         return tx.document.create({
           data: {
+            id: documentIds[index],
             studentId: student.id,
             thesisId: student.thesis.id,
             correctionDocumentId: createdCorrection.id,
             documentType: DocumentType.CORRECTION,
             fileName: document.fileName,
-            storagePath,
+            storagePath: document.storagePath,
             mimeType: document.mimeType,
+            sizeBytes: document.sizeBytes,
+            checksumSha256: document.checksumSha256,
+            verificationStatus: DocumentVerificationStatus.VERIFIED,
+            verifiedAt: new Date(),
             version: 1,
             isCurrentVersion: true,
           },
@@ -310,6 +326,22 @@ export async function submitCorrectionDocument(
       }),
     );
 
+    for (const [index, file] of verifiedSession.files.entries()) {
+      await tx.stagedUploadFile.update({
+        where: { id: file.id },
+        data: { documentId: documentIds[index] },
+      });
+    }
+    await tx.uploadSession.update({
+      where: { id: verifiedSession.id },
+      data: {
+        status: UploadSessionStatus.FINALIZED,
+        finalizedAt: new Date(),
+        finalizedEntityId: createdCorrection.id,
+        result: { documentCount: documents.length },
+      },
+    });
+
     return {
       correction: {
         id: createdCorrection.id,
@@ -324,18 +356,14 @@ export async function submitCorrectionDocument(
       },
       documents,
     };
-  });
-
-  const uploads = await Promise.all(
-    correction.documents.map(async (document) => ({
-      signedUrl: await generateUploadSignedUrl(
-        document.storagePath,
-        document.mimeType,
-      ),
-      storagePath: document.storagePath,
-      expiresInMinutes: 15,
-    })),
-  );
+    });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Correction finalization failed.",
+    );
+    throw error;
+  }
 
   await notifyAdministratorsOfCorrectionSubmission({
     studentName: student.user.displayName,
@@ -345,9 +373,38 @@ export async function submitCorrectionDocument(
 
   return {
     correction: correction.correction,
-    upload: uploads[0] ?? null,
-    uploads,
   };
+}
+
+export async function createCorrectionUploadUrl(
+  thesisId: string,
+  input: CorrectionUploadRequest,
+  auth: AuthenticatedUserContext,
+) {
+  const parsed = correctionUploadRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ThesisCorrectionError(
+      parsed.error.issues[0]?.message ?? "Invalid correction upload request.",
+      400,
+    );
+  }
+  const student = await requireCorrectionSubmissionContext(thesisId, auth);
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.CORRECTION,
+        idempotencyKey: parsed.data.idempotencyKey,
+        files: parsed.data.files,
+      },
+      auth,
+      `${student.id}/${student.thesis.id}`,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ThesisCorrectionError(error.message, error.status);
+    }
+    throw error;
+  }
 }
 
 async function requireAdministratorContext(auth: AuthenticatedUserContext) {

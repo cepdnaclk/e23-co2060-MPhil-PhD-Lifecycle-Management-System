@@ -86,6 +86,8 @@ describe("application submission utilities", () => {
 
   it("rejects a submission schema payload with an oversized uploaded document", () => {
     const result = applicationSubmissionSchema.safeParse({
+      draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+      draftToken: "a".repeat(43),
       applicantName: "Applicant One",
       applicantEmail: "applicant@example.com",
       applicantPhone: "+94770000000",
@@ -108,6 +110,8 @@ describe("application submission utilities", () => {
 
   it("accepts a submission schema payload with multiple PDF/ZIP supporting documents", () => {
     const result = applicationSubmissionSchema.safeParse({
+      draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+      draftToken: "a".repeat(43),
       applicantName: "Applicant One",
       applicantEmail: "applicant@example.com",
       applicantPhone: "+94770000000",

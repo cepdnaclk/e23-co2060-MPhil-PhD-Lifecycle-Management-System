@@ -291,7 +291,7 @@ export async function generateUploadSignedUrl(
 
   const { data, error } = await supabase.storage
     .from(bucketName)
-    .createSignedUploadUrl(normalizedPath);
+    .createSignedUploadUrl(normalizedPath, { upsert: false });
 
   if (error || !data?.signedUrl) {
     throw new StorageAccessError(`Failed to generate upload URL: ${error?.message || 'Unknown error'}`, 400);
@@ -313,12 +313,30 @@ export async function uploadBufferToStorage(
     .from(bucketName)
     .upload(normalizedPath, buffer, {
       contentType,
-      upsert: true,
+      upsert: false,
     });
 
   if (error) {
     throw new StorageAccessError(`Failed to upload buffer: ${error.message}`, 400);
   }
+}
+
+export async function downloadStorageObject(path: string): Promise<Buffer> {
+  const normalizedPath = normalizeStoragePath(path);
+  const supabase = getSupabaseClient();
+  const bucketName = getSupabaseBucketName();
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .download(normalizedPath);
+
+  if (error || !data) {
+    throw new StorageAccessError(
+      `Uploaded object could not be read: ${error?.message || "Unknown error"}`,
+      400,
+    );
+  }
+
+  return Buffer.from(await data.arrayBuffer());
 }
 
 export async function generateDownloadSignedUrl(path: string): Promise<string> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { z } from "zod";
 
@@ -49,15 +49,12 @@ const documentsStepSchema = z.object({
   supportingDocuments: applicationSubmissionSchema.shape.supportingDocuments,
 });
 
-function createDraftId() {
-  return `application-${crypto.randomUUID()}`;
-}
-
 export function ApplicationForm() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
-  const [draftId] = useState(() => createDraftId());
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftToken, setDraftToken] = useState<string | null>(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const [isRemovingDocument, setIsRemovingDocument] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +73,42 @@ export function ApplicationForm() {
 
   const currentStepLabel = useMemo(() => stepLabels[step], [step]);
   const isNavigationBusy =
-    isUploadingDocument || isRemovingDocument || isSubmitting;
+    isUploadingDocument ||
+    isRemovingDocument ||
+    isSubmitting ||
+    !draftId ||
+    !draftToken;
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/applications/drafts", { method: "POST" })
+      .then(async (response) => {
+        const payload = (await response.json()) as {
+          draftId?: string;
+          draftToken?: string;
+          error?: string;
+        };
+        if (!response.ok || !payload.draftId || !payload.draftToken) {
+          throw new Error(payload.error ?? "Unable to initialize the application draft.");
+        }
+        if (active) {
+          setDraftId(payload.draftId);
+          setDraftToken(payload.draftToken);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Unable to initialize the application draft.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function updateField(name: keyof typeof formValues, value: string) {
     setIsReviewConfirmed(false);
@@ -148,6 +180,11 @@ export function ApplicationForm() {
     if (selectedFiles.length === 0) {
       return;
     }
+    if (!draftId || !draftToken) {
+      setErrorMessage("The protected application draft is not ready yet.");
+      event.target.value = "";
+      return;
+    }
 
     if (documents.length + selectedFiles.length > 10) {
       setErrorMessage(
@@ -166,6 +203,7 @@ export function ApplicationForm() {
       for (const file of selectedFiles) {
         const formData = new FormData();
         formData.append("draftId", draftId);
+        formData.append("draftToken", draftToken);
         formData.append("file", file);
 
         const uploadResponse = await fetch("/api/applications/upload", {
@@ -232,6 +270,10 @@ export function ApplicationForm() {
     if (!document) {
       return;
     }
+    if (!draftId || !draftToken) {
+      setErrorMessage("The protected application draft is not ready yet.");
+      return;
+    }
 
     setErrorMessage(null);
     setIsRemovingDocument(true);
@@ -244,6 +286,7 @@ export function ApplicationForm() {
         },
         body: JSON.stringify({
           draftId,
+          draftToken,
           storagePath: document.storagePath,
         }),
       });
@@ -327,6 +370,8 @@ export function ApplicationForm() {
     setErrorMessage(null);
 
     const parsed = applicationSubmissionSchema.safeParse({
+      draftId,
+      draftToken,
       ...formValues,
       supportingDocuments: documents,
     });
@@ -583,7 +628,12 @@ export function ApplicationForm() {
                   accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
                   multiple
                   onChange={handleDocumentUpload}
-                  disabled={isUploadingDocument || isRemovingDocument}
+                  disabled={
+                    isUploadingDocument ||
+                    isRemovingDocument ||
+                    !draftId ||
+                    !draftToken
+                  }
                 />
                 {isUploadingDocument && (
                   <p className="text-sm text-muted-foreground">Uploading documents...</p>

@@ -86,6 +86,9 @@ vi.mock("@/lib/prisma/client", () => ({
       }),
       update: vi.fn().mockResolvedValue({ id: "doc-001", isDeleted: true }),
     },
+    documentAccessEvent: {
+      create: vi.fn().mockResolvedValue({ id: "access-event-1" }),
+    },
   },
 }));
 
@@ -355,6 +358,18 @@ describe("getDocumentDownloadUrl", () => {
         },
       }),
     );
+    expect(prisma.documentAccessEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorUserId: "user-1",
+        actorRole: "STUDENT",
+        documentId: "doc-proposal-1",
+        action: "DOWNLOAD",
+        decision: "ALLOWED",
+        reasonCode: "POLICY_ALLOWED",
+        storagePathHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+        signedUrlExpiresAt: expect.any(Date),
+      }),
+    });
   });
 
   it("blocks an unreleased review attachment without generating a signed URL", async () => {
@@ -399,6 +414,13 @@ describe("getDocumentDownloadUrl", () => {
       ]),
     });
     expect(generateDownloadSignedUrl).not.toHaveBeenCalled();
+    expect(prisma.documentAccessEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        documentId: "review-document-1",
+        decision: "DENIED",
+        reasonCode: "POLICY_DENIED",
+      }),
+    });
   });
 
   it("allows a released, correctly scoped review attachment", async () => {

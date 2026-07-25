@@ -1,8 +1,14 @@
+import { randomUUID } from "node:crypto";
+
 import {
-  ApplicationStatus,
   AcademicStatus,
+  ApplicationStatus,
+  DocumentVerificationStatus,
   DocumentType,
+  MalwareScanStatus,
   RegistrationStatus,
+  UploadFileStatus,
+  UploadSessionStatus,
   UserRole,
 } from "@prisma/client";
 
@@ -18,6 +24,7 @@ import {
 } from "@/lib/firebase/admin";
 import { assertValidApplicationStatusTransition } from "@/lib/prisma/application-status";
 import { prisma } from "@/lib/prisma/client";
+import { withSerializableRetry } from "@/lib/prisma/transactions";
 import {
   assertApplicationAttachmentConstraints,
   buildApplicationAttachmentStoragePath,
@@ -28,6 +35,15 @@ import {
   StorageAccessError,
   uploadBufferToStorage,
 } from "@/lib/storage";
+import {
+  PublicDraftCapabilityError,
+  requirePublicApplicationDraft,
+} from "@/lib/uploads/capabilities";
+import {
+  UploadVerificationError,
+  verifyStagedUploadFile,
+  type VerifiedUploadFile,
+} from "@/lib/uploads/verification";
 
 import {
   applicationDocumentDeleteRequestSchema,
@@ -45,9 +61,12 @@ export {
 };
 
 export class ApplicationSubmissionError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500 = 400,
+  ) {
     super(message);
     this.name = "ApplicationSubmissionError";
     this.status = status;
@@ -103,7 +122,30 @@ export async function createApplicationUploadUrl(
   }
 
   try {
-    const storagePath = assertValidApplicationUploadFile(parsed.data);
+    const draft = await requirePublicApplicationDraft(
+      parsed.data.draftId,
+      parsed.data.draftToken,
+    );
+    const fileId = randomUUID();
+    const storagePath = normalizeStoragePath(
+      `applications/${draft.id}/staged/${fileId}/${parsed.data.fileName}`,
+    );
+    assertApplicationAttachmentConstraints({
+      contentType: parsed.data.contentType,
+      fileSizeBytes: parsed.data.fileSizeBytes,
+      path: storagePath,
+    });
+    await prisma.stagedUploadFile.create({
+      data: {
+        id: fileId,
+        uploadSessionId: draft.id,
+        ordinal: draft.files.length,
+        fileName: parsed.data.fileName,
+        expectedMimeType: parsed.data.contentType,
+        expectedSizeBytes: parsed.data.fileSizeBytes,
+        storagePath,
+      },
+    });
     const signedUrl = await generateUploadSignedUrl(
       storagePath,
       parsed.data.contentType,
@@ -115,6 +157,9 @@ export async function createApplicationUploadUrl(
       expiresInMinutes: 15,
     };
   } catch (error) {
+    if (error instanceof PublicDraftCapabilityError) {
+      throw new ApplicationSubmissionError(error.message, error.status);
+    }
     if (error instanceof StorageAccessError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
@@ -125,6 +170,7 @@ export async function createApplicationUploadUrl(
 
 export async function uploadApplicationDocument(input: {
   draftId: string;
+  draftToken: string;
   file: FormDataEntryValue | null;
 }) {
   const file = input.file;
@@ -133,24 +179,59 @@ export async function uploadApplicationDocument(input: {
     throw new ApplicationSubmissionError("A PDF or ZIP document is required.", 400);
   }
 
-  const storagePath = assertValidApplicationUploadFile({
-    draftId: input.draftId,
-    fileName: file.name,
-    contentType: file.type,
-    fileSizeBytes: file.size,
-  });
-
   try {
+    const draft = await requirePublicApplicationDraft(
+      input.draftId,
+      input.draftToken,
+    );
+    const fileId = randomUUID();
+    const storagePath = normalizeStoragePath(
+      `applications/${draft.id}/staged/${fileId}/${file.name}`,
+    );
+    assertApplicationAttachmentConstraints({
+      contentType: file.type,
+      fileSizeBytes: file.size,
+      path: storagePath,
+    });
+    const stagedFile = await prisma.stagedUploadFile.create({
+      data: {
+        id: fileId,
+        uploadSessionId: draft.id,
+        ordinal: draft.files.length,
+        fileName: file.name,
+        expectedMimeType: file.type,
+        expectedSizeBytes: file.size,
+        storagePath,
+      },
+    });
     const buffer = Buffer.from(await file.arrayBuffer());
     await uploadBufferToStorage(storagePath, buffer, file.type);
+    const verified = await verifyStagedUploadFile(stagedFile);
+    await prisma.stagedUploadFile.update({
+      where: { id: stagedFile.id },
+      data: {
+        actualMimeType: verified.mimeType,
+        actualSizeBytes: verified.sizeBytes,
+        actualSha256: verified.checksumSha256,
+        status: UploadFileStatus.VERIFIED,
+        malwareScanStatus: MalwareScanStatus.CLEAN,
+        verifiedAt: new Date(),
+      },
+    });
 
     return {
       storagePath,
       fileName: file.name,
-      mimeType: file.type,
-      sizeBytes: file.size,
+      mimeType: verified.mimeType,
+      sizeBytes: verified.sizeBytes,
     };
   } catch (error) {
+    if (error instanceof PublicDraftCapabilityError) {
+      throw new ApplicationSubmissionError(error.message, error.status);
+    }
+    if (error instanceof UploadVerificationError) {
+      throw new ApplicationSubmissionError(error.message, 409);
+    }
     if (error instanceof StorageAccessError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
@@ -175,6 +256,10 @@ export async function deleteUploadedApplicationDocument(
   }
 
   try {
+    const draft = await requirePublicApplicationDraft(
+      parsed.data.draftId,
+      parsed.data.draftToken,
+    );
     const normalizedStoragePath = normalizeStoragePath(parsed.data.storagePath);
 
     if (!normalizedStoragePath.startsWith("applications/")) {
@@ -184,7 +269,7 @@ export async function deleteUploadedApplicationDocument(
       );
     }
 
-    if (getStorageObjectOwnerId(normalizedStoragePath) !== parsed.data.draftId) {
+    if (getStorageObjectOwnerId(normalizedStoragePath) !== draft.id) {
       throw new ApplicationSubmissionError(
         "Document removal denied for this draft.",
         403,
@@ -192,12 +277,22 @@ export async function deleteUploadedApplicationDocument(
     }
 
     await deleteFile(normalizedStoragePath);
+    await prisma.stagedUploadFile.deleteMany({
+      where: {
+        uploadSessionId: draft.id,
+        storagePath: normalizedStoragePath,
+        documentId: null,
+      },
+    });
   } catch (error) {
     if (error instanceof ApplicationSubmissionError) {
       throw error;
     }
 
     if (error instanceof StorageAccessError) {
+      throw new ApplicationSubmissionError(error.message, error.status);
+    }
+    if (error instanceof PublicDraftCapabilityError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
 
@@ -220,65 +315,165 @@ export async function createApplicationSubmission(
     );
   }
 
+  let draft;
   try {
-    for (const document of parsed.data.supportingDocuments) {
-      assertApplicationAttachmentConstraints({
-        contentType: document.mimeType,
-        fileSizeBytes: document.sizeBytes,
-        path: document.storagePath,
-      });
-    }
+    draft = await requirePublicApplicationDraft(
+      parsed.data.draftId,
+      parsed.data.draftToken,
+      { allowFinalized: true },
+    );
   } catch (error) {
-    if (error instanceof StorageAccessError) {
+    if (error instanceof PublicDraftCapabilityError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
-
     throw error;
   }
 
-  const existingApplication = await prisma.application.findFirst({
-    where: {
-      applicantEmail: parsed.data.applicantEmail,
-      status: {
-        in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
-      },
-      isArchived: false,
-    },
-    select: { id: true },
-  });
+  if (
+    draft.status === UploadSessionStatus.FINALIZED &&
+    draft.finalizedEntityId
+  ) {
+    return prisma.application.findUniqueOrThrow({
+      where: { id: draft.finalizedEntityId },
+      include: { documents: true },
+    });
+  }
 
-  if (existingApplication) {
+  const claimed = await prisma.uploadSession.updateMany({
+    where: { id: draft.id, status: UploadSessionStatus.OPEN },
+    data: { status: UploadSessionStatus.FINALIZING },
+  });
+  if (claimed.count !== 1) {
     throw new ApplicationSubmissionError(
-      "An active application already exists for this email address.",
+      "Application draft is already being finalized.",
       409,
     );
   }
 
-  const application = await prisma.application.create({
-    data: {
-      applicantName: parsed.data.applicantName,
-      applicantEmail: parsed.data.applicantEmail,
-      applicantPhone: parsed.data.applicantPhone,
-      supervisor: parsed.data.supervisor,
-      researchArea: parsed.data.researchArea,
-      statementOfPurpose: parsed.data.statementOfPurpose,
-      status: ApplicationStatus.SUBMITTED,
-      programType: parsed.data.programType,
-      documents: {
-        create: parsed.data.supportingDocuments.map((document) => ({
-          documentType: DocumentType.APPLICATION_ATTACHMENT,
-          fileName: document.fileName,
-          storagePath: document.storagePath,
-          mimeType: document.mimeType,
-        })),
-      },
-    },
-    include: {
-      documents: true,
-    },
-  });
+  const verifiedFiles: VerifiedUploadFile[] = [];
+  try {
+    for (const file of draft.files) {
+      const verified =
+        file.status === UploadFileStatus.VERIFIED &&
+        file.actualMimeType &&
+        file.actualSizeBytes &&
+        file.actualSha256
+          ? {
+              id: file.id,
+              ordinal: file.ordinal,
+              fileName: file.fileName,
+              storagePath: file.storagePath,
+              mimeType: file.actualMimeType as "application/pdf" | "application/zip",
+              sizeBytes: file.actualSizeBytes,
+              checksumSha256: file.actualSha256,
+            }
+          : await verifyStagedUploadFile(file);
+      verifiedFiles.push(verified);
+      await prisma.stagedUploadFile.update({
+        where: { id: file.id },
+        data: {
+          actualMimeType: verified.mimeType,
+          actualSizeBytes: verified.sizeBytes,
+          actualSha256: verified.checksumSha256,
+          status: UploadFileStatus.VERIFIED,
+          malwareScanStatus: MalwareScanStatus.CLEAN,
+          verifiedAt: new Date(),
+        },
+      });
+    }
 
-  const administrators = await prisma.user.findMany({
+    if (verifiedFiles.length < 1 || verifiedFiles.length > 10) {
+      throw new ApplicationSubmissionError(
+        "Application drafts require between 1 and 10 verified documents.",
+        409,
+      );
+    }
+
+    const claimedPaths = new Set(
+      parsed.data.supportingDocuments.map((document) =>
+        normalizeStoragePath(document.storagePath),
+      ),
+    );
+    if (
+      claimedPaths.size !== verifiedFiles.length ||
+      verifiedFiles.some((file) => !claimedPaths.has(file.storagePath))
+    ) {
+      throw new ApplicationSubmissionError(
+        "Application documents do not match the protected draft.",
+        409,
+      );
+    }
+
+    const applicationId = await withSerializableRetry(async (tx) => {
+      const existingApplication = await tx.application.findFirst({
+        where: {
+          applicantEmail: parsed.data.applicantEmail,
+          status: {
+            in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
+          },
+          isArchived: false,
+        },
+        select: { id: true },
+      });
+      if (existingApplication) {
+        throw new ApplicationSubmissionError(
+          "An active application already exists for this email address.",
+          409,
+        );
+      }
+
+      const documentIds = verifiedFiles.map(() => randomUUID());
+      const application = await tx.application.create({
+        data: {
+          applicantName: parsed.data.applicantName,
+          applicantEmail: parsed.data.applicantEmail,
+          applicantPhone: parsed.data.applicantPhone,
+          supervisor: parsed.data.supervisor,
+          researchArea: parsed.data.researchArea,
+          statementOfPurpose: parsed.data.statementOfPurpose,
+          status: ApplicationStatus.SUBMITTED,
+          programType: parsed.data.programType,
+          documents: {
+            create: verifiedFiles.map((document, index) => ({
+              id: documentIds[index],
+              documentType: DocumentType.APPLICATION_ATTACHMENT,
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              checksumSha256: document.checksumSha256,
+              verificationStatus: DocumentVerificationStatus.VERIFIED,
+              verifiedAt: new Date(),
+            })),
+          },
+        },
+        select: { id: true },
+      });
+
+      for (const [index, file] of verifiedFiles.entries()) {
+        await tx.stagedUploadFile.update({
+          where: { id: file.id },
+          data: { documentId: documentIds[index] },
+        });
+      }
+      await tx.uploadSession.update({
+        where: { id: draft.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: application.id,
+          result: { applicationId: application.id },
+        },
+      });
+      return application.id;
+    });
+
+    const application = await prisma.application.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { documents: true },
+    });
+
+    const administrators = await prisma.user.findMany({
     where: {
       role: UserRole.ADMINISTRATOR,
       isActive: true,
@@ -293,7 +488,7 @@ export async function createApplicationSubmission(
     },
   });
 
-  await Promise.all(
+    await Promise.all(
     administrators.map((administrator) =>
       notifyApplicationSubmittedToAdministrator({
         recipientUserId: administrator.id,
@@ -305,9 +500,20 @@ export async function createApplicationSubmission(
         researchArea: application.researchArea ?? "Not specified",
       }),
     ),
-  );
+    );
 
-  return application;
+    return application;
+  } catch (error) {
+    await prisma.uploadSession.updateMany({
+      where: { id: draft.id, status: UploadSessionStatus.FINALIZING },
+      data: {
+        status: UploadSessionStatus.OPEN,
+        failureReason:
+          error instanceof Error ? error.message.slice(0, 1000) : "Finalization failed.",
+      },
+    });
+    throw error;
+  }
 }
 
 export async function updateApplicationStatus(

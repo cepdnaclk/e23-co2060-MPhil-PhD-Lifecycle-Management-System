@@ -37,6 +37,12 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
+vi.mock("@/lib/documents", () => ({
+  getDocumentDownloadUrl: vi.fn().mockResolvedValue(
+    "https://storage.example.test/read?path=theses%2Fstudent-1%2Fthesis.pdf",
+  ),
+}));
+
 import { notifyExaminerAssignedToThesis } from "@/lib/email";
 import { assignExaminerToThesis } from "@/lib/assignments/examiners";
 import { prisma } from "@/lib/prisma/client";
@@ -87,6 +93,13 @@ describe("examiner assignment integration", () => {
           version: 1,
           isCurrentVersion: true,
           createdAt: new Date("2026-05-01T04:00:00.000Z"),
+        },
+      ],
+      versions: [
+        {
+          id: "thesis-version-1",
+          manifestHash: "manifest-1",
+          isCurrent: true,
         },
       ],
     } as never);

@@ -43,6 +43,25 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
+vi.mock("@/lib/documents", () => {
+  class DocumentRepositoryError extends Error {
+    status = 403;
+  }
+  return {
+    DocumentRepositoryError,
+    assertDocumentsAccessible: vi.fn(
+      async (_documentIds: string[], auth: { userId: string }) => {
+        if (auth.userId === "db-examiner-2") {
+          throw new DocumentRepositoryError("Thesis access denied.");
+        }
+      },
+    ),
+    getDocumentDownloadUrl: vi
+      .fn()
+      .mockResolvedValue("https://storage.example.test/read?thesis=1"),
+  };
+});
+
 import { getAuth } from "firebase-admin/auth";
 
 import { GET as downloadThesis } from "@/app/api/theses/[id]/download/route";
@@ -140,6 +159,7 @@ describe("thesis download integration", () => {
           createdAt: new Date("2026-05-01T04:00:00.000Z"),
         },
       ],
+      versions: [],
     } as never);
 
     const response = await downloadThesis(
@@ -195,6 +215,7 @@ describe("thesis download integration", () => {
           createdAt: new Date("2026-05-01T04:00:00.000Z"),
         },
       ],
+      versions: [],
     } as never);
 
     const response = await downloadThesis(

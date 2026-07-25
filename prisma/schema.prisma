@@ -73,6 +73,53 @@ enum DocumentType {
   REVIEW_ATTACHMENT
 }
 
+enum UploadPurpose {
+  APPLICATION
+  PROPOSAL
+  ETHICS_APPROVAL
+  PROGRESS_REPORT
+  THESIS
+  CORRECTION
+  REVIEW_ATTACHMENT
+}
+
+enum UploadSessionStatus {
+  OPEN
+  FINALIZING
+  FINALIZED
+  ABORTED
+  EXPIRED
+  FAILED
+}
+
+enum UploadFileStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MalwareScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  ERROR
+}
+
+enum DocumentVerificationStatus {
+  LEGACY
+  VERIFIED
+}
+
+enum DocumentAccessAction {
+  LIST
+  DOWNLOAD
+}
+
+enum DocumentAccessDecision {
+  ALLOWED
+  DENIED
+}
+
 enum NotificationEvent {
   APPLICATION_STATUS_CHANGED
   PROPOSAL_STATUS_CHANGED
@@ -236,38 +283,62 @@ model Registration {
 }
 
 model ResearchProposal {
-  id             String           @id @default(cuid())
+  id             String            @id @default(cuid())
   studentId      String
-  applicationId  String           @unique
+  applicationId  String            @unique
   title          String
   abstract       String
-  status         ProposalStatus   @default(SUBMITTED)
-  currentVersion Int              @default(1)
-  isArchived     Boolean          @default(false)
-  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  application    Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status         ProposalStatus    @default(SUBMITTED)
+  currentVersion Int               @default(1)
+  isArchived     Boolean           @default(false)
+  student        Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  application    Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   evaluations    EvaluationForm[]
+  versions       ProposalVersion[]
   documents      Document[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([studentId, status])
   @@map("research_proposals")
 }
 
-model EvaluationForm {
+model ProposalVersion {
   id                 String           @id @default(cuid())
   researchProposalId String
-  examinerId         String
-  feedback           String
-  adminComments      String?
-  releasedAt         DateTime?
-  submissionDate     DateTime         @default(now())
+  versionNumber      Int
+  isCurrent          Boolean          @default(false)
+  manifestHash       String
+  submittedByUserId  String
+  submittedAt        DateTime         @default(now())
   researchProposal   ResearchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
-  examiner           Examiner         @relation(fields: [examinerId], references: [id], onDelete: Restrict)
+  evaluations        EvaluationForm[]
   documents          Document[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  @@unique([researchProposalId, examinerId])
+  @@unique([researchProposalId, versionNumber])
+  @@index([researchProposalId, isCurrent])
+  @@map("proposal_versions")
+}
+
+model EvaluationForm {
+  id                   String           @id @default(cuid())
+  researchProposalId   String
+  proposalVersionId    String?
+  examinerId           String
+  feedback             String
+  evidenceManifestHash String?
+  adminComments        String?
+  releasedAt           DateTime?
+  submissionDate       DateTime         @default(now())
+  researchProposal     ResearchProposal @relation(fields: [researchProposalId], references: [id], onDelete: Cascade)
+  proposalVersion      ProposalVersion? @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  examiner             Examiner         @relation(fields: [examinerId], references: [id], onDelete: Restrict)
+  documents            Document[]
+
+  @@unique([proposalVersionId, examinerId])
+  @@index([proposalVersionId])
   @@map("evaluation_forms")
 }
 
@@ -375,22 +446,23 @@ model PanelEvaluation {
 }
 
 model ProgressReportReview {
-  id               String         @id @default(cuid())
-  progressReportId String
-  examinerId       String
-  examinerUserId   String
-  assignedAt       DateTime       @default(now())
-  assignedBy       String
-  reviewText       String?
-  submittedAt      DateTime?
-  adminComments    String?
-  releasedAt       DateTime?
-  progressReport   ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
-  examiner         Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
-  administrator    Administrator  @relation("ProgressReportReviewAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
-  documents        Document[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                   String         @id @default(cuid())
+  progressReportId     String
+  examinerId           String
+  examinerUserId       String
+  assignedAt           DateTime       @default(now())
+  assignedBy           String
+  reviewText           String?
+  submittedAt          DateTime?
+  adminComments        String?
+  releasedAt           DateTime?
+  evidenceManifestHash String?
+  progressReport       ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
+  examiner             Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
+  administrator        Administrator  @relation("ProgressReportReviewAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  documents            Document[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   @@unique([progressReportId, examinerId])
   @@unique([progressReportId, examinerUserId])
@@ -422,6 +494,7 @@ model Thesis {
   isArchived          Boolean                    @default(false)
   student             Student                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   examinerAssignments ThesisExaminerAssignment[]
+  versions            ThesisVersion[]
   viva                Viva?
   corrections         CorrectionDocument[]
   documents           Document[]
@@ -432,29 +505,52 @@ model Thesis {
   @@map("theses")
 }
 
+model ThesisVersion {
+  id                  String                     @id @default(cuid())
+  thesisId            String
+  versionNumber       Int
+  isCurrent           Boolean                    @default(false)
+  manifestHash        String
+  submittedByUserId   String
+  submittedAt         DateTime                   @default(now())
+  thesis              Thesis                     @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  examinerAssignments ThesisExaminerAssignment[]
+  documents           Document[]
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  @@unique([thesisId, versionNumber])
+  @@index([thesisId, isCurrent])
+  @@map("thesis_versions")
+}
+
 model ThesisExaminerAssignment {
-  id             String        @id @default(cuid())
-  thesisId       String
-  studentId      String
-  examinerId     String
-  examinerUserId String
-  assignedAt     DateTime      @default(now())
-  assignedBy     String
-  reviewText     String?
-  submittedAt    DateTime?
-  adminComments  String?
-  releasedAt     DateTime?
-  thesis         Thesis        @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  student        Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examiner       Examiner      @relation(fields: [examinerId], references: [id], onDelete: Cascade)
-  administrator  Administrator @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
-  documents      Document[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                   String         @id @default(cuid())
+  thesisId             String
+  thesisVersionId      String?
+  studentId            String
+  examinerId           String
+  examinerUserId       String
+  assignedAt           DateTime       @default(now())
+  assignedBy           String
+  reviewText           String?
+  submittedAt          DateTime?
+  adminComments        String?
+  releasedAt           DateTime?
+  evidenceManifestHash String?
+  thesis               Thesis         @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  thesisVersion        ThesisVersion? @relation(fields: [thesisVersionId], references: [id], onDelete: Restrict)
+  student              Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examiner             Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
+  administrator        Administrator  @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  documents            Document[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   @@unique([thesisId, examinerId])
   @@unique([studentId, examinerUserId])
   @@index([studentId, examinerId])
+  @@index([thesisVersionId])
   @@index([assignedBy])
   @@map("thesis_examiner_assignments")
 }
@@ -491,45 +587,150 @@ model CorrectionDocument {
 }
 
 model Document {
-  id                         String                    @id @default(cuid())
+  id                         String                     @id @default(cuid())
   documentType               DocumentType
   fileName                   String
   storagePath                String
   mimeType                   String
-  version                    Int                       @default(1)
-  isCurrentVersion           Boolean                   @default(true)
-  isDeleted                  Boolean                   @default(false)
+  sizeBytes                  Int?
+  checksumSha256             String?
+  verificationStatus         DocumentVerificationStatus @default(LEGACY)
+  verifiedAt                 DateTime?
+  version                    Int                        @default(1)
+  isCurrentVersion           Boolean                    @default(true)
+  isDeleted                  Boolean                    @default(false)
   applicationId              String?
   studentId                  String?
   researchProposalId         String?
+  proposalVersionId          String?
   ethicsApprovalId           String?
   progressReportId           String?
   progressReportReviewId     String?
   thesisId                   String?
+  thesisVersionId            String?
   thesisExaminerAssignmentId String?
   correctionDocumentId       String?
   evaluationFormId           String?
-  application                Application?              @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  student                    Student?                  @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  researchProposal           ResearchProposal?         @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
-  ethicsApproval             EthicsApproval?           @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
-  progressReport             ProgressReport?           @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
-  progressReportReview       ProgressReportReview?     @relation(fields: [progressReportReviewId], references: [id], onDelete: SetNull)
-  thesis                     Thesis?                   @relation(fields: [thesisId], references: [id], onDelete: SetNull)
-  thesisExaminerAssignment   ThesisExaminerAssignment? @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
-  correctionDocument         CorrectionDocument?       @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
-  evaluationForm             EvaluationForm?           @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
-  createdAt                  DateTime                  @default(now())
-  updatedAt                  DateTime                  @updatedAt
+  application                Application?               @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  student                    Student?                   @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  researchProposal           ResearchProposal?          @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
+  proposalVersion            ProposalVersion?           @relation(fields: [proposalVersionId], references: [id], onDelete: SetNull)
+  ethicsApproval             EthicsApproval?            @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
+  progressReport             ProgressReport?            @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
+  progressReportReview       ProgressReportReview?      @relation(fields: [progressReportReviewId], references: [id], onDelete: SetNull)
+  thesis                     Thesis?                    @relation(fields: [thesisId], references: [id], onDelete: SetNull)
+  thesisVersion              ThesisVersion?             @relation(fields: [thesisVersionId], references: [id], onDelete: SetNull)
+  thesisExaminerAssignment   ThesisExaminerAssignment?  @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
+  correctionDocument         CorrectionDocument?        @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
+  evaluationForm             EvaluationForm?            @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
+  stagedUploadFile           StagedUploadFile?
+  accessEvents               DocumentAccessEvent[]
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
 
   @@index([documentType, isDeleted])
   @@index([researchProposalId, version])
+  @@index([proposalVersionId])
   @@index([ethicsApprovalId])
   @@index([progressReportReviewId])
   @@index([thesisId, version])
+  @@index([thesisVersionId])
   @@index([thesisExaminerAssignmentId])
   @@index([evaluationFormId])
   @@map("documents")
+}
+
+model UploadSession {
+  id                  String              @id @default(cuid())
+  ownerUserId         String?
+  capabilityTokenHash String?             @unique
+  purpose             UploadPurpose
+  status              UploadSessionStatus @default(OPEN)
+  idempotencyKey      String              @unique
+  expiresAt           DateTime
+  finalizedAt         DateTime?
+  finalizedEntityId   String?
+  result              Json?
+  abortedAt           DateTime?
+  failureReason       String?
+  requestCount        Int                 @default(0)
+  lastRequestAt       DateTime?
+  files               StagedUploadFile[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([ownerUserId, status])
+  @@index([status, expiresAt])
+  @@map("upload_sessions")
+}
+
+model StagedUploadFile {
+  id                String            @id @default(cuid())
+  uploadSessionId   String
+  ordinal           Int
+  fileName          String
+  expectedMimeType  String
+  expectedSizeBytes Int
+  expectedSha256    String?
+  storagePath       String            @unique
+  actualMimeType    String?
+  actualSizeBytes   Int?
+  actualSha256      String?
+  status            UploadFileStatus  @default(PENDING)
+  malwareScanStatus MalwareScanStatus @default(PENDING)
+  verifiedAt        DateTime?
+  rejectionReason   String?
+  documentId        String?           @unique
+  uploadSession     UploadSession     @relation(fields: [uploadSessionId], references: [id], onDelete: Cascade)
+  document          Document?         @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([uploadSessionId, ordinal])
+  @@index([uploadSessionId, status])
+  @@map("staged_upload_files")
+}
+
+model DocumentAccessEvent {
+  id                 String                 @id @default(cuid())
+  actorUserId        String
+  actorRole          UserRole
+  documentId         String
+  action             DocumentAccessAction
+  decision           DocumentAccessDecision
+  reasonCode         String
+  storagePathHash    String
+  signedUrlExpiresAt DateTime?
+  occurredAt         DateTime               @default(now())
+  document           Document               @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, occurredAt])
+  @@index([documentId, occurredAt])
+  @@map("document_access_events")
+}
+
+model DocumentMigrationIssue {
+  id         String    @id @default(cuid())
+  entityType String
+  entityId   String
+  reason     String
+  details    Json?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([resolvedAt, createdAt])
+  @@map("document_migration_issues")
+}
+
+model PublicRequestRateLimit {
+  keyHash      String   @id
+  windowStart  DateTime
+  requestCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@index([windowStart])
+  @@map("public_request_rate_limits")
 }
 
 model Notification {

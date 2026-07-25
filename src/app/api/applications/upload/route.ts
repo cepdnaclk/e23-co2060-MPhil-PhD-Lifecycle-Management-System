@@ -9,11 +9,13 @@ import {
 export async function POST(request: Request) {
   const formData = await request.formData();
   const draftId = formData.get("draftId");
+  const draftToken = formData.get("draftToken");
   const file = formData.get("file");
 
   try {
     const uploadedDocument = await uploadApplicationDocument({
       draftId: typeof draftId === "string" ? draftId : "",
+      draftToken: typeof draftToken === "string" ? draftToken : "",
       file,
     });
 
@@ -33,12 +35,14 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const body = (await request.json()) as {
     draftId?: string;
+    draftToken?: string;
     storagePath?: string;
   };
 
   try {
     await deleteUploadedApplicationDocument({
       draftId: body.draftId ?? "",
+      draftToken: body.draftToken ?? "",
       storagePath: body.storagePath ?? "",
     });
 

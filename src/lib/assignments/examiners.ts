@@ -2,8 +2,9 @@ import { DocumentType, ThesisStatus } from "@prisma/client";
 import { z } from "zod";
 
 import { notifyExaminerAssignedToThesis } from "@/lib/email";
+import { getDocumentDownloadUrl } from "@/lib/documents";
 import { prisma } from "@/lib/prisma/client";
-import { generateDownloadSignedUrl, STORAGE_URL_EXPIRATION_MS } from "@/lib/storage";
+import { STORAGE_URL_EXPIRATION_MS } from "@/lib/storage";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export const examinerAssignmentSchema = z.object({
@@ -73,6 +74,11 @@ type ThesisAssignmentView = {
     examinerUserId: string;
   }>;
   documents: ThesisDocumentRecord[];
+  versions: Array<{
+    id: string;
+    manifestHash: string;
+    isCurrent: boolean;
+  }>;
 };
 
 async function requireAdministratorContext(
@@ -181,6 +187,15 @@ async function requireThesis(thesisId: string): Promise<ThesisAssignmentView> {
           createdAt: true,
         },
       },
+      versions: {
+        where: { isCurrent: true },
+        take: 2,
+        select: {
+          id: true,
+          manifestHash: true,
+          isCurrent: true,
+        },
+      },
     },
   });
 
@@ -254,6 +269,17 @@ function getCurrentThesisDocument(thesis: ThesisAssignmentView) {
   return currentDocuments[0];
 }
 
+function getCurrentThesisVersion(thesis: ThesisAssignmentView) {
+  if (thesis.versions.length !== 1) {
+    throw new ExaminerAssignmentError(
+      "Exactly one current logical thesis version is required before assigning an examiner.",
+      409,
+    );
+  }
+
+  return thesis.versions[0];
+}
+
 export async function assignExaminerToThesis(
   input: ExaminerAssignmentInput,
   auth: AuthenticatedUserContext,
@@ -278,15 +304,18 @@ export async function assignExaminerToThesis(
   assertNoSupervisorConflict(thesis, examiner);
 
   const currentDocument = getCurrentThesisDocument(thesis);
+  const currentVersion = getCurrentThesisVersion(thesis);
 
   const assignment = await prisma.thesisExaminerAssignment.create({
     data: {
       thesisId: thesis.id,
+      thesisVersionId: currentVersion.id,
       studentId: thesis.studentId,
       examinerId: examiner.id,
       examinerUserId: examiner.userId,
       assignedAt: new Date(),
       assignedBy: administrator.id,
+      evidenceManifestHash: currentVersion.manifestHash,
     },
     select: {
       id: true,
@@ -299,7 +328,13 @@ export async function assignExaminerToThesis(
     },
   });
 
-  const secureDownloadUrl = await generateDownloadSignedUrl(currentDocument.storagePath);
+  const secureDownloadUrl = await getDocumentDownloadUrl(currentDocument.id, {
+    uid: examiner.userId,
+    userId: examiner.userId,
+    firebaseUid: examiner.userId,
+    role: "EXAMINER",
+    email: examiner.user.email,
+  });
 
   await notifyExaminerAssignedToThesis({
     recipientUserId: examiner.user.id,

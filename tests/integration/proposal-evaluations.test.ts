@@ -68,6 +68,12 @@ describe("proposal evaluation integration", () => {
         ],
       },
       evaluations: [],
+      versions: [
+        {
+          id: "proposal-version-1",
+          manifestHash: "manifest-1",
+        },
+      ],
     } as never);
 
     await expect(
@@ -116,6 +122,12 @@ describe("proposal evaluation integration", () => {
         supervisorAssignments: [],
       },
       evaluations: [],
+      versions: [
+        {
+          id: "proposal-version-1",
+          manifestHash: "manifest-1",
+        },
+      ],
     } as never);
     vi.mocked(prisma.evaluationForm.create).mockResolvedValue({
       id: "evaluation-1",

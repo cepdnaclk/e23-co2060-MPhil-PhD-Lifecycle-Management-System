@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { AcademicStatus, DocumentType, UserRole } from "@prisma/client";
 import { z } from "zod";
 
@@ -165,6 +167,15 @@ async function requireProgressReport(progressReportId: string) {
           },
         },
       },
+      documents: {
+        where: { isDeleted: false },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          storagePath: true,
+          checksumSha256: true,
+        },
+      },
     },
   });
 
@@ -252,12 +263,25 @@ export async function assignExaminerToProgressReport(
   assertNoSupervisorConflict(report, examiner.userId);
 
   try {
+    const evidenceManifestHash = createHash("sha256")
+      .update(
+        JSON.stringify(
+          report.documents.map((document) => ({
+            id: document.id,
+            storagePath: document.storagePath,
+            checksumSha256: document.checksumSha256,
+          })),
+        ),
+      )
+      .digest("hex");
+
     return await prisma.progressReportReview.create({
       data: {
         progressReportId: report.id,
         examinerId: examiner.id,
         examinerUserId: examiner.userId,
         assignedBy: administrator.id,
+        evidenceManifestHash,
       },
       select: {
         id: true,

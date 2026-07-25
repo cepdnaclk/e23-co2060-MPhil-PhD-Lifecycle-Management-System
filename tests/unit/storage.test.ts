@@ -48,6 +48,7 @@ describe("storage utilities", () => {
     expect(signedUrl).toBe("https://storage.supabase.test/upload");
     expect(mockCreateSignedUploadUrl).toHaveBeenCalledWith(
       "proposals/student-1/1/proposal.pdf",
+      { upsert: false },
     );
   });
 

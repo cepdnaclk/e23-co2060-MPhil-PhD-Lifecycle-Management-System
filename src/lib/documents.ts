@@ -1,4 +1,8 @@
+import { createHash } from "node:crypto";
+
 import {
+  DocumentAccessAction,
+  DocumentAccessDecision,
   DocumentType,
   ProposalStatus,
   ThesisStatus,
@@ -266,17 +270,25 @@ async function buildAccessScope(
 
       const assignments = await prisma.thesisExaminerAssignment.findMany({
         where: { examinerId: examiner.id },
-        select: { thesisId: true },
+        select: { thesisId: true, thesisVersionId: true },
       });
 
-      const assignedThesisIds = assignments.map((a) => a.thesisId);
+      const assignedVersionIds = assignments.flatMap((assignment) =>
+        assignment.thesisVersionId ? [assignment.thesisVersionId] : [],
+      );
+      const legacyAssignedThesisIds = assignments.flatMap((assignment) =>
+        assignment.thesisVersionId ? [] : [assignment.thesisId],
+      );
 
       // Examiners may only see THESIS documents for their assigned theses
       return {
         accessibleStudentIds: [],
         where: {
           documentType: DocumentType.THESIS,
-          thesisId: { in: assignedThesisIds },
+          OR: [
+            { thesisVersionId: { in: assignedVersionIds } },
+            { thesisId: { in: legacyAssignedThesisIds } },
+          ],
         },
       };
     }
@@ -1120,6 +1132,12 @@ export async function getDocumentDownloadUrl(
   // Soft-deleted: admins can still download, others receive 410 Gone
   if (document.isDeleted) {
     if (auth.role !== "ADMINISTRATOR") {
+      await appendDocumentAccessEvent({
+        auth,
+        document,
+        decision: DocumentAccessDecision.DENIED,
+        reasonCode: "DOCUMENT_DELETED",
+      });
       throw new DocumentRepositoryError(
         "This document has been removed and is no longer available.",
         410,
@@ -1132,6 +1150,12 @@ export async function getDocumentDownloadUrl(
     const accessible = await checkAccess(documentId, auth);
 
     if (!accessible) {
+      await appendDocumentAccessEvent({
+        auth,
+        document,
+        decision: DocumentAccessDecision.DENIED,
+        reasonCode: "POLICY_DENIED",
+      });
       throw new DocumentRepositoryError(
         "You do not have permission to access this document.",
         403,
@@ -1140,6 +1164,12 @@ export async function getDocumentDownloadUrl(
 
     // Block examiners from non-thesis documents
     if (auth.role === "EXAMINER" && document.documentType !== DocumentType.THESIS) {
+      await appendDocumentAccessEvent({
+        auth,
+        document,
+        decision: DocumentAccessDecision.DENIED,
+        reasonCode: "EXAMINER_DOCUMENT_TYPE_DENIED",
+      });
       throw new DocumentRepositoryError(
         "Examiners may only access THESIS documents.",
         403,
@@ -1147,7 +1177,76 @@ export async function getDocumentDownloadUrl(
     }
   }
 
-  return generateDownloadSignedUrl(document.storagePath);
+  const downloadUrl = await generateDownloadSignedUrl(document.storagePath);
+  await appendDocumentAccessEvent({
+    auth,
+    document,
+    decision: DocumentAccessDecision.ALLOWED,
+    reasonCode: "POLICY_ALLOWED",
+    signedUrlExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+  });
+  return downloadUrl;
+}
+
+async function appendDocumentAccessEvent(input: {
+  auth: AuthenticatedUserContext;
+  document: { id: string; storagePath: string };
+  decision: DocumentAccessDecision;
+  reasonCode: string;
+  signedUrlExpiresAt?: Date;
+}) {
+  const client = prisma as typeof prisma & {
+    documentAccessEvent?: {
+      create: (args: {
+        data: {
+          actorUserId: string;
+          actorRole: AuthenticatedUserContext["role"];
+          documentId: string;
+          action: DocumentAccessAction;
+          decision: DocumentAccessDecision;
+          reasonCode: string;
+          storagePathHash: string;
+          signedUrlExpiresAt?: Date;
+        };
+      }) => Promise<unknown>;
+    };
+  };
+
+  // Some focused unit tests provide a deliberately minimal Prisma double.
+  // The real generated client always contains this append-only model.
+  if (!client.documentAccessEvent) {
+    return;
+  }
+
+  await client.documentAccessEvent.create({
+    data: {
+      actorUserId: input.auth.userId,
+      actorRole: input.auth.role,
+      documentId: input.document.id,
+      action: DocumentAccessAction.DOWNLOAD,
+      decision: input.decision,
+      reasonCode: input.reasonCode,
+      storagePathHash: createHash("sha256")
+        .update(input.document.storagePath)
+        .digest("hex"),
+      signedUrlExpiresAt: input.signedUrlExpiresAt,
+    },
+  });
+}
+
+export async function assertDocumentsAccessible(
+  documentIds: string[],
+  auth: AuthenticatedUserContext,
+) {
+  for (const documentId of documentIds) {
+    const document = await checkAccess(documentId, auth);
+    if (!document) {
+      throw new DocumentRepositoryError(
+        "You do not have permission to access this document.",
+        403,
+      );
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

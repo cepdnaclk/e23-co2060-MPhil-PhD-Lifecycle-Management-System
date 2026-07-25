@@ -77,12 +77,7 @@ describe("thesis correction workflow", () => {
           {
             correctionType: CorrectionType.MINOR,
             description: "Updated chapter 4.",
-            documents: [],
-            document: {
-              fileName: "correction.pdf",
-              mimeType: "application/pdf",
-              sizeBytes: 1024 * 1024,
-            },
+            uploadSessionId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
           },
           {
             uid: "firebase-student-1",

@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { createServerErrorResponse } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma/client";
 import { markOverdueProgressReports } from "@/lib/progress-reports/maintenance";
+import { cleanupExpiredUploadSessions } from "@/lib/uploads/sessions";
 import { runRegistrationMaintenance } from "@/lib/registrations";
 
 export const runtime = "nodejs";
@@ -149,13 +150,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [registrationMaintenance, overdueProgressReports] = await Promise.all([
+    const [
+      registrationMaintenance,
+      overdueProgressReports,
+      uploadMaintenance,
+    ] = await Promise.all([
       runRegistrationMaintenance(),
       markOverdueProgressReports(),
+      cleanupExpiredUploadSessions(),
     ]);
     const result = {
       ...registrationMaintenance,
       overdueProgressReports,
+      uploadMaintenance,
     };
 
     await prisma.maintenanceRun.update({

@@ -12,11 +12,6 @@ import {
 
 type ProgressReportSubmissionResponse = {
   error?: string;
-  uploads?: Array<{
-    signedUrl: string;
-    storagePath: string;
-    expiresInMinutes: number;
-  }>;
 };
 
 export function ProgressReportSubmissionForm() {
@@ -31,11 +26,6 @@ export function ProgressReportSubmissionForm() {
     return {
       periodLabel,
       narrative,
-      documents: documentFiles.map((documentFile) => ({
-        fileName: documentFile.name,
-        mimeType: documentFile.type,
-        sizeBytes: documentFile.size,
-      })),
     };
   }
 
@@ -83,14 +73,65 @@ export function ProgressReportSubmissionForm() {
     }
 
     setIsSubmitting(true);
+    let uploadSessionId: string | null = null;
 
     try {
+      if (documentFiles.length > 0) {
+        const prepareResponse = await secureFetch(
+          "/api/student/progress-reports/upload-url",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              idempotencyKey: crypto.randomUUID(),
+              files: documentFiles.map((file) => ({
+                fileName: file.name,
+                mimeType: file.type,
+                sizeBytes: file.size,
+              })),
+            }),
+          },
+        );
+        const preparePayload = (await prepareResponse.json()) as {
+          error?: string;
+          uploadSessionId?: string;
+          uploads?: Array<{ signedUrl: string | null }>;
+        };
+        if (
+          !prepareResponse.ok ||
+          !preparePayload.uploadSessionId ||
+          preparePayload.uploads?.length !== documentFiles.length
+        ) {
+          throw new Error(
+            preparePayload.error ?? "Unable to prepare the report upload.",
+          );
+        }
+        uploadSessionId = preparePayload.uploadSessionId;
+        for (const [index, documentFile] of documentFiles.entries()) {
+          const signedUrl = preparePayload.uploads[index]?.signedUrl;
+          if (!signedUrl) {
+            throw new Error("A report upload target was not available.");
+          }
+          const uploadResponse = await secureFetch(signedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": documentFile.type },
+            body: documentFile,
+          });
+          if (!uploadResponse.ok) {
+            throw new Error("A progress report document upload failed.");
+          }
+        }
+      }
+
       const response = await secureFetch("/api/student/progress-reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({
+          ...parsed.data,
+          uploadSessionId: uploadSessionId ?? undefined,
+        }),
       });
 
       const payload = (await response.json()) as ProgressReportSubmissionResponse;
@@ -100,37 +141,19 @@ export function ProgressReportSubmissionForm() {
         return;
       }
 
-      if (documentFiles.length > 0) {
-        if (!payload.uploads || payload.uploads.length !== documentFiles.length) {
-          setErrorMessage(
-            "The report was saved, but not all document upload URLs were returned.",
-          );
-          return;
-        }
-
-        for (const [index, documentFile] of documentFiles.entries()) {
-          const uploadTarget = payload.uploads[index];
-          const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
-            method: "PUT",
-            headers: {
-              "Content-Type": documentFile.type,
-            },
-            body: documentFile,
-          });
-
-          if (!uploadResponse.ok) {
-            setErrorMessage(
-              "The report was saved, but a document upload failed. Please try again.",
-            );
-            return;
-          }
-        }
-      }
-
       router.push("/dashboard/student/progress-reports");
       router.refresh();
-    } catch {
-      setErrorMessage("A network error occurred. Please try again.");
+    } catch (error) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+        }).catch(() => undefined);
+      }
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "A network error occurred. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }

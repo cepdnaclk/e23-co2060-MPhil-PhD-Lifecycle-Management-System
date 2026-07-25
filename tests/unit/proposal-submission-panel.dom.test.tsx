@@ -10,12 +10,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProposalSubmissionPanel } from "@/components/proposals/proposal-submission-panel";
 
-describe("ProposalSubmissionPanel one-file guard", () => {
+describe("ProposalSubmissionPanel staged multi-file flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("presents a single-file picker and rejects a synthetic multi-file selection", async () => {
+  it("presents a multi-file picker and rejects more than 10 files", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -30,27 +30,30 @@ describe("ProposalSubmissionPanel one-file guard", () => {
 
     const { container } = render(<ProposalSubmissionPanel />);
     const input = (await screen.findByText(
-      /Upload one PDF, or one ZIP containing the complete proposal package/i,
+      /Upload 1–10 PDF or ZIP files as one proposal version/i,
     ))
       .parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
-    expect(input).not.toHaveAttribute("multiple");
+    expect(input).toHaveAttribute("multiple");
 
     fireEvent.change(input, {
       target: {
-        files: [
-          new File(["proposal"], "proposal.pdf", { type: "application/pdf" }),
-          new File(["appendix"], "appendix.zip", { type: "application/zip" }),
-        ],
+        files: Array.from({ length: 11 }, (_, index) =>
+          new File(["proposal"], `proposal-${index}.pdf`, {
+            type: "application/pdf",
+          }),
+        ),
       },
     });
 
     expect(
-      await screen.findByText("Upload one proposal document per submission."),
+      await screen.findByText(
+        "Upload no more than 10 proposal documents in one version.",
+      ),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(container.querySelector('input[type="file"]')).not.toHaveAttribute(
+    expect(container.querySelector('input[type="file"]')).toHaveAttribute(
       "multiple",
     );
   });
@@ -75,8 +78,16 @@ describe("ProposalSubmissionPanel one-file guard", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          signedUrl: "https://storage.example.test/proposal",
-          storagePath: "proposals/student-1/1/proposal.pdf",
+          uploadSessionId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+          uploads: [
+            {
+              fileId: "file-1",
+              fileName: "proposal.pdf",
+              signedUrl: "https://storage.example.test/proposal",
+              storagePath:
+                "proposals/student-1/staged/session/file/proposal.pdf",
+            },
+          ],
         }),
       })
       .mockResolvedValueOnce({ ok: true })
@@ -84,7 +95,7 @@ describe("ProposalSubmissionPanel one-file guard", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const { container } = render(<ProposalSubmissionPanel />);
-    await screen.findByText(/complete proposal package/i);
+    await screen.findByText(/Upload 1–10 PDF or ZIP files/i);
     const fileInput = container.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;

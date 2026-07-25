@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withAuth } from "@/lib/firebase/with-auth";
 import { createServerErrorResponse } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma/client";
-import { generateDownloadSignedUrl } from "@/lib/storage";
+import { getDocumentDownloadUrl } from "@/lib/documents";
 
 type RouteParams = {
   id: string;
@@ -33,7 +33,7 @@ export const GET = withAuth<RouteParams>(
         return NextResponse.json({ error: "Document not found." }, { status: 404 });
       }
 
-      const signedUrl = await generateDownloadSignedUrl(document.storagePath);
+      const signedUrl = await getDocumentDownloadUrl(document.id, context.auth);
 
       return NextResponse.json({
         document: {

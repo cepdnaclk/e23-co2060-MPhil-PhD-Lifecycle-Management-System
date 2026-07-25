@@ -1,26 +1,38 @@
-import { DocumentType, RegistrationStatus } from "@prisma/client";
+import { randomUUID } from "node:crypto";
+
+import {
+  DocumentType,
+  DocumentVerificationStatus,
+  RegistrationStatus,
+  UploadPurpose,
+  UploadSessionStatus,
+} from "@prisma/client";
 
 import { notifyInBackground } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
-import {
-  assertFileUploadConstraints,
-  buildProgressReportStoragePath,
-  generateUploadSignedUrl,
-  normalizeStoragePath,
-  StorageAccessError,
-  STORAGE_URL_EXPIRATION_MS,
-} from "@/lib/storage";
+import { withSerializableRetry } from "@/lib/prisma/transactions";
 import {
   progressReportSubmissionSchema,
-  type ProgressReportDocumentInput,
+  progressReportUploadRequestSchema,
   type ProgressReportSubmissionInput,
+  type ProgressReportUploadRequest,
 } from "@/lib/progress-reports/schemas";
+import {
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+  type VerifiedUploadSession,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export class ProgressReportSubmissionError extends Error {
-  status: 400 | 403 | 404 | 409 | 413 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 500;
 
-  constructor(message: string, status: 400 | 403 | 404 | 409 | 413 | 500 = 400) {
+  constructor(
+    message: string,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 500 = 400,
+  ) {
     super(message);
     this.name = "ProgressReportSubmissionError";
     this.status = status;
@@ -47,31 +59,6 @@ type StudentProgressReportContext = {
     };
   }>;
 };
-
-function assertProgressReportDocumentUpload(input: {
-  contentType: string;
-  fileSizeBytes: number;
-  path: string;
-}) {
-  try {
-    assertFileUploadConstraints(input);
-  } catch (error) {
-    if (error instanceof StorageAccessError) {
-      throw new ProgressReportSubmissionError(error.message, error.status);
-    }
-
-    throw error;
-  }
-
-  const normalizedPath = normalizeStoragePath(input.path);
-
-  if (!normalizedPath.startsWith("progress-reports/")) {
-    throw new ProgressReportSubmissionError(
-      "Progress report documents must be uploaded to the progress-reports directory.",
-      400,
-    );
-  }
-}
 
 async function requireStudentProgressReportContext(
   auth: AuthenticatedUserContext,
@@ -140,35 +127,6 @@ async function requireStudentProgressReportContext(
   return student;
 }
 
-function buildDocumentCreateInput(input: {
-  studentId: string;
-  progressReportId: string;
-  document: ProgressReportDocumentInput;
-}) {
-  const storagePath = buildProgressReportStoragePath(
-    input.studentId,
-    input.progressReportId,
-    input.document.fileName,
-  );
-
-  assertProgressReportDocumentUpload({
-    contentType: input.document.mimeType,
-    fileSizeBytes: input.document.sizeBytes,
-    path: storagePath,
-  });
-
-  return {
-    documentType: DocumentType.PROGRESS_REPORT,
-    studentId: input.studentId,
-    progressReportId: input.progressReportId,
-    fileName: input.document.fileName,
-    storagePath,
-    mimeType: input.document.mimeType,
-    version: 1,
-    isCurrentVersion: true,
-  };
-}
-
 function notifyAssignedSupervisors(input: {
   student: StudentProgressReportContext;
   periodLabel: string;
@@ -207,10 +165,44 @@ export async function submitProgressReport(
 
   const student = await requireStudentProgressReportContext(auth);
 
+  let verifiedSession: VerifiedUploadSession | null = null;
+  if (parsed.data.uploadSessionId) {
+    try {
+      const verification = await verifyUploadSessionForFinalize(
+        parsed.data.uploadSessionId,
+        UploadPurpose.PROGRESS_REPORT,
+        auth,
+      );
+      if (verification.state === "FINALIZED") {
+        const existing = await prisma.progressReport.findUnique({
+          where: { id: verification.finalizedEntityId },
+          include: { documents: { where: { isDeleted: false } } },
+        });
+        if (!existing) {
+          throw new ProgressReportSubmissionError(
+            "Finalized progress report could not be loaded.",
+            500,
+          );
+        }
+        return { report: existing };
+      }
+      verifiedSession = verification.session;
+    } catch (error) {
+      if (error instanceof UploadSessionError) {
+        throw new ProgressReportSubmissionError(error.message, error.status);
+      }
+      throw error;
+    }
+  }
+
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withSerializableRetry(async (tx) => {
+      const reportId = randomUUID();
+      const documentIds =
+        verifiedSession?.files.map(() => randomUUID()) ?? [];
       const report = await tx.progressReport.create({
         data: {
+          id: reportId,
           studentId: student.id,
           periodLabel: parsed.data.periodLabel,
           narrative: parsed.data.narrative,
@@ -228,7 +220,7 @@ export async function submitProgressReport(
         },
       });
 
-      if (parsed.data.documents.length === 0) {
+      if (!verifiedSession) {
         return {
           report,
           documents: [],
@@ -236,13 +228,23 @@ export async function submitProgressReport(
       }
 
       const documents = await Promise.all(
-        parsed.data.documents.map((document) =>
+        verifiedSession.files.map((document, index) =>
           tx.document.create({
-            data: buildDocumentCreateInput({
+            data: {
+              id: documentIds[index],
+              documentType: DocumentType.PROGRESS_REPORT,
               studentId: student.id,
               progressReportId: report.id,
-              document,
-            }),
+              fileName: document.fileName,
+              storagePath: document.storagePath,
+              mimeType: document.mimeType,
+              sizeBytes: document.sizeBytes,
+              checksumSha256: document.checksumSha256,
+              verificationStatus: DocumentVerificationStatus.VERIFIED,
+              verifiedAt: new Date(),
+              version: 1,
+              isCurrentVersion: true,
+            },
             select: {
               id: true,
               fileName: true,
@@ -256,22 +258,27 @@ export async function submitProgressReport(
         ),
       );
 
+      for (const [index, file] of verifiedSession.files.entries()) {
+        await tx.stagedUploadFile.update({
+          where: { id: file.id },
+          data: { documentId: documentIds[index] },
+        });
+      }
+      await tx.uploadSession.update({
+        where: { id: verifiedSession.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: report.id,
+          result: { documentCount: documents.length },
+        },
+      });
+
       return {
         report,
         documents,
       };
     });
-
-    const uploads = await Promise.all(
-      result.documents.map(async (document) => ({
-        signedUrl: await generateUploadSignedUrl(
-          document.storagePath,
-          document.mimeType,
-        ),
-        storagePath: document.storagePath,
-        expiresInMinutes: STORAGE_URL_EXPIRATION_MS / (60 * 1000),
-      })),
-    );
 
     notifyAssignedSupervisors({
       student,
@@ -283,16 +290,16 @@ export async function submitProgressReport(
         ...result.report,
         documents: result.documents,
       },
-      upload: uploads[0] ?? null,
-      uploads,
     };
   } catch (error) {
+    if (verifiedSession) {
+      await reopenUploadSessionAfterFinalizeFailure(
+        verifiedSession.id,
+        error instanceof Error ? error.message : "Progress finalization failed.",
+      );
+    }
     if (error instanceof ProgressReportSubmissionError) {
       throw error;
-    }
-
-    if (error instanceof StorageAccessError) {
-      throw new ProgressReportSubmissionError(error.message, error.status);
     }
 
     if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
@@ -306,5 +313,35 @@ export async function submitProgressReport(
       error instanceof Error ? error.message : "Unable to submit progress report.",
       500,
     );
+  }
+}
+
+export async function createProgressReportUploadUrl(
+  input: ProgressReportUploadRequest,
+  auth: AuthenticatedUserContext,
+) {
+  const parsed = progressReportUploadRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ProgressReportSubmissionError(
+      parsed.error.issues[0]?.message ?? "Invalid progress upload request.",
+      400,
+    );
+  }
+  const student = await requireStudentProgressReportContext(auth);
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.PROGRESS_REPORT,
+        idempotencyKey: parsed.data.idempotencyKey,
+        files: parsed.data.files,
+      },
+      auth,
+      student.id,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new ProgressReportSubmissionError(error.message, error.status);
+    }
+    throw error;
   }
 }
