@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/firebase/admin", () => ({
   createFirebaseAuthUser: vi.fn(),
   deleteFirebaseAuthUser: vi.fn(),
+  generateFirebasePasswordSetupLink: vi.fn(),
+  revokeFirebaseRefreshTokens: vi.fn(),
   setCustomClaimsForUser: vi.fn(),
   updateFirebaseAuthUser: vi.fn(),
   verifyFirebaseToken: vi.fn(),
@@ -80,12 +82,19 @@ describe("administrator user management integration", () => {
       return callback(tx as never);
     });
 
-    const { createFirebaseAuthUser, setCustomClaimsForUser } = await import(
+    const {
+      createFirebaseAuthUser,
+      generateFirebasePasswordSetupLink,
+      setCustomClaimsForUser,
+    } = await import(
       "@/lib/firebase/admin"
     );
     vi.mocked(createFirebaseAuthUser).mockResolvedValue({
       uid: "firebase-supervisor-4",
     } as never);
+    vi.mocked(generateFirebasePasswordSetupLink).mockResolvedValue(
+      "https://identity.example/setup-account",
+    );
 
     await createAdminManagedUser({
       email: "supervisor@example.com",
@@ -102,6 +111,7 @@ describe("administrator user management integration", () => {
       expect.objectContaining({
         to: "supervisor@example.com",
         roleLabel: UserRole.SUPERVISOR,
+        accountSetupUrl: "https://identity.example/setup-account",
       }),
     );
   });
@@ -123,6 +133,7 @@ describe("administrator user management integration", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          origin: "http://localhost",
         },
         body: JSON.stringify({
           idToken: "disabled-user-token",

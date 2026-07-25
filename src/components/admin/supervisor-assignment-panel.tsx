@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import React, { useEffect, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 
@@ -88,8 +90,8 @@ export function SupervisorAssignmentPanel() {
       const headers = await getAuthorizationHeader();
 
       const [studentsRes, supervisorsRes] = await Promise.all([
-        fetch("/api/assignments/supervisors", { headers }),
-        fetch("/api/admin/users?role=SUPERVISOR", { headers }),
+        secureFetch("/api/assignments/supervisors", { headers }),
+        secureFetch("/api/admin/users?role=SUPERVISOR", { headers }),
       ]);
 
       const studentsData = await studentsRes.json();
@@ -123,7 +125,7 @@ export function SupervisorAssignmentPanel() {
 
     try {
       const headers = await getAuthorizationHeader();
-      const res = await fetch("/api/assignments/supervisors", {
+      const res = await secureFetch("/api/assignments/supervisors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +164,7 @@ export function SupervisorAssignmentPanel() {
 
     try {
       const headers = await getAuthorizationHeader();
-      const res = await fetch(`/api/assignments/supervisors/${assignmentId}`, {
+      const res = await secureFetch(`/api/assignments/supervisors/${assignmentId}`, {
         method: "DELETE",
         headers,
       });

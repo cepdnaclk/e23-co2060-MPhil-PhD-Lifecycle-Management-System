@@ -2,7 +2,7 @@
 
 **Document ID:** PGLMS-MASTER-001  
 **Implementation baseline version:** 1.0  
-**Report revision:** 1.3<br>
+**Report revision:** 1.4<br>
 **Audit date:** 18 July 2026  
 **Audited branch:** `main`  
 **Audited commit:** `653ff632e0cecb6114f50e6fb525ebe2cb592942` — “Implement postgraduate lifecycle workflow updates”  
@@ -10,7 +10,7 @@
 **Document status:** Current implementation baseline, prioritized remediation plan, and living progress register  
 **Canonical source:** This Markdown file.  
 **DOCX status:** The existing DOCX remains the revision 1.0 implementation snapshot and is intentionally deferred until the remediation programme is complete or an interim copy is requested.
-**Active remediation checkpoint:** WP-01 is committed at `9949fb8` and remains pending deployment/reconciliation evidence. WP-02 is implemented and verified locally as of 25 July 2026; hosted branch protection, first CI/CodeQL runs, populated-data migration rehearsal, external-service E2E, and deployment evidence remain pending. The audited implementation baseline has not changed.
+**Active remediation checkpoint:** WP-01 is committed at `9949fb8` and remains pending deployment/reconciliation evidence. WP-02 is implemented and verified locally as of 25 July 2026; hosted branch protection, first CI/CodeQL runs, populated-data migration rehearsal, external-service E2E, and deployment evidence remain pending. WP-03 is implemented and verified locally as of 26 July 2026; identity reconciliation, live Firebase invitation/session tests, CSP observation/enforcement, and deployed-response evidence remain pending. The audited implementation baseline has not changed.
 
 > **Source-of-truth rule.** This report describes the behavior implemented at the audited commit. It supersedes the workflow claims in `docs/WORKFLOW_REPORT.md` and `output/pdf/pglms_admin_handover_report.*` where those documents conflict with the current code. Update the document control, capability matrix, change register, and risk register whenever the system changes.
 
@@ -21,11 +21,11 @@
 | Baseline owner | Project team | Assign a named product/technical owner after review. |
 | Implementation baseline | Commit `653ff632...` on `main` | Replace only after the revised code is verified. |
 | Requirements baseline | Observable behavior in source, schema, migrations, routes, UI, and tests | Add links to an approved SRS/BRD when one exists. |
-| Verification baseline | Audited commit: 79 files / 243 tests and production build passed. WP-01 committed checkpoint: 82 files / 264 tests, Prisma validation, and production build passed. WP-02 local checkpoint: clean install, lint/type checks, 81 files / 263 tests passed plus one real-database test, migration/drift checks, build, two browser smokes, and zero high/critical audit findings on 25 July 2026. | Re-run after every material lifecycle change; distinguish local verification from hosted/deployed verification. |
+| Verification baseline | Audited commit: 79 files / 243 tests and production build passed. WP-01 committed checkpoint: 82 files / 264 tests, Prisma validation, and production build passed. WP-02 local checkpoint: clean install, lint/type checks, 81 files / 263 tests passed plus one real-database test, migration/drift checks, build, two browser smokes, and zero high/critical audit findings on 25 July 2026. WP-03 local checkpoint: lint/type checks, 49 unit files / 175 tests, 34 integration files / 106 tests plus one guarded database skip, production build, no public client source maps, and 2/2 browser/header/accessibility smokes passed on 26 July 2026. | Re-run after every material lifecycle change; distinguish local verification from hosted/deployed verification. |
 | Review cadence | At each accepted change set and before a release | Record the date, owner, evidence, and changed capability/risk IDs. |
 | Change states | Proposed, Approved, In progress, Implemented, Verified, Deferred, Rejected | “Implemented” is not “Verified”; retain evidence for both. |
 | Capability states | Full, Partial, Backend-only, Retired, Missing, Operational verification required | Use the definitions below consistently. |
-| Remediation plan | Section 17, revision 1.3; WP-01 committed/deployment pending; WP-02 locally implemented/hosted enforcement pending | Execute work packages in dependency order; a risk closes only with the package's acceptance and required hosted/deployment evidence. |
+| Remediation plan | Section 17, revision 1.4; WP-01 committed/deployment pending; WP-02 locally implemented/hosted enforcement pending; WP-03 locally implemented/deployment and external verification pending | Execute work packages in dependency order; a risk closes only with the package's acceptance and required hosted/deployment evidence. |
 
 ### Capability status legend
 
@@ -57,7 +57,11 @@ The current version is **not yet a dependable end-to-end lifecycle implementatio
 
 > **WP-01 local checkpoint, not deployed.** The working-tree patch removes the public claims route, makes review-attachment access release- and parent-aware, converts maintenance to signed fail-closed POST with a database run ledger, and temporarily limits proposal/thesis submissions to one file. These changes have passed local verification, but findings 1–3 remain open operational risks until deployment and reconciliation are evidenced; RISK-003 also requires the WP-04 logical-version redesign for closure.
 
+> **WP-03 local checkpoint, not deployed.** The working-tree patch makes the active local user role authoritative, rejects claim/role drift, revokes refresh tokens on deactivation and session-creation mismatch, applies double-submit CSRF plus strict same-origin validation to cookie-authenticated mutations, auto-escapes email HTML and validates links, replaces emailed passwords with Firebase setup links, adds report-only CSP and baseline browser headers, and keeps client source maps out of the production artifact. Local tests and production browser checks pass; role reconciliation, real Firebase invitation/session behavior, CSP observation/enforcement, and deployed-response evidence are still required.
+
 Quality gates have materially improved but are not yet fully hosted: at the audited commit, the production build completed and all 79 Vitest files / 243 tests passed. WP-01 subsequently passed all 82 files / 264 tests, Prisma validation, a focused 10-file / 49-test security-regression set, and a production build before being committed at `9949fb8`. WP-02 adds strict lint/type gates, locked-install audits, disposable-PostgreSQL migration/drift testing, public Playwright/accessibility smoke tests, secret scanning, CodeQL, Dependabot, and a production build on Next.js 16. The 25 July local checkpoint passed 81 files / 263 ordinary tests, the separately gated real-database test, and two public browser smokes. Firebase, Supabase Storage, SMTP, authenticated browser flows, hosted repository settings, deployment, and runtime security-header evidence remain outside this local checkpoint.
+
+WP-03's 26 July local checkpoint passed strict lint and type checking, all 175 unit tests, all 106 ordinary integration tests with the guarded live-database test skipped, a production build, a production-artifact scan showing no public client source maps, and 2/2 Chromium smokes including runtime security-header and accessibility assertions. The production and all-dependency audits continue to pass the configured high-severity gate while reporting the nine moderate residuals already owned by WP-02.
 
 ### Baseline verdict
 
@@ -1102,6 +1106,7 @@ Direct affected packages included `next`, `nodemailer`, `firebase`, `firebase-ad
 | 1.1 | 18 Jul 2026 | Added dependency-ordered remediation plan, corrected change-to-risk ownership, recorded CERPS policy-alignment evidence, and scheduled shared UI templates after lifecycle approval | Codex planning; project owner to approve | All RISK-001–034 mapped exactly once; official University/CERPS sources checked; Markdown consistency checks passed |
 | 1.2 | 18 Jul 2026 | Implemented the WP-01 local hotfix: removed public claims mutation, added release/parent-aware review-document authorization, hardened maintenance execution, and added a temporary one-file submission guard | Codex implementation; project owner/deployer pending | Focused 10 files / 49 tests, full 82 files / 264 tests, Prisma validation, and production build passed locally; deployment and reconciliation remain pending |
 | 1.3 | 25 Jul 2026 | Implemented WP-02 dependency stabilization and repository quality gates: supported Next/React/runtime baseline, strict lint/type checks, CI/CodeQL/Dependabot, guarded migrations/database tests, public browser/accessibility smoke, and placeholder environment contract | Codex implementation; project owner/repository administrator/deployer pending | Clean install; audits with zero high/critical; lint/type; 81/263 ordinary tests plus one disposable-PostgreSQL test; four migrations/drift check; build; and 2/2 browser smokes passed locally |
+| 1.4 | 26 Jul 2026 | Implemented WP-03 local identity, request, email, header, and onboarding hardening: local-role authority, mismatch rejection, token revocation, CSRF/origin controls, safe email rendering/links, Firebase setup invitations, security headers, and private source maps | Codex implementation; project owner/deployer pending | Lint/type; 49 unit files / 175 tests; 34 integration files / 106 tests plus one guarded database skip; build; no public client source maps; and 2/2 browser/header/accessibility smokes passed locally |
 
 ### 15.2 Remediation work-package register
 
@@ -1111,7 +1116,7 @@ This register is the working index. `CHG-001` through `CHG-015` correspond one-t
 |---|---|---|---|---|---|---|
 | CHG-001 | RISK-001/002/006 | Emergency privilege, confidential-review, and scheduler containment | P0 | Implemented (committed; deployment pending) | Codex (code); project owner/deployer pending | Commit `9949fb8`; focused 10/49, full 82/264, Prisma validation, and build pass. Remaining: migration, scheduler cutover, reconciliation, and deployed exploit-path smoke evidence |
 | CHG-002 | RISK-010/029, CAP-029 | CI safety net and supported dependency baseline | P1 enabler | Implemented (local; hosted enforcement pending) | Codex (code/docs); repository administrator/deployer pending | Clean install; zero high/critical audit; lint/type; 81/263 ordinary tests plus one real-DB test; empty migration/drift; build; 2/2 browser smokes. Remaining: protected checks, first hosted run, populated-data rehearsal, external-service E2E, and deployment evidence |
-| CHG-003 | RISK-004/005/008/009/017 | Identity, session, CSRF, email, headers, and onboarding hardening | P1 | Proposed | Unassigned | Role mismatch/session/CSRF/header/email/invitation security suite passes |
+| CHG-003 | RISK-004/005/008/009/017 | Identity, session, CSRF, email, headers, and onboarding hardening | P1 | Implemented (local; deployment/external verification pending) | Codex (code/docs); project owner/deployer pending | Lint/type; unit 175/175; integration 106/106 plus one guarded DB skip; build; no public client source maps; 2/2 browser smokes. Remaining: reconciliation, real Firebase invite/session tests, CSP observation/enforcement, and deployed header evidence |
 | CHG-004 | RISK-003/007/015/026, CAP-001/006/009/013/018/021 | Logical multi-file versions, central document policy, and staged uploads | P0/P1 | Proposed | Unassigned | 1–10 file logical versions, uniform ACL, verified finalize/retry, scan, and migration checks pass |
 | CHG-005 | RISK-016/020, CAP-022/023/026 | Append-only lifecycle audit and transactional outbox | P1 | Proposed | Unassigned | Atomic transition/outbox, immutability, retry, deduplication, and recovery tests pass |
 | CHG-006 | RISK-034, CAP-030 | Approved CERPS programme, lifecycle, role, and terminology baseline | Policy gate | Proposed | Unassigned | Department/Faculty owner signs dated scope, state diagrams, RACI, glossary, and deviations |
@@ -1195,6 +1200,46 @@ Required evidence before CHG-002 can be `Verified`:
 | RISK-010 | Major code/dependency remediation implemented; risk reduced, not closed | Hosted audits remain required; review the nine moderate residuals by 25 Aug 2026 or on upstream release; demonstrate deployed compatibility |
 | RISK-029 | Repository CI/database/browser/security gates implemented; risk reduced, not closed | Required branch protection and first hosted checks pass; populated-data rehearsal, external-service E2E, and deployment evidence are recorded |
 
+#### WP-03 implementation checkpoint — local, deployment and external verification pending
+
+Implemented changes:
+
+- The active local `User` record is now the request-time role authority. Firebase claims must exactly match that role; mismatches fail closed without exposing token data, and session creation revokes Firebase refresh tokens before rejecting the request. The login UI routes using the server-returned local role.
+- Account deactivation now disables the Firebase user and explicitly revokes refresh tokens. No role-change or UID-relinking mutation is added by WP-03; any future privileged identity mutation must revoke sessions and be covered by the append-only audit work in WP-05.
+- Cookie-authenticated state-changing requests now require a strict same-origin `Origin`, acceptable Fetch Metadata, and matching CSRF cookie/header tokens. The session endpoint issues and rotates the readable CSRF token, clears it on logout, and validates refresh/logout directly. A shared browser request helper applies the token to same-origin mutations without disclosing it to signed cross-origin storage uploads. Bearer-authenticated API calls remain outside the CSRF threat model.
+- Email HTML templates now escape every interpolated value by default, explicitly mark only generated fragments as trusted, validate HTTP(S) links without embedded credentials, and remove CR/LF from subjects before SMTP delivery and notification logging.
+- Admission and Administrator account creation no longer generate, return, log, or email reusable passwords. Firebase creates the identity without a password and produces an expiring setup/reset action link; welcome mail contains only that link.
+- Global response configuration now supplies report-only CSP, `nosniff`, clickjacking, referrer, and permissions policies. Production browser source maps are disabled, and Sentry is configured to delete maps after private upload.
+
+Local verification on 26 July 2026:
+
+| Gate | Result |
+|---|---|
+| Static checks | Strict ESLint and Next.js/TypeScript type checking passed |
+| Unit tests | 49 files / 175 tests passed, including role drift, CSRF, secure client requests, hostile email input, safe links, passwordless onboarding, and refresh-token revocation |
+| Integration tests | 34 files / 106 tests passed; the separately guarded live-database test was skipped because no opted-in test database was supplied |
+| Production build | Next.js 16.2.11 build passed; 67 static-page-generation units completed |
+| Public source-map check | No `.map` files were present under `.next/static` |
+| Browser/header/accessibility | 2/2 Chromium smokes passed against the production server; security headers were asserted and the public application page had no serious/critical axe finding |
+| Dependency audits | High-severity production/all-dependency gates passed; the six production and three development-only moderate residuals remain tracked under WP-02 |
+
+Required evidence before CHG-003 can be `Verified`:
+
+1. Reconcile every active local Firebase UID/role against Firebase identities and claims before deployment; investigate and repair mismatches, then revoke affected refresh tokens and session cookies.
+2. Test account setup against an isolated real Firebase project: delivery, successful first setup, expiry, reuse rejection, reset recovery, disabled-user behavior, and redaction from logs/responses.
+3. Run authenticated browser flows for all four roles with cookie mutations, inactivity refresh/logout, deliberate cross-origin/missing/mismatched CSRF attempts, deactivation, and claim drift.
+4. Deploy CSP in report-only mode, collect and review violations for the approved observation period, correct required origins/nonces, then approve enforcement rather than silently leaving report-only indefinitely.
+5. Verify every deployed HTML/API response carries the intended headers and that CDN/hosting artifacts do not expose source maps. Confirm Sentry receives usable private maps when release credentials are configured.
+6. Add immutable identity-mismatch and privileged identity-change audit events through WP-05. The current mismatch log is deliberately minimal and excludes token/claim contents.
+
+| Risk | Local disposition | Closure condition |
+|---|---|---|
+| RISK-004 | Local-role authority, exact claim equality, mismatch rejection, and relevant token revocation implemented; risk reduced, not closed | Reconcile identities/roles, verify real role-change/deactivation/session behavior, deploy, and add immutable audit evidence |
+| RISK-005 | Central same-origin and double-submit CSRF controls implemented for cookie-authenticated mutations; risk reduced, not closed | Authenticated deployed browser and deliberate cross-origin/missing-token tests pass for all mutation families |
+| RISK-008 | Default HTML escaping, trusted-fragment handling, URL validation, and subject sanitation implemented; risk reduced, not closed | Send hostile fixtures through the configured SMTP path and verify rendered mail across supported clients |
+| RISK-009 | Report-only CSP, baseline headers, private-map configuration, runtime header smoke, and artifact scan implemented; risk reduced, not closed | Deployed header/artifact evidence passes and observed CSP is approved and enforced |
+| RISK-017 | Reusable temporary passwords removed from creation, response, and mail paths; Firebase setup links implemented; risk reduced, not closed | Isolated real-Firebase setup, expiry, reuse rejection, reset, and disabled-user E2E pass |
+
 ### 15.3 Update procedure
 
 For every accepted change:
@@ -1267,6 +1312,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Fix:** Make one authority explicit—prefer local role for every request or require exact equality and fail closed. Revoke/refresh sessions on role/deactivation changes and audit mismatches.
 - **Mitigation:** Run a reconciliation job comparing Firebase claims with local roles and investigate discrepancies.
 - **False-positive notes:** Firebase claim revocation may be performed operationally, but equality is still not enforced by this code.
+- **WP-03 remediation status (26 Jul 2026):** The local active-user role is now authoritative, exact claim equality is required, session creation revokes refresh tokens on mismatch, deactivation disables the Firebase user and revokes refresh tokens, and the login redirect uses the server-returned role. **Reduced, not closed** pending pre-deployment reconciliation, real Firebase/session tests, deployed evidence, and immutable mismatch/identity-change audit through WP-05.
 
 #### RISK-005 — cookie-authenticated mutations lack explicit CSRF/origin validation
 
@@ -1278,6 +1324,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Fix:** Add a centralized CSRF strategy for cookie-authenticated POST/PUT/PATCH/DELETE APIs, strict Origin/Host validation for JSON endpoints, and tests. Keep SameSite as defense in depth.
 - **Mitigation:** Require a non-simple custom header and strict same-origin checks at the edge while introducing tokens.
 - **False-positive notes:** An external gateway could add checks; no evidence is present. Bearer-only calls are not CSRF-prone, but these handlers also accept cookies.
+- **WP-03 remediation status (26 Jul 2026):** Cookie-authenticated mutations now use centralized strict same-origin/Fetch Metadata checks plus matching CSRF cookie/header tokens; session creation validates Origin and refresh/logout validate CSRF directly. Browser clients add the token only to same-origin mutations. **Reduced, not closed** pending authenticated deployed cross-origin/missing-token coverage for every mutation family.
 
 #### RISK-006 — fail-open, state-changing cron GET
 
@@ -1312,6 +1359,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Fix:** Escape every text value by default or use a templating library with contextual auto-escaping; validate URLs separately; add hostile-input tests.
 - **Mitigation:** Strip/control HTML-significant characters from high-risk fields until escaping is centralized.
 - **False-positive notes:** Email clients often sanitize scripts, but markup/phishing injection remains possible and should not rely on client behavior.
+- **WP-03 remediation status (26 Jul 2026):** All email HTML builders now escape interpolations by default, optional generated fragments require an explicit trusted wrapper, HTTP(S) links reject embedded credentials, and subjects are stripped of CR/LF before delivery and logging. Hostile-input unit tests pass. **Reduced, not closed** pending configured-SMTP and supported-client rendering evidence.
 
 #### RISK-009 — missing application security headers and possible public source maps
 
@@ -1323,6 +1371,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Fix:** Add a tested CSP and baseline headers centrally, verify at runtime, and configure Sentry source-map upload/removal so maps are not publicly served unless explicitly accepted.
 - **Mitigation:** Set headers and source-map blocking at the CDN/edge immediately.
 - **False-positive notes:** Headers/source-map removal may be supplied by hosting/Sentry; verify actual deployed responses and artifacts before closing.
+- **WP-03 remediation status (26 Jul 2026):** Report-only CSP and baseline browser headers are configured globally; production browser source maps are disabled and Sentry deletes privately uploaded maps. The production browser header smoke passes and `.next/static` contains no maps. **Reduced, not closed** pending deployed CDN/response evidence, private Sentry-map confirmation, and observed CSP approval/enforcement.
 
 #### RISK-010 — vulnerable dependency graph
 
@@ -1346,7 +1395,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 | RISK-014 | P1 | Viva outcome is one shared Examiner-controlled value with no date guard, quorum, independent recommendations, report, comments, actor audit, or ratification. | Store per-Examiner recommendations and report attachments; require scheduled date, quorum/consensus/chair/admin decision, reason, and audit. | Multi-Examiner E2E proves independent inputs, ratification, transitions, and notices. |
 | RISK-015 | P1 | Submission metadata/notifications precede browser storage completion for progress, thesis, and corrections; public/proposal/ethics uploads can orphan objects. | Staged upload session with finalize/abort, object verification, idempotency key, expiry cleanup, and retry/resume. | Simulated failed/partial upload leaves no final record/notice; retry is idempotent. |
 | RISK-016 | P1 | Notification coverage/taxonomy is incomplete and misleading; delivery/in-app writes are not atomic; no retry/outbox/dedup/deep links. | Domain-event catalogue plus transactional outbox, worker retries/backoff, idempotency, destination URLs, accurate logs and admin retry tooling. | Trigger matrix is automated; failure/retry/restart tests show exactly-once user-visible intent. |
-| RISK-017 | P1 | Temporary passwords use `Math.random()`, are emailed in plaintext, and no forced reset exists. | Firebase password-setup/reset invitation with cryptographic token, expiry, one-time use, and first-login policy; never send reusable password. | No password in email/log; expired/reused invite fails; initial setup flow E2E passes. |
+| RISK-017 | P1 | **WP-03 reduced:** the audited baseline used `Math.random()` temporary passwords and emailed them in plaintext. Local admission/admin creation now creates passwordless Firebase identities, returns no password, and emails only a Firebase setup/reset action link. Real Firebase expiry/reuse/reset behavior remains unverified. | Keep the Firebase password-setup/reset invitation; verify expiry, one-time use, reset recovery, disabled users, and log/response redaction in an isolated project. | No password in email/log/response; expired/reused invite fails; initial setup/reset/disabled-user E2E passes. |
 | RISK-018 | P1 | Registration can be renewed immediately/repeatedly; concurrency can create multiple active periods; graduation/archive leaves active renewal/reminders. | Student renewal request + admin approval, eligibility/evidence/payment hooks, idempotency, non-overlap/one-active DB invariant, atomic graduation closure. | Concurrency test produces one active row; graduated/archived renewal/reminder is blocked. |
 | RISK-019 | P1 | Finalization/archive is inconsistent across generic status, specialized graduation, Student archive, `Thesis.isArchived`, registration, user/Firebase access. | One atomic lifecycle command and approved state diagram; separate academic finalization, record retention, and account deactivation. | All related states/audit/notifications commit or roll back together; archive list is accurate. |
 | RISK-020 | P2 | Status fields overwrite history; assignment deletion removes history; most decisions lack actor/reason/version/time. | Append-only `LifecycleTransition`/decision/audit records and effective-dated assignments. | Every state/assignment/decision change is attributable and queryable; immutability test passes. |
@@ -1379,10 +1428,10 @@ The project team should not mark a risk “closed” solely because code was mer
 
 ## 17. Prioritized remediation and modernization plan
 
-**Planning revision:** 1.2, updated 18 July 2026  
-**Planning status:** WP-01 and WP-02 authorized/implemented; WP-03–WP-15 remain proposed for project-owner sequencing
+**Planning revision:** 1.3, updated 26 July 2026<br>
+**Planning status:** WP-01, WP-02, and WP-03 authorized/implemented; WP-04–WP-15 remain proposed for project-owner sequencing
 
-**Implementation status:** WP-01 is committed with deployment/reconciliation pending. WP-02 passed local dependency, static, automated, database, migration, build, and browser gates; hosted enforcement, populated-data rehearsal, external-service E2E, and deployment evidence remain pending.
+**Implementation status:** WP-01 is committed with deployment/reconciliation pending. WP-02 passed local dependency, static, automated, database, migration, build, and browser gates; hosted enforcement, populated-data rehearsal, external-service E2E, and deployment evidence remain pending. WP-03 passed local static, unit, integration, build, source-map artifact, browser-header, and accessibility gates; identity reconciliation, real Firebase/SMTP/authenticated E2E, CSP enforcement, and deployment evidence remain pending.
 **Canonical tracking rule:** Update this Markdown after each accepted fix. Regenerate the DOCX after the complete programme unless the project owner requests an interim release.
 
 This section converts every current risk in Section 16 into a dependency-ordered work package. The order is intentional:
@@ -1482,6 +1531,8 @@ Safe parallelism after WP-02 is limited to separately coordinated branches for W
 7. Upload source maps privately to monitoring and prevent public serving unless explicitly accepted.
 
 **Verification and rollout:** Role/claim mismatch and old sessions fail safely; cross-origin/missing-token mutations fail; hostile email values remain text; no password appears in mail, response, storage, or logs; reused/expired setup links fail; deployed headers pass. Reconcile roles before strict mismatch enforcement and observe CSP before enforcing it.
+
+**Checkpoint:** Local implementation and repository verification are complete. The active local role is authoritative and must match the Firebase claim; session creation mismatch and deactivation revoke refresh tokens; cookie-authenticated mutations use same-origin plus double-submit CSRF controls; email HTML/link/header handling is hardened; reusable temporary passwords are replaced by Firebase setup links; report-only CSP and baseline headers are active; and production client maps are absent. See Section 15.2 for exact evidence and rollout requirements. WP-03 is not `Verified` until reconciliation, isolated real Firebase/SMTP/authenticated browser tests, CSP observation/enforcement approval, private Sentry-map confirmation, and deployed header/artifact evidence are recorded.
 
 #### WP-04 — Document, logical-version, and staged-upload foundation
 
@@ -1776,7 +1827,7 @@ This matrix accounts for RISK-001 through RISK-034 with no missing or duplicate 
 |---|---|---|---|---|---|
 | WP-01 | Implemented (committed; deployment pending) | Codex (code); project owner/deployer pending | Commit `9949fb8` on `main` | Additive `MaintenanceRun` ledger plus identity/document/data reconciliation; no destructive schema change | Focused 10/49, full 82/264, Prisma validation, and build pass locally; migration, scheduler cutover, reconciliation, and deployed smoke evidence pending |
 | WP-02 | Implemented (local; hosted enforcement pending) | Codex (code/docs); repository administrator/deployer pending | `main` working tree; commit/PR pending | Supported dependency/CI baseline; guarded empty-database migration validation; populated destructive migration remains blocked | Clean install; 0 critical/high audit; lint/type; 81/263 ordinary tests + 1 real-DB test; four migrations/drift; build; 2/2 browser smokes. Hosted protections/runs, populated rehearsal, external-service E2E, and deployment evidence pending |
-| WP-03 | Proposed | Unassigned | — | Auth/session and optional invitation/session-version expansion | — |
+| WP-03 | Implemented (local; deployment/external verification pending) | Codex (code/docs); project owner/deployer pending | `main` working tree; commit/PR pending | No schema migration; auth/session/CSRF invitation behavior changes require identity reconciliation and coordinated rollout | Lint/type; 175/175 unit; 106/106 integration plus one guarded DB skip; build; no public client maps; 2/2 browser/header/accessibility smokes. Remaining: reconciliation, real Firebase/SMTP/authenticated E2E, CSP enforcement, Sentry-map and deployed evidence |
 | WP-04 | Proposed | Unassigned | — | Expand → backfill → dual operation → cutover → WP-15 contract | — |
 | WP-05 | Proposed | Unassigned | — | Additive audit/outbox; dual logging then worker cutover | — |
 | WP-06 | Proposed | Unassigned | — | Policy/terminology; compatibility aliases before enum changes | — |

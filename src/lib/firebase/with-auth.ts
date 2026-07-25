@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { AuthError, authenticateBearerRequest } from "@/lib/firebase/auth";
+import {
+  AuthError,
+  authenticateBearerRequest,
+} from "@/lib/firebase/auth";
 import { createServerErrorResponse } from "@/lib/http/errors";
+import {
+  RequestSecurityError,
+  assertCookieMutationIsTrusted,
+} from "@/lib/security/request";
 import {
   type AppUserRole,
   type AuthenticatedUserContext,
@@ -39,6 +46,11 @@ export function withAuth<TParams = Record<string, string>>(
   ): Promise<Response> => {
     try {
       const auth = await authenticateBearerRequest(request, allowedRoles);
+
+      if (!request.headers.get("authorization")?.startsWith("Bearer ")) {
+        assertCookieMutationIsTrusted(request);
+      }
+
       const params = await context?.params;
 
       return handler(request, {
@@ -47,6 +59,15 @@ export function withAuth<TParams = Record<string, string>>(
       });
     } catch (error) {
       if (error instanceof AuthError) {
+        return NextResponse.json(
+          {
+            error: error.message,
+          },
+          { status: error.status },
+        );
+      }
+
+      if (error instanceof RequestSecurityError) {
         return NextResponse.json(
           {
             error: error.message,

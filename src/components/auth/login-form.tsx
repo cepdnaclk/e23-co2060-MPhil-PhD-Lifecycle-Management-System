@@ -113,6 +113,7 @@ export function LoginForm() {
 
       const sessionPayload = (await sessionResponse.json()) as {
         error?: string;
+        role?: unknown;
       };
 
       if (!sessionResponse.ok) {
@@ -125,7 +126,14 @@ export function LoginForm() {
         return;
       }
 
-      router.push(resolveDashboardPathFromRole(roleClaim));
+      if (!isAppUserRole(sessionPayload.role)) {
+        await signOutUser();
+        setErrorMessage("The server did not return a valid account role.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      router.push(resolveDashboardPathFromRole(sessionPayload.role));
       router.refresh();
     } catch (error) {
       setErrorMessage(mapFirebaseErrorMessage(error));

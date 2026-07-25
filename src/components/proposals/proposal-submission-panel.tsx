@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
@@ -61,7 +63,7 @@ type UploadedProposalDocument = {
 };
 
 async function loadProposalOverview(): Promise<ProposalOverviewResponse> {
-  const response = await fetch("/api/proposals", {
+  const response = await secureFetch("/api/proposals", {
     credentials: "include",
   });
   const payload = (await response.json()) as ProposalOverviewResponse;
@@ -173,7 +175,7 @@ export function ProposalSubmissionPanel() {
         );
       }
 
-      const uploadUrlResponse = await fetch("/api/proposals/upload-url", {
+      const uploadUrlResponse = await secureFetch("/api/proposals/upload-url", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -199,7 +201,7 @@ export function ProposalSubmissionPanel() {
         throw new Error(uploadUrlPayload.error ?? "Unable to prepare the proposal upload.");
       }
 
-      const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
+      const uploadResponse = await secureFetch(uploadUrlPayload.signedUrl, {
         method: "PUT",
         headers: {
           "Content-Type": file.type,
@@ -259,7 +261,7 @@ export function ProposalSubmissionPanel() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/proposals", {
+      const response = await secureFetch("/api/proposals", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

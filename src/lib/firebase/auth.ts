@@ -12,7 +12,11 @@ import {
   SESSION_ACTIVITY_COOKIE_NAME,
   hasSessionExpiredByInactivity,
 } from "@/lib/security/session";
-import { type AppUserRole, type AuthenticatedUserContext } from "@/types/auth";
+import {
+  isAppUserRole,
+  type AppUserRole,
+  type AuthenticatedUserContext,
+} from "@/types/auth";
 
 export class AuthError extends Error {
   constructor(
@@ -81,7 +85,7 @@ function getSessionCookieFromHeadersByName(
 async function resolveAuthenticatedUser(
   decodedToken: VerifiedFirebaseToken | null,
 ): Promise<AuthenticatedUserContext | null> {
-  if (!decodedToken?.uid || !decodedToken.role) {
+  if (!decodedToken?.uid) {
     return null;
   }
 
@@ -91,19 +95,30 @@ async function resolveAuthenticatedUser(
       id: true,
       firebaseUid: true,
       email: true,
+      role: true,
       isActive: true,
     },
   });
 
-  if (!user?.isActive || !user.firebaseUid) {
+  if (!user?.isActive || !user.firebaseUid || !isAppUserRole(user.role)) {
     return null;
+  }
+
+  if (decodedToken.role !== user.role) {
+    console.warn("Authentication role mismatch.", {
+      userId: user.id,
+    });
+    throw new AuthError(
+      "Your session role is out of date. Please sign in again.",
+      403,
+    );
   }
 
   return {
     uid: decodedToken.uid,
     userId: user.id,
     firebaseUid: user.firebaseUid,
-    role: decodedToken.role,
+    role: user.role,
     email: user.email,
   };
 }

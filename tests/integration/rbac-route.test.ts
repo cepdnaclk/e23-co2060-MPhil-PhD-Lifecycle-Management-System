@@ -38,6 +38,7 @@ describe("RBAC test route", () => {
           firebaseUid: "firebase-admin-1",
           email: "admin@example.com",
           isActive: true,
+          role: "ADMINISTRATOR",
         } as never;
       }
 
@@ -47,6 +48,7 @@ describe("RBAC test route", () => {
           firebaseUid: "firebase-student-1",
           email: "student@example.com",
           isActive: true,
+          role: "STUDENT",
         } as never;
       }
 

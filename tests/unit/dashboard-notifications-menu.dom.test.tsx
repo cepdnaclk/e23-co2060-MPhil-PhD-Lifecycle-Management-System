@@ -70,10 +70,13 @@ describe("DashboardNotificationsMenu", () => {
 
     await user.click(screen.getByRole("button", { name: /mark all read/i }));
 
-    expect(fetchMock).toHaveBeenLastCalledWith("/api/notifications", {
-      method: "PATCH",
-      credentials: "include",
-    });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/notifications",
+      expect.objectContaining({
+        method: "PATCH",
+        credentials: "include",
+      }),
+    );
 
     await waitFor(() => {
       expect(menuButton).not.toHaveTextContent("1");

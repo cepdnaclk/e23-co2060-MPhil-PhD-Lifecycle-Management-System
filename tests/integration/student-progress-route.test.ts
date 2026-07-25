@@ -45,6 +45,7 @@ describe("student progress route", () => {
           firebaseUid: "firebase-student-1",
           email: "student1@example.com",
           isActive: true,
+          role: "STUDENT",
         } as never;
       }
 
@@ -54,6 +55,7 @@ describe("student progress route", () => {
           firebaseUid: "firebase-student-2",
           email: "student2@example.com",
           isActive: true,
+          role: "STUDENT",
         } as never;
       }
 

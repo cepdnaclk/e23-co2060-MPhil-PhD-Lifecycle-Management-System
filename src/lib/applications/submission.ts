@@ -13,6 +13,7 @@ import {
 import {
   createFirebaseAuthUser,
   deleteFirebaseAuthUser,
+  generateFirebasePasswordSetupLink,
   setCustomClaimsForUser,
 } from "@/lib/firebase/admin";
 import { assertValidApplicationStatusTransition } from "@/lib/prisma/application-status";
@@ -51,18 +52,6 @@ export class ApplicationSubmissionError extends Error {
     this.name = "ApplicationSubmissionError";
     this.status = status;
   }
-}
-
-function buildStudentTemporaryPassword(length = 18) {
-  const alphabet =
-    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
-  let password = "";
-
-  for (let index = 0; index < length; index += 1) {
-    password += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-
-  return password;
 }
 
 function buildInitialRegistrationWindow(startDate = new Date()) {
@@ -392,15 +381,20 @@ export async function updateApplicationStatus(
     );
   }
 
-  const temporaryPassword = buildStudentTemporaryPassword();
   const firebaseUser = await createFirebaseAuthUser({
     email: application.applicantEmail,
-    password: temporaryPassword,
     displayName: application.applicantName,
     disabled: false,
   });
 
   try {
+    const accountSetupUrl = await generateFirebasePasswordSetupLink(
+      application.applicantEmail,
+      {
+        url: buildLoginUrl(),
+      },
+    );
+
     await setCustomClaimsForUser(firebaseUser.uid, "STUDENT");
 
     const { startDate, expirationDate } = buildInitialRegistrationWindow();
@@ -455,8 +449,7 @@ export async function updateApplicationStatus(
       to: admittedApplication.createdUser.email,
       recipientName: admittedApplication.createdUser.displayName,
       roleLabel: admittedApplication.createdUser.role,
-      temporaryPassword,
-      loginUrl: buildLoginUrl(),
+      accountSetupUrl,
     });
 
     return prisma.application.findUniqueOrThrow({

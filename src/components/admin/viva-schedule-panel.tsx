@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import React, { useState, type FormEvent } from "react";
 
@@ -81,7 +83,7 @@ export function VivaSchedulePanel({ theses }: { theses: ThesisForViva[] }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/vivas", {
+      const response = await secureFetch("/api/vivas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

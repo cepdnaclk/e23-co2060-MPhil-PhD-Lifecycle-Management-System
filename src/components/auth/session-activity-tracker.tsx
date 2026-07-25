@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { signOutUser } from "@/lib/firebase/client";
+import { secureFetch } from "@/lib/security/client-request";
 import {
   SESSION_INACTIVITY_TIMEOUT_MS,
   SESSION_REFRESH_THROTTLE_MS,
@@ -38,7 +39,7 @@ export function SessionActivityTracker() {
       }
 
       try {
-        await fetch("/api/auth/session", {
+        await secureFetch("/api/auth/session", {
           method: "DELETE",
         });
       } catch {
@@ -68,7 +69,7 @@ export function SessionActivityTracker() {
       lastRefreshRef.current = now;
 
       try {
-        const response = await fetch("/api/auth/session", {
+        const response = await secureFetch("/api/auth/session", {
           method: "PATCH",
           cache: "no-store",
         });

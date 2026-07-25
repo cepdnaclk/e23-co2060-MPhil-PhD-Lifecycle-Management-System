@@ -69,6 +69,7 @@ describe("thesis download integration", () => {
           firebaseUid: "firebase-examiner-1",
           email: "examiner1@example.com",
           isActive: true,
+          role: "EXAMINER",
         } as never;
       }
 
@@ -78,6 +79,7 @@ describe("thesis download integration", () => {
           firebaseUid: "firebase-examiner-2",
           email: "examiner2@example.com",
           isActive: true,
+          role: "EXAMINER",
         } as never;
       }
 

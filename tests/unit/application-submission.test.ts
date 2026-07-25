@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/firebase/admin", () => ({
   createFirebaseAuthUser: vi.fn(),
   deleteFirebaseAuthUser: vi.fn(),
+  generateFirebasePasswordSetupLink: vi.fn(),
   setCustomClaimsForUser: vi.fn(),
 }));
 
@@ -47,6 +48,7 @@ import {
 import {
   createFirebaseAuthUser,
   deleteFirebaseAuthUser,
+  generateFirebasePasswordSetupLink,
   setCustomClaimsForUser,
 } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/prisma/client";
@@ -54,6 +56,9 @@ import { prisma } from "@/lib/prisma/client";
 describe("application submission utilities", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateFirebasePasswordSetupLink).mockResolvedValue(
+      "https://identity.example/setup-account",
+    );
   });
 
   it("rejects a non-PDF-or-ZIP supporting file", () => {
@@ -169,7 +174,11 @@ describe("application submission utilities", () => {
     expect(createFirebaseAuthUser).toHaveBeenCalledWith(
       expect.objectContaining({
         email: "admit@example.com",
+        displayName: "Applicant Admit",
       }),
+    );
+    expect(vi.mocked(createFirebaseAuthUser).mock.calls[0]?.[0]).not.toHaveProperty(
+      "password",
     );
     expect(setCustomClaimsForUser).toHaveBeenCalledWith(
       "firebase-student-1",
@@ -276,5 +285,14 @@ describe("application submission utilities", () => {
       id: "application-admit-2",
       status: ApplicationStatus.ADMITTED,
     });
+    expect(createFirebaseAuthUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "success@example.com",
+        displayName: "Applicant Success",
+      }),
+    );
+    expect(vi.mocked(createFirebaseAuthUser).mock.calls[0]?.[0]).not.toHaveProperty(
+      "password",
+    );
   });
 });

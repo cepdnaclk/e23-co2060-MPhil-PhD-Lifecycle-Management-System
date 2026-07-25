@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -61,7 +63,7 @@ export function DashboardNotificationsMenu({ trigger }: { trigger?: React.ReactN
     setError(null);
 
     try {
-      const response = await fetch("/api/notifications?limit=8", {
+      const response = await secureFetch("/api/notifications?limit=8", {
         credentials: "include",
       });
       const payload = (await response.json()) as NotificationsResponse;
@@ -95,7 +97,7 @@ export function DashboardNotificationsMenu({ trigger }: { trigger?: React.ReactN
     setError(null);
 
     try {
-      const response = await fetch("/api/notifications", {
+      const response = await secureFetch("/api/notifications", {
         method: "PATCH",
         credentials: "include",
       });

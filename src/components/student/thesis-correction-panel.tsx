@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
@@ -125,7 +127,7 @@ export function ThesisCorrectionPanel({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/theses/${thesis.id}/corrections`, {
+      const response = await secureFetch(`/api/theses/${thesis.id}/corrections`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -145,7 +147,7 @@ export function ThesisCorrectionPanel({
 
       for (const [index, file] of files.entries()) {
         const uploadTarget = payload.uploads[index];
-        const uploadResponse = await fetch(uploadTarget.signedUrl, {
+        const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,

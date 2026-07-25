@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -54,7 +56,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
   useEffect(() => {
     async function fetchDetails() {
       try {
-        const res = await fetch(`/api/applications/${applicationId}`);
+        const res = await secureFetch(`/api/applications/${applicationId}`);
         if (!res.ok) throw new Error("Failed to load application details");
         const data = await res.json();
         setApplication(data.application);
@@ -70,7 +72,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
 
   const handleDownload = async (docId: string) => {
     try {
-      const res = await fetch(`/api/applications/${applicationId}/documents/${docId}/download`);
+      const res = await secureFetch(`/api/applications/${applicationId}/documents/${docId}/download`);
       if (!res.ok) throw new Error("Failed to get download link");
       const data = await res.json();
 
@@ -89,7 +91,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     setShowConfirmModal({ show: false, type: null });
 
     try {
-      const res = await fetch(`/api/applications/${applicationId}/status`, {
+      const res = await secureFetch(`/api/applications/${applicationId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

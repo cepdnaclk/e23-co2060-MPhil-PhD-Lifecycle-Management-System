@@ -1,5 +1,6 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import {
+  type ActionCodeSettings,
   type CreateRequest,
   type UpdateRequest,
   getAuth,
@@ -94,6 +95,20 @@ export async function updateFirebaseAuthUser(
 
 export async function deleteFirebaseAuthUser(uid: string): Promise<void> {
   await getFirebaseAdminAuth().deleteUser(uid);
+}
+
+export async function generateFirebasePasswordSetupLink(
+  email: string,
+  actionCodeSettings?: ActionCodeSettings,
+): Promise<string> {
+  return getFirebaseAdminAuth().generatePasswordResetLink(
+    email,
+    actionCodeSettings,
+  );
+}
+
+export async function revokeFirebaseRefreshTokens(uid: string): Promise<void> {
+  await getFirebaseAdminAuth().revokeRefreshTokens(uid);
 }
 
 export async function verifyFirebaseToken(

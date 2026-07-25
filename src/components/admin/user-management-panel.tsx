@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import React, { useEffect, useState } from "react";
 import { getFirebaseClientAuth } from "@/lib/firebase/client";
 import {
@@ -101,7 +103,7 @@ export function UserManagementPanel() {
     try {
       const headers = await getAuthorizationHeader();
       const query = roleFilter === "ALL" ? "" : `?role=${encodeURIComponent(roleFilter)}`;
-      const response = await fetch(`/api/admin/users${query}`, {
+      const response = await secureFetch(`/api/admin/users${query}`, {
         headers,
       });
       const payload = (await response.json()) as {
@@ -141,7 +143,7 @@ export function UserManagementPanel() {
 
     try {
       const headers = await getAuthorizationHeader();
-      const response = await fetch("/api/admin/users", {
+      const response = await secureFetch("/api/admin/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -181,7 +183,7 @@ export function UserManagementPanel() {
 
     try {
       const headers = await getAuthorizationHeader();
-      const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
+      const response = await secureFetch(`/api/admin/users/${userId}/deactivate`, {
         method: "PATCH",
         headers,
       });

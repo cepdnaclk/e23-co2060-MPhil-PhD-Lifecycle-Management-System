@@ -55,7 +55,7 @@ describe("LoginForm", () => {
     } as never);
     fetchMock.mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({ ok: true }),
+      json: vi.fn().mockResolvedValue({ ok: true, role: "STUDENT" }),
     } as never);
 
     render(<LoginForm />);

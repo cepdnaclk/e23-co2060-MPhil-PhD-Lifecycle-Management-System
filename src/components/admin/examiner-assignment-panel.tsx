@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import React, { useState, type FormEvent } from "react";
 
@@ -64,7 +66,7 @@ export function ExaminerAssignmentPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submitJson(path: string, body: unknown) {
-    const response = await fetch(path, {
+    const response = await secureFetch(path, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -86,7 +88,7 @@ export function ExaminerAssignmentPanel({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/assignments/examiners", {
+      const response = await secureFetch("/api/assignments/examiners", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

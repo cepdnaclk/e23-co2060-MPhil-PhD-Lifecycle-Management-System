@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader } from "@/components/ui/loader";
+import { secureFetch } from "@/lib/security/client-request";
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function LogoutPage() {
   useEffect(() => {
     async function performLogout() {
       try {
-        await fetch("/api/auth/session", {
+        await secureFetch("/api/auth/session", {
           method: "DELETE",
           credentials: "include",
         });

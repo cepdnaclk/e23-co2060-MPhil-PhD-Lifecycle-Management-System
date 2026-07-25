@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
@@ -120,7 +122,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/theses", {
+      const response = await secureFetch("/api/theses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -141,7 +143,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
 
       for (const [index, file] of files.entries()) {
         const uploadTarget = payload.uploads[index];
-        const uploadResponse = await fetch(uploadTarget.signedUrl, {
+        const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
           method: "PUT",
           headers: { "Content-Type": file.type },
           body: file,

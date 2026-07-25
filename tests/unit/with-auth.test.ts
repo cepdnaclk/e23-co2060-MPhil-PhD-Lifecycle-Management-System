@@ -44,6 +44,7 @@ describe("withAuth", () => {
       firebaseUid: "firebase-admin-1",
       email: "admin@example.com",
       isActive: true,
+      role: "ADMINISTRATOR",
     } as never);
 
     const handler = vi.fn(
@@ -89,6 +90,7 @@ describe("withAuth", () => {
       firebaseUid: "firebase-student-1",
       email: "student@example.com",
       isActive: true,
+      role: "STUDENT",
     } as never);
 
     const handler = vi.fn(async () => NextResponse.json({ ok: true }));
@@ -153,6 +155,7 @@ describe("withAuth", () => {
       firebaseUid: "firebase-supervisor-2",
       email: "supervisor@example.com",
       isActive: true,
+      role: "SUPERVISOR",
     } as never);
 
     const handler = vi.fn(
@@ -183,6 +186,89 @@ describe("withAuth", () => {
     });
 
     vi.useRealTimers();
+  });
+
+  it("rejects a Firebase role claim that does not match the local user role", async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      verifyIdToken: vi.fn().mockResolvedValue({
+        uid: "firebase-user-3",
+        email: "user@example.com",
+        role: "ADMINISTRATOR",
+      }),
+    } as never);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "db-user-3",
+      firebaseUid: "firebase-user-3",
+      email: "user@example.com",
+      isActive: true,
+      role: "STUDENT",
+    } as never);
+
+    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const response = await withAuth(handler, ["ADMINISTRATOR"])(
+      new Request("http://localhost/api/test", {
+        headers: {
+          authorization: "Bearer elevated-token",
+        },
+      }) as never,
+      { params: Promise.resolve({}) },
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Your session role is out of date. Please sign in again.",
+    });
+  });
+
+  it("requires a matching same-origin CSRF token for cookie-authenticated mutations", async () => {
+    vi.mocked(getAuth).mockReturnValue({
+      verifySessionCookie: vi.fn().mockResolvedValue({
+        uid: "firebase-supervisor-4",
+        email: "supervisor@example.com",
+        role: "SUPERVISOR",
+      }),
+    } as never);
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "db-supervisor-4",
+      firebaseUid: "firebase-supervisor-4",
+      email: "supervisor@example.com",
+      isActive: true,
+      role: "SUPERVISOR",
+    } as never);
+
+    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const guardedHandler = withAuth(handler, ["SUPERVISOR"]);
+    const baseCookie = `pglms_session=session-cookie-token; pglms_session_activity=${Date.now()}`;
+
+    const rejectedResponse = await guardedHandler(
+      new Request("http://localhost/api/test", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost",
+          cookie: baseCookie,
+        },
+      }) as never,
+      { params: Promise.resolve({}) },
+    );
+
+    const acceptedResponse = await guardedHandler(
+      new Request("http://localhost/api/test", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost",
+          "x-pglms-csrf": "csrf-token",
+          cookie: `${baseCookie}; pglms_csrf=csrf-token`,
+        },
+      }) as never,
+      { params: Promise.resolve({}) },
+    );
+
+    expect(rejectedResponse.status).toBe(403);
+    expect(acceptedResponse.status).toBe(200);
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("rejects an expired inactivity cookie even when the session cookie exists", async () => {

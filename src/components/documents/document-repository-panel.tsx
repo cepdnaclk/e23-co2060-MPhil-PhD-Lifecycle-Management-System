@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Card,
@@ -139,7 +141,7 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
         startDate,
         endDate,
       });
-      const response = await fetch(`/api/documents${queryString ? `?${queryString}` : ""}`, {
+      const response = await secureFetch(`/api/documents${queryString ? `?${queryString}` : ""}`, {
         credentials: "include",
       });
       const payload = (await response.json()) as DocumentsResponse;
@@ -172,7 +174,7 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/documents/${document.id}`, {
+      const response = await secureFetch(`/api/documents/${document.id}`, {
         credentials: "include",
       });
       const payload = (await response.json()) as DownloadResponse;
@@ -196,7 +198,7 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/documents/${document.id}`, {
+      const response = await secureFetch(`/api/documents/${document.id}`, {
         method: "PATCH",
         credentials: "include",
       });

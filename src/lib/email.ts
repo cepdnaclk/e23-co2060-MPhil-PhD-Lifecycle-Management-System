@@ -27,6 +27,76 @@ export type SendEmailResult = {
   error?: string;
 };
 
+type TrustedEmailHtml = {
+  readonly value: string;
+  readonly trusted: true;
+};
+
+function escapeHtml(value: unknown) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function trustedEmailHtml(value: string): TrustedEmailHtml {
+  return { value, trusted: true };
+}
+
+function isTrustedEmailHtml(value: unknown): value is TrustedEmailHtml {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "trusted" in value &&
+    value.trusted === true &&
+    "value" in value &&
+    typeof value.value === "string"
+  );
+}
+
+function emailHtml(
+  strings: TemplateStringsArray,
+  ...values: Array<unknown | TrustedEmailHtml>
+) {
+  return strings.reduce((result, part, index) => {
+    const value = values[index];
+    const renderedValue =
+      isTrustedEmailHtml(value)
+        ? value.value
+        : value === undefined
+          ? ""
+          : escapeHtml(value);
+
+    return result + part + renderedValue;
+  }, "");
+}
+
+function optionalLabeledParagraph(label: string, value?: string) {
+  return trustedEmailHtml(
+    value ? emailHtml`<p><strong>${label}:</strong><br />${value}</p>` : "",
+  );
+}
+
+function validateEmailLink(value: string) {
+  const url = new URL(value);
+
+  if (
+    (url.protocol !== "https:" && url.protocol !== "http:") ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error("Email links must use an HTTP(S) URL without credentials.");
+  }
+
+  return url.toString();
+}
+
+function sanitizeEmailHeader(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
 let cachedTransporter:
   | ReturnType<typeof nodemailer.createTransport>
   | undefined;
@@ -86,7 +156,7 @@ async function writeNotificationLog(
       data: {
         recipientId: input.recipientUserId,
         event: input.event,
-        subject: input.subject,
+        subject: sanitizeEmailHeader(input.subject),
         deliveryStatus,
         failureReason,
         metadata: {
@@ -103,16 +173,20 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   try {
     const transporter = getEmailTransporter();
     const fromAddress = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "";
+    const safeInput = {
+      ...input,
+      subject: sanitizeEmailHeader(input.subject),
+    };
 
     const result = await transporter.sendMail({
       from: fromAddress,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
+      to: safeInput.to,
+      subject: safeInput.subject,
+      html: safeInput.html,
+      text: safeInput.text,
     });
 
-    await writeNotificationLog(input, NotificationDeliveryStatus.SENT);
+    await writeNotificationLog(safeInput, NotificationDeliveryStatus.SENT);
 
     return {
       success: true,
@@ -154,7 +228,7 @@ export function buildRegistrationExpiryTemplate(input: {
     `Your registration will expire on ${input.expirationDateLabel}.`,
     `Please renew within the next ${daysRemaining} days to avoid a lapse.`,
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.studentName},</p>
     <p>Your registration will expire on <strong>${input.expirationDateLabel}</strong>.</p>
     <p>Please renew within the next <strong>${daysRemaining} days</strong> to avoid a lapse.</p>
@@ -173,9 +247,7 @@ export function buildProposalStatusChangeTemplate(input: {
   const feedbackText = input.feedback
     ? `\n\nFeedback:\n${input.feedback}`
     : "";
-  const feedbackHtml = input.feedback
-    ? `<p><strong>Feedback:</strong><br />${input.feedback}</p>`
-    : "";
+  const feedbackHtml = optionalLabeledParagraph("Feedback", input.feedback);
   const text = [
     `Dear ${input.studentName},`,
     "",
@@ -184,7 +256,7 @@ export function buildProposalStatusChangeTemplate(input: {
   ]
     .filter(Boolean)
     .join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.studentName},</p>
     <p>Your proposal "<strong>${input.proposalTitle}</strong>" is now <strong>${input.statusLabel}</strong>.</p>
     ${feedbackHtml}
@@ -206,7 +278,7 @@ export function buildEthicsApprovalSubmittedTemplate(input: {
     `Application title: ${input.applicationTitle}`,
     "Please review the application in the ethics approval workflow.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.administratorName},</p>
     <p><strong>${input.studentName}</strong> has submitted an ethics approval application.</p>
     <p><strong>Application title:</strong> ${input.applicationTitle}</p>
@@ -228,7 +300,7 @@ export function buildProgressReportSubmittedTemplate(input: {
     `${input.studentName} has submitted a progress report for ${input.periodLabel}.`,
     "Please sign in to view and monitor the submitted report.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.supervisorName},</p>
     <p><strong>${input.studentName}</strong> has submitted a progress report for <strong>${input.periodLabel}</strong>.</p>
     <p>Please sign in to view and monitor the submitted report.</p>
@@ -240,24 +312,22 @@ export function buildProgressReportSubmittedTemplate(input: {
 export function buildWelcomeAccountTemplate(input: {
   recipientName: string;
   roleLabel: string;
-  temporaryPassword: string;
-  loginUrl: string;
+  accountSetupUrl: string;
 }): EmailTemplate {
+  const accountSetupUrl = validateEmailLink(input.accountSetupUrl);
   const subject = `Your ${input.roleLabel.toLowerCase()} account is ready`;
   const text = [
     `Dear ${input.recipientName},`,
     "",
     `An account has been created for you in the Postgraduate Lifecycle Management System as a ${input.roleLabel}.`,
-    `Temporary password: ${input.temporaryPassword}`,
-    `Login URL: ${input.loginUrl}`,
-    "Please sign in and change your password as soon as possible.",
+    `Set your password: ${accountSetupUrl}`,
+    "This one-time Firebase link expires automatically. If it has expired or was already used, request a new password-reset link.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.recipientName},</p>
     <p>An account has been created for you in the Postgraduate Lifecycle Management System as a <strong>${input.roleLabel}</strong>.</p>
-    <p><strong>Temporary password:</strong> ${input.temporaryPassword}</p>
-    <p><strong>Login URL:</strong> <a href="${input.loginUrl}">${input.loginUrl}</a></p>
-    <p>Please sign in and change your password as soon as possible.</p>
+    <p><a href="${accountSetupUrl}">Set your password and activate access</a></p>
+    <p>This one-time Firebase link expires automatically. If it has expired or was already used, request a new password-reset link.</p>
   `;
 
   return { subject, html, text };
@@ -279,7 +349,7 @@ export function buildApplicationSubmittedTemplate(input: {
     `Research area: ${input.researchArea}`,
     "Please review the application in the admissions workflow.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.administratorName},</p>
     <p><strong>${input.applicantName}</strong> has submitted a new <strong>${input.programTypeLabel}</strong> application.</p>
     <p><strong>Applicant email:</strong> ${input.applicantEmail}</p>
@@ -306,11 +376,11 @@ export function buildProposalEvaluationSubmittedTemplate(input: {
     input.feedback ? `Feedback: ${input.feedback}` : "",
     "You can review the submitted text feedback in the proposal workflow.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.administratorName},</p>
     <p><strong>${input.supervisorName}</strong> has submitted a proposal review for <strong>${input.studentName}</strong>.</p>
     <p><strong>Proposal title:</strong> ${input.proposalTitle}</p>
-    ${input.feedback ? `<p><strong>Feedback:</strong><br />${input.feedback}</p>` : ""}
+    ${optionalLabeledParagraph("Feedback", input.feedback)}
     <p>You can review the submitted text feedback in the proposal workflow.</p>
   `;
 
@@ -331,7 +401,7 @@ export function buildSupervisorAssignmentTemplate(input: {
     `Assigned by: ${input.assignedByName}`,
     "Please sign in to the Postgraduate Lifecycle Management System to review the student record.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.supervisorName},</p>
     <p>You have been assigned as <strong>${input.assignmentRoleLabel.toLowerCase()}</strong> for <strong>${input.studentName}</strong>.</p>
     <p><strong>Assigned by:</strong> ${input.assignedByName}</p>
@@ -348,20 +418,21 @@ export function buildExaminerAssignmentTemplate(input: {
   assignedByName: string;
   secureDownloadUrl: string;
 }): EmailTemplate {
+  const secureDownloadUrl = validateEmailLink(input.secureDownloadUrl);
   const subject = `New thesis examiner assignment: ${input.thesisTitle}`;
   const text = [
     `Dear ${input.examinerName},`,
     "",
     `You have been assigned as an examiner for ${input.studentName}'s thesis titled "${input.thesisTitle}".`,
     `Assigned by: ${input.assignedByName}`,
-    `Secure thesis download link: ${input.secureDownloadUrl}`,
+    `Secure thesis download link: ${secureDownloadUrl}`,
     "Please review the thesis using the secure link above.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.examinerName},</p>
     <p>You have been assigned as an examiner for <strong>${input.studentName}</strong>'s thesis titled <strong>${input.thesisTitle}</strong>.</p>
     <p><strong>Assigned by:</strong> ${input.assignedByName}</p>
-    <p><a href="${input.secureDownloadUrl}">Open the secure thesis download link</a></p>
+    <p><a href="${secureDownloadUrl}">Open the secure thesis download link</a></p>
     <p>Please review the thesis using the secure link above.</p>
   `;
 
@@ -382,7 +453,7 @@ export function buildThesisSubmittedTemplate(input: {
     `Thesis title: ${input.thesisTitle}`,
     "Please review the submission workflow and proceed with the examination process.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.administratorName},</p>
     <p><strong>${input.studentName}</strong> has submitted a thesis manuscript for the <strong>${input.programTypeLabel}</strong> programme.</p>
     <p><strong>Thesis title:</strong> ${input.thesisTitle}</p>
@@ -405,7 +476,7 @@ export function buildCorrectionSubmittedTemplate(input: {
     `${input.studentName} has submitted a ${input.correctionTypeLabel.toLowerCase()} correction document for "${input.thesisTitle}".`,
     "Please review the uploaded correction package in the thesis workflow.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.administratorName},</p>
     <p><strong>${input.studentName}</strong> has submitted a <strong>${input.correctionTypeLabel.toLowerCase()}</strong> correction document for <strong>${input.thesisTitle}</strong>.</p>
     <p>Please review the uploaded correction package in the thesis workflow.</p>
@@ -487,8 +558,7 @@ export async function notifyWelcomeAccountCreated(input: {
   to: string;
   recipientName: string;
   roleLabel: string;
-  temporaryPassword: string;
-  loginUrl: string;
+  accountSetupUrl: string;
 }) {
   const template = buildWelcomeAccountTemplate(input);
 
@@ -628,7 +698,7 @@ export function buildVivaScheduledTemplate(input: {
     "",
     "Please check your dashboard for further details.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.recipientName},</p>
     <p>A viva has been scheduled for the thesis titled <strong>${input.thesisTitle}</strong>.</p>
     <p><strong>Date & Time:</strong> ${formattedDate}</p>
@@ -673,7 +743,7 @@ export function buildApplicationStatusChangedTemplate(input: {
     `The status of your ${input.programTypeLabel} application has been updated to: ${input.newStatus}.`,
     "Please sign in to the system to view further details.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.studentName},</p>
     <p>The status of your <strong>${input.programTypeLabel}</strong> application has been updated to: <strong>${input.newStatus}</strong>.</p>
     <p>Please sign in to the system to view further details.</p>
@@ -714,7 +784,7 @@ export function buildThesisArchivedTemplate(input: {
     `Your thesis titled "${input.thesisTitle}" has been successfully archived in the Postgraduate Lifecycle Management System.`,
     "No further action is required. Congratulations on completing your programme.",
   ].join("\n");
-  const html = `
+  const html = emailHtml`
     <p>Dear ${input.studentName},</p>
     <p>Your thesis titled <strong>${input.thesisTitle}</strong> has been successfully archived in the Postgraduate Lifecycle Management System.</p>
     <p>No further action is required. Congratulations on completing your programme.</p>

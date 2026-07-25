@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 
@@ -69,7 +71,7 @@ export function EthicsApprovalReviewPanel() {
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/ethics", {
+      const response = await secureFetch("/api/admin/ethics", {
         credentials: "include",
       });
       const payload = (await response.json()) as EthicsApprovalsResponse;
@@ -102,7 +104,7 @@ export function EthicsApprovalReviewPanel() {
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/documents/${document.id}`, {
+      const response = await secureFetch(`/api/documents/${document.id}`, {
         credentials: "include",
       });
       const payload = (await response.json()) as DownloadResponse;

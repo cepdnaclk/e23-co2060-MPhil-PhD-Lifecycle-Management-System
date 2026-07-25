@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +50,7 @@ export function ProposalEvaluationPanel() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/admin/proposals", {
+      const response = await secureFetch("/api/admin/proposals", {
         credentials: "include",
       });
       const payload = (await response.json()) as ProposalListResponse;
@@ -85,7 +87,7 @@ export function ProposalEvaluationPanel() {
     setSuccessMessage(null);
 
     try {
-      const response = await fetch(`/api/proposals/${selectedProposalId}/status`, {
+      const response = await secureFetch(`/api/proposals/${selectedProposalId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

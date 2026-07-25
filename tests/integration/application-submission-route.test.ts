@@ -19,6 +19,7 @@ vi.mock("@/lib/email", () => ({
 vi.mock("@/lib/firebase/admin", () => ({
   createFirebaseAuthUser: vi.fn(),
   deleteFirebaseAuthUser: vi.fn(),
+  generateFirebasePasswordSetupLink: vi.fn(),
   setCustomClaimsForUser: vi.fn(),
   verifyFirebaseToken: vi.fn(),
   createSessionCookieFromIdToken: vi.fn().mockResolvedValue("session-cookie"),
@@ -29,6 +30,7 @@ vi.mock("@/lib/firebase/admin", () => ({
     path: "/",
     maxAge: 1800,
   })),
+  SESSION_COOKIE_MAX_AGE_SECONDS: 432000,
   SESSION_COOKIE_NAME: "pglms_session",
 }));
 
@@ -54,6 +56,7 @@ import { updateApplicationStatus } from "@/lib/applications/submission";
 import { notifyApplicationSubmittedToAdministrator } from "@/lib/email";
 import {
   createFirebaseAuthUser,
+  generateFirebasePasswordSetupLink,
   setCustomClaimsForUser,
   verifyFirebaseToken,
 } from "@/lib/firebase/admin";
@@ -62,6 +65,9 @@ import { prisma } from "@/lib/prisma/client";
 describe("application submission integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateFirebasePasswordSetupLink).mockResolvedValue(
+      "https://identity.example/setup-account",
+    );
   });
 
   it("creates a SUBMITTED application record and notifies administrators", async () => {
@@ -88,6 +94,7 @@ describe("application submission integration", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          origin: "http://localhost",
         },
         body: JSON.stringify({
           applicantName: "Applicant Example",
@@ -206,6 +213,7 @@ describe("application submission integration", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          origin: "http://localhost",
         },
         body: JSON.stringify({
           idToken: "student-id-token",
@@ -213,7 +221,10 @@ describe("application submission integration", () => {
       }),
     );
 
-    expect(response.status).toBe(200);
+    expect(
+      response.status,
+      JSON.stringify(await response.clone().json()),
+    ).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       ok: true,
       role: UserRole.STUDENT,

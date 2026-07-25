@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/firebase/admin", () => ({
   createFirebaseAuthUser: vi.fn(),
   deleteFirebaseAuthUser: vi.fn(),
+  generateFirebasePasswordSetupLink: vi.fn(),
+  revokeFirebaseRefreshTokens: vi.fn(),
   setCustomClaimsForUser: vi.fn(),
   updateFirebaseAuthUser: vi.fn(),
 }));
@@ -37,6 +39,8 @@ vi.mock("@/lib/prisma/client", () => ({
 import {
   createFirebaseAuthUser,
   deleteFirebaseAuthUser,
+  generateFirebasePasswordSetupLink,
+  revokeFirebaseRefreshTokens,
   setCustomClaimsForUser,
   updateFirebaseAuthUser,
 } from "@/lib/firebase/admin";
@@ -51,6 +55,9 @@ import { prisma } from "@/lib/prisma/client";
 describe("admin user management", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(generateFirebasePasswordSetupLink).mockResolvedValue(
+      "https://identity.example/setup-account",
+    );
   });
 
   it("creates the User and Supervisor records within a single transaction", async () => {
@@ -112,6 +119,20 @@ describe("admin user management", () => {
       UserRole.SUPERVISOR,
     );
     expect(notifyWelcomeAccountCreated).toHaveBeenCalledTimes(1);
+    expect(createFirebaseAuthUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "supervisor@example.com",
+        displayName: "Dr. Supervisor",
+      }),
+    );
+    expect(vi.mocked(createFirebaseAuthUser).mock.calls[0]?.[0]).not.toHaveProperty(
+      "password",
+    );
+    expect(notifyWelcomeAccountCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountSetupUrl: "https://identity.example/setup-account",
+      }),
+    );
   });
 
   it("deletes the Firebase user if the database insert fails", async () => {
@@ -213,6 +234,9 @@ describe("admin user management", () => {
     expect(updateFirebaseAuthUser).toHaveBeenCalledWith("firebase-admin-7", {
       disabled: true,
     });
+    expect(revokeFirebaseRefreshTokens).toHaveBeenCalledWith(
+      "firebase-admin-7",
+    );
     expect(result.isActive).toBe(false);
   });
 

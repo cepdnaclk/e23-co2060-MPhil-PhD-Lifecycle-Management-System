@@ -3,6 +3,8 @@ import { UserRole, ProgramType, type User } from "@prisma/client";
 import {
   createFirebaseAuthUser,
   deleteFirebaseAuthUser,
+  generateFirebasePasswordSetupLink,
+  revokeFirebaseRefreshTokens,
   setCustomClaimsForUser,
   updateFirebaseAuthUser,
 } from "@/lib/firebase/admin";
@@ -66,18 +68,6 @@ function assertAdminManagedRole(role: string): asserts role is AdminManagedRole 
 function normalizeOptionalText(value?: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
-}
-
-function generateTemporaryPassword(length = 18): string {
-  const alphabet =
-    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
-  let password = "";
-
-  for (let index = 0; index < length; index += 1) {
-    password += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-
-  return password;
 }
 
 function buildLoginUrl() {
@@ -228,10 +218,8 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
     );
   }
 
-  const temporaryPassword = generateTemporaryPassword();
   const firebaseUser = await createFirebaseAuthUser({
     email,
-    password: temporaryPassword,
     displayName,
     disabled: false,
   });
@@ -247,6 +235,10 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
     | undefined;
 
   try {
+    const accountSetupUrl = await generateFirebasePasswordSetupLink(email, {
+      url: buildLoginUrl(),
+    });
+
     createdUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -280,13 +272,11 @@ export async function createAdminManagedUser(input: CreateAdminUserInput) {
       to: createdUser.email,
       recipientName: createdUser.displayName,
       roleLabel: createdUser.role,
-      temporaryPassword,
-      loginUrl: buildLoginUrl(),
+      accountSetupUrl,
     });
 
     return {
       user: createdUser,
-      temporaryPassword,
     };
   } catch (error) {
     try {
@@ -349,6 +339,7 @@ export async function deactivateAdminManagedUser(userId: string): Promise<User> 
     await updateFirebaseAuthUser(existingUser.firebaseUid, {
       disabled: true,
     });
+    await revokeFirebaseRefreshTokens(existingUser.firebaseUid);
   }
 
   return updatedUser;

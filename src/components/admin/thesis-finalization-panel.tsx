@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -57,7 +59,7 @@ export function ThesisFinalizationPanel({
     setError(null);
 
     try {
-      const response = await fetch(path, {
+      const response = await secureFetch(path, {
         method: "PATCH",
         credentials: "include",
       });

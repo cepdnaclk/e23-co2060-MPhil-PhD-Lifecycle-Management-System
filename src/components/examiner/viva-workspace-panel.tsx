@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -75,7 +77,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/vivas/${vivaId}/outcome`, {
+      const response = await secureFetch(`/api/vivas/${vivaId}/outcome`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -105,7 +107,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/theses/${thesisId}/download`, {
+      const response = await secureFetch(`/api/theses/${thesisId}/download`, {
         credentials: "include",
       });
       const payload = (await response.json()) as ThesisDownloadResponse;

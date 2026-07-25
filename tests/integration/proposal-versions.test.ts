@@ -66,6 +66,7 @@ describe("proposal version integration", () => {
           firebaseUid: "firebase-supervisor-1",
           email: "supervisor@example.com",
           isActive: true,
+          role: "SUPERVISOR",
         } as never;
       }
 
@@ -75,6 +76,7 @@ describe("proposal version integration", () => {
           firebaseUid: "firebase-student-1",
           email: "student@example.com",
           isActive: true,
+          role: "STUDENT",
         } as never;
       }
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -83,7 +85,7 @@ export function ProgressReportSubmissionForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/student/progress-reports", {
+      const response = await secureFetch("/api/student/progress-reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,7 +110,7 @@ export function ProgressReportSubmissionForm() {
 
         for (const [index, documentFile] of documentFiles.entries()) {
           const uploadTarget = payload.uploads[index];
-          const uploadResponse = await fetch(uploadTarget.signedUrl, {
+          const uploadResponse = await secureFetch(uploadTarget.signedUrl, {
             method: "PUT",
             headers: {
               "Content-Type": documentFile.type,

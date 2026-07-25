@@ -1,5 +1,7 @@
 "use client";
 
+import { secureFetch } from "@/lib/security/client-request";
+
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { FileUp, RefreshCw } from "lucide-react";
 
@@ -58,7 +60,7 @@ type UploadedEthicsDocument = {
 };
 
 async function loadEthicsOverview() {
-  const response = await fetch("/api/ethics", {
+  const response = await secureFetch("/api/ethics", {
     credentials: "include",
   });
   const payload = (await response.json()) as EthicsOverview;
@@ -147,7 +149,7 @@ export function EthicsApprovalPanel() {
           );
         }
 
-        const uploadUrlResponse = await fetch("/api/ethics/upload-url", {
+        const uploadUrlResponse = await secureFetch("/api/ethics/upload-url", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -175,7 +177,7 @@ export function EthicsApprovalPanel() {
 
         approvalId = uploadUrlPayload.approvalId;
 
-        const uploadResponse = await fetch(uploadUrlPayload.signedUrl, {
+        const uploadResponse = await secureFetch(uploadUrlPayload.signedUrl, {
           method: "PUT",
           headers: {
             "Content-Type": file.type,
@@ -236,7 +238,7 @@ export function EthicsApprovalPanel() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/ethics", {
+      const response = await secureFetch("/api/ethics", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

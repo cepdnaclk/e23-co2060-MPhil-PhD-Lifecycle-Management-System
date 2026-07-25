@@ -94,7 +94,6 @@ describe("admin user routes", () => {
         isActive: true,
         firebaseUid: "firebase-examiner-1",
       },
-      temporaryPassword: "TempPassword123!",
     } as never);
 
     const response = await POST(
@@ -120,12 +119,15 @@ describe("admin user routes", () => {
         role: UserRole.EXAMINER,
       }),
     );
-    await expect(response.json()).resolves.toMatchObject({
+    const payload = await response.json();
+
+    expect(payload).toMatchObject({
       user: expect.objectContaining({
         id: "user-examiner-1",
         role: UserRole.EXAMINER,
       }),
     });
+    expect(payload).not.toHaveProperty("temporaryPassword");
   });
 
   it("deactivates a managed user by id", async () => {
