@@ -70,12 +70,12 @@ reports and recommendations do not change the thesis state.
 
 ```text
 HOD outcome MINOR/MAJOR
-→ correction requirement OPEN
-→ Student submission
-→ Supervisor certification
-→ Examiner approval when required
-→ HOD approval
-→ CLOSED
+→ order bound to the current examined thesis version
+→ verified Student correction version and revised thesis version
+→ primary Supervisor certification or return
+→ independent assigned-Examiner approval when required
+→ HOD approval or version-return
+→ CORRECTIONS_APPROVED
 → HOD completion approval
 → Admin completion execution
 → graduation record
@@ -83,7 +83,8 @@ HOD outcome MINOR/MAJOR
 ```
 
 Correction type derives from the HOD outcome. Ordinary thesis resubmission
-cannot bypass the correction requirement.
+cannot bypass the correction requirement. Every return preserves the reviewed
+version and opens the order for a new verified submission version.
 
 ## Transaction boundary
 

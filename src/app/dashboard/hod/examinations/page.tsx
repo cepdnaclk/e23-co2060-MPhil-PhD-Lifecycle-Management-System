@@ -1,4 +1,4 @@
-import { AssignmentStatus } from "@prisma/client";
+import { AssignmentStatus, ExaminerRecommendation } from "@prisma/client";
 
 import { HodExaminationDecisionPanel } from "@/components/hod/department-decision-panels";
 import { HodReadinessPanel } from "@/components/thesis-readiness/decision-panels";
@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma/client";
 
 export default async function HodExaminationsPage() {
   await getServerDashboardContext("hod");
-  const [readinessRequests, assignments, vivas] = await Promise.all([
+  const [readinessRequests, assignments, vivas, correctionVivas] = await Promise.all([
     prisma.thesisReadinessCertification.findMany({
       where: { decision: "CERTIFIED" },
       orderBy: { certifiedAt: "asc" },
@@ -39,6 +39,18 @@ export default async function HodExaminationsPage() {
         _count: { select: { recommendations: true } },
       },
     }),
+    prisma.viva.findMany({
+      where: {
+        hodOutcome: { in: ["MINOR_CORRECTIONS", "MAJOR_CORRECTIONS"] },
+        correctionOrders: { none: {} },
+      },
+      orderBy: { hodDecisionAt: "asc" },
+      select: {
+        id: true,
+        hodOutcome: true,
+        thesis: { select: { title: true } },
+      },
+    }),
   ]);
 
   return (
@@ -55,6 +67,21 @@ export default async function HodExaminationsPage() {
       <HodExaminationDecisionPanel
         assignments={assignments.map((assignment) => ({ id: assignment.id, thesisTitle: assignment.thesis.title, examinerName: assignment.examiner.user.displayName }))}
         vivas={vivas.map((viva) => ({ id: viva.id, thesisTitle: viva.thesis.title, recommendationCount: viva._count.recommendations }))}
+        correctionVivas={correctionVivas.flatMap((viva) => {
+          if (
+            viva.hodOutcome !== ExaminerRecommendation.MINOR_CORRECTIONS &&
+            viva.hodOutcome !== ExaminerRecommendation.MAJOR_CORRECTIONS
+          ) {
+            return [];
+          }
+          return [
+            {
+              id: viva.id,
+              thesisTitle: viva.thesis.title,
+              outcome: viva.hodOutcome,
+            },
+          ];
+        })}
       />
     </div>
   );

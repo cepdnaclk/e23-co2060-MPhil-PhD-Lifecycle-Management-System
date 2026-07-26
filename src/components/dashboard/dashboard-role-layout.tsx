@@ -162,6 +162,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/supervisor/proposals/evaluate", label: "Monitor Proposals", icon: ClipboardCheck },
         { href: "/dashboard/supervisor/ethics", label: "Ethics Recommendations", icon: ClipboardCheck },
         { href: "/dashboard/supervisor/progress-reports", label: "Monitor Reports", icon: TrendingUp },
+        { href: "/dashboard/supervisor/corrections", label: "Correction Reviews", icon: FileEdit },
         { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];
     case "admin":
@@ -182,6 +183,7 @@ function getNavItems(role: DashboardRole) {
       return [
         { href: "/dashboard/examiner/proposals", label: "Assigned Proposals", icon: ClipboardCheck },
         { href: "/dashboard/examiner/vivas", label: "Assigned Vivas", icon: CalendarDays },
+        { href: "/dashboard/examiner/corrections", label: "Correction Reviews", icon: FileEdit },
         { href: "/dashboard/examiner/documents", label: "Documents", icon: FolderOpen },
       ];
     case "hod":

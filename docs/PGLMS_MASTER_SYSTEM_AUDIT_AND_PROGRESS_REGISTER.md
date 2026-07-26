@@ -15,12 +15,11 @@
 > **Department V1 local checkpoint, not deployed.** A post-WP-04 Department
 > lifecycle implementation is recorded in
 > `docs/DEPARTMENT_PGLMS_V1_IMPLEMENTATION_REGISTER.md`. The local checkpoint
-> passes lint, type/schema/migration-policy checks, 85 ordinary test files /
-> 296 tests, a production build, and the public browser smokes. Five migrations
-> remain checksum-pinned production blockers. Full conformance is not claimed:
-> multi-party ethics confirmation, Supervisor/Examiner correction review with
-> exact submission evidence, and exact intermediate completion-state enums
-> remain release-blocking functional deltas.
+> passes lint, type/schema/migration-policy checks, 87 ordinary test files /
+> 306 tests, and a production build with 88 route/page units. Seven migrations
+> remain checksum-pinned production blockers. Role-separated ethics and
+> version-bound correction review are implemented locally; exact intermediate
+> completion-state enums remain the release-blocking functional delta.
 
 > **Source-of-truth rule.** This report describes the behavior implemented at the audited commit. It supersedes the workflow claims in `docs/WORKFLOW_REPORT.md` and `output/pdf/pglms_admin_handover_report.*` where those documents conflict with the current code. Update the document control, capability matrix, change register, and risk register whenever the system changes.
 

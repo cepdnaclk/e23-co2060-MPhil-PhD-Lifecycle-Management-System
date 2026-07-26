@@ -55,10 +55,10 @@
 | D4 Application/proposal | Implemented | Public proposal, named-Supervisor consent, exact reviewer assignments/reviews, HOD decision and staff work queues |
 | D5 Admission/milestones | Implemented | HOD gate, idempotent execution record, four exact fixed schedules, effective-dated Supervisor assignments |
 | D6 Progress/tables/CSV | Implemented | Milestone return/resubmit/approve, four fixed tables, scoped complete formula-safe CSV and export audit |
-| D7 Ethics | Partial | Applicability/status records and readiness gate exist; separate Student declaration, Supervisor recommendation, and HOD confirmation history remain |
+| D7 Ethics | Implemented | Student declaration, Supervisor recommendation, PG Coordinator record, HOD confirmation, immutable decision history, and confirmed gate |
 | D8 Thesis examination | Implemented | Primary-Supervisor readiness, pending exact-version assignment, HOD confirmation, independent reports |
-| D9 Viva/corrections/completion | Partial | Independent recommendations, HOD outcome, correction orders/submissions, and separate administrative records exist; correction review stages and exact completion-state enums remain |
-| D10 UI/cleanup/docs | Partial locally | HOD and assignment queues, role navigation, major retired route/model removal, and canonical docs exist; the two functional deltas below and external browser/DB checks remain |
+| D9 Viva/corrections/completion | Partial | Independent recommendations, HOD outcome, verified version-bound correction submissions, Supervisor/Examiner reviews, and HOD closure exist; exact completion-state enums remain |
+| D10 UI/cleanup/docs | Partial locally | HOD and assignment queues, role navigation, retired route/model removal, and canonical docs exist; completion-state alignment and external browser/DB checks remain |
 
 ## Deployment limitations
 
@@ -114,7 +114,7 @@ link one account for every role when existing Firebase UIDs are supplied via
 - Added public Supervisor selection, Administrator reviewer assignment,
   Supervisor/Examiner review work, HOD decision queues, and fixed progress
   tables for Administrator/HOD/Supervisor.
-- Final ordinary suite: 85 passing files / 296 passing tests; the guarded
+- Final ordinary suite: 87 passing files / 306 passing tests; the guarded
   real-database test remains opt-in.
 
 The final route-to-target audit also closed three gaps found after the first
@@ -126,19 +126,17 @@ D4–D10 pass:
   milestone, immutable versions, and exact verified evidence;
 - Student request → primary Supervisor certification → HOD approval before the
   first thesis submission, with examiner assignment gated on HOD approval.
+- Student ethics declaration → Supervisor recommendation → PG Coordinator
+  record → HOD confirmation with immutable decisions and a confirmed gate.
+- HOD-derived corrections tied to the originating thesis version, sealed
+  Student resubmission versions, primary-Supervisor certification, required
+  independent Examiner approvals, and HOD closure.
 
 ## Remaining functional deltas
 
 This branch is not a complete implementation of every approved target rule:
 
-1. Ethics currently records applicability/status and enforces the readiness
-   gate, but it does not yet persist the full Student declaration → Supervisor
-   recommendation → PG Coordinator record → HOD confirmation history.
-2. Correction orders preserve Student response versions, but the active flow
-   still lacks verified evidence bound to each `CorrectionSubmission`, primary
-   Supervisor certification, required major-correction Examiner approval, and
-   the corresponding return/resubmit queues.
-3. Completion, graduation, and archive are separate records, but the legacy
+1. Completion, graduation, and archive are separate records, but the legacy
    `AcademicStatus`, `RegistrationStatus`, and `ThesisStatus` enums do not yet
    express all target intermediate `COMPLETED`/`FAILED` states directly.
 
@@ -151,8 +149,8 @@ These are release blockers for claiming full Department PGLMS V1 conformance.
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
 | `npm run prisma:validate` | Passed |
-| `npm run prisma:migrate:check` | Passed; five checksum-pinned production blockers |
-| `npm test -- --run` | Passed: 85 files / 296 tests; 1 guarded database test skipped |
-| `npm run build` | Passed: 81 static pages generated and active route manifest compiled |
+| `npm run prisma:migrate:check` | Passed; seven checksum-pinned production blockers |
+| `npm test -- --run` | Passed: 87 files / 306 tests; 1 guarded database test skipped |
+| `npm run build` | Passed: 88 static pages generated and active route manifest compiled |
 | `npm run test:e2e` | Passed: 2/2 public Chromium/accessibility tests |
 | `npm run test:database` | Skipped safely: opted-in `TEST_DATABASE_URL` unavailable |

@@ -102,6 +102,7 @@ async function buildAccessScope(
 ): Promise<RoleDocumentAccess> {
   switch (auth.role) {
     case "ADMINISTRATOR":
+    case "HOD":
       return {
         accessibleStudentIds: [],
         where: {},
@@ -280,14 +281,33 @@ async function buildAccessScope(
         assignment.thesisVersionId ? [] : [assignment.thesisId],
       );
 
-      // Examiners may only see THESIS documents for their assigned theses
+      // Examiners may see only the exact thesis evidence assigned to them and
+      // correction submissions that originate from that assigned version.
       return {
         accessibleStudentIds: [],
         where: {
-          documentType: DocumentType.THESIS,
           OR: [
-            { thesisVersionId: { in: assignedVersionIds } },
-            { thesisId: { in: legacyAssignedThesisIds } },
+            {
+              documentType: DocumentType.THESIS,
+              OR: [
+                { thesisVersionId: { in: assignedVersionIds } },
+                { thesisId: { in: legacyAssignedThesisIds } },
+              ],
+            },
+            {
+              documentType: DocumentType.CORRECTION,
+              correctionSubmission: {
+                is: {
+                  correctionOrder: {
+                    is: {
+                      originatingThesisVersionId: {
+                        in: assignedVersionIds,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           ],
         },
       };

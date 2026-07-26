@@ -1,10 +1,9 @@
-import { CorrectionType } from "@prisma/client";
 import { z } from "zod";
 
 import {
   stagedUploadFileSchema,
 } from "@/lib/uploads/schemas";
-import { optionalSanitizedString, sanitizedString } from "@/lib/validation/schemas";
+import { sanitizedString } from "@/lib/validation/schemas";
 
 export const uploadedThesisDocumentSchema = stagedUploadFileSchema;
 
@@ -32,13 +31,16 @@ export const correctionUploadRequestSchema = z.object({
     .max(10, "Upload no more than 10 correction documents."),
 });
 
-export const correctionSubmissionSchema = z.object({
-  correctionType: z.nativeEnum(CorrectionType),
-  description: optionalSanitizedString,
+export const orderedCorrectionSubmissionSchema = z.object({
+  responseSummary: sanitizedString
+    .min(20, "Explain how the ordered corrections were addressed.")
+    .max(10_000),
   uploadSessionId: z.string().uuid("A valid upload session ID is required."),
 });
 
 export type ThesisSubmissionInput = z.infer<typeof thesisSubmissionSchema>;
 export type ThesisUploadRequest = z.infer<typeof thesisUploadRequestSchema>;
 export type CorrectionUploadRequest = z.infer<typeof correctionUploadRequestSchema>;
-export type CorrectionSubmissionInput = z.infer<typeof correctionSubmissionSchema>;
+export type OrderedCorrectionSubmissionInput = z.infer<
+  typeof orderedCorrectionSubmissionSchema
+>;

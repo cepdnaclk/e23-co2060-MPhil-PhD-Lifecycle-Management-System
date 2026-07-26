@@ -28,8 +28,12 @@ read-only profile/report routes are retained from WP-01–WP-04.
 | `GET /api/student/progress-reports` | Owning Student | Fixed milestone schedule and immutable version history |
 | `POST /api/student/progress-reports/upload-url` | Owning Student | Sealed optional evidence for the exact milestone version |
 | `POST /api/supervisor/progress-reports/:id/decision` | Active primary Supervisor | Return/approve |
-| `POST /api/ethics/students/:id/applicability` | Assigned Supervisor/PG Coordinator/HOD | Record applicability |
-| `POST /api/ethics/:id/status` | PG Coordinator/HOD | Record Department status |
+| `POST /api/ethics` | Owning Student | Finalize verified required-ethics evidence |
+| `POST /api/student/ethics/declaration` | Owning Student | Declare that formal approval is not required |
+| `GET /api/supervisor/ethics` | Assigned Supervisor | Scoped recommendation queue |
+| `POST /api/supervisor/ethics/:id/recommendation` | Assigned Supervisor | Recommend or return the exact declaration revision |
+| `POST /api/admin/ethics/:id/record` | PG Coordinator | Record proposed Department status |
+| `POST /api/hod/ethics/:id/confirmation` | HOD | Confirm, return, or reject Department status |
 | `GET /api/progress-tables` | PG Coordinator/HOD/assigned Supervisor | Four tables or complete CSV |
 | `GET /api/admin/reports/*` | PG Coordinator | Operational reports/CSV |
 
@@ -47,8 +51,11 @@ read-only profile/report routes are retained from WP-01–WP-04.
 | `POST /api/vivas/:id/recommendation` | Confirmed exact Examiner | Independent recommendation |
 | `POST /api/hod/vivas/:id/outcome` | HOD | Final outcome |
 | `POST /api/hod/vivas/:id/corrections` | HOD | Order outcome-matched corrections |
-| `POST /api/correction-orders/:id/submissions` | Owning Student | Versioned correction response |
-| `POST /api/hod/correction-orders/:id/approve-completion` | HOD | Close corrections |
+| `POST /api/student/corrections/:id/upload-url` | Owning Student | Prepare staged evidence for the HOD order |
+| `POST /api/student/corrections/:id/submissions` | Owning Student | Finalize a verified correction and revised thesis version |
+| `POST /api/supervisor/corrections/:id/review` | Active primary Supervisor | Certify or return the exact submission version |
+| `POST /api/examiner/corrections/:id/review` | Assigned Thesis Examiner | Independently approve or return when required |
+| `POST /api/hod/corrections/:id/decision` | HOD | Approve or return correction completion |
 | `POST /api/hod/students/:id/completion` | HOD | Academic completion |
 | `POST /api/admin/students/:id/completion` | PG Coordinator | Record completion |
 | `POST /api/admin/students/:id/graduation` | PG Coordinator | Record graduation |
@@ -85,9 +92,6 @@ The free-text progress submission service and thesis-bound Supervisor-only
 readiness route are removed. The old Student progress URLs redirect to the
 canonical fixed-milestone pages.
 
-## Known incomplete target routes
-
-The active route surface still has no separate Supervisor/HOD ethics
-recommendation/confirmation commands and no Supervisor/Examiner correction
-review commands. These are recorded as release-blocking functional deltas in
-the implementation register.
+The active route surface now includes the role-separated ethics and correction
+decision commands. Completion-state enum alignment remains recorded in the
+implementation register.

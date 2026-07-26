@@ -1,4 +1,5 @@
 import {
+  CorrectionOrderStatus,
   DocumentType,
   ProgressSubmissionStatus,
   ProgramType,
@@ -59,6 +60,9 @@ type StudentProgressRecord = {
       approvedAt: Date | null;
       approvedById: string | null;
     }>;
+    correctionOrders?: Array<{
+      status: CorrectionOrderStatus;
+    }>;
   }>;
   ethicsApprovals: Array<{
     id: string;
@@ -86,6 +90,11 @@ type StudentDocumentRecord = {
     isApproved: boolean;
     approvedAt: Date | null;
     approvedById: string | null;
+  } | null;
+  correctionSubmission?: {
+    correctionOrder: {
+      status: CorrectionOrderStatus;
+    };
   } | null;
 };
 
@@ -148,6 +157,11 @@ async function findStudentProgressRecord(
               approvedById: true,
             },
           },
+          correctionOrders: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { status: true },
+          },
         },
       },
       ethicsApprovals: {
@@ -207,6 +221,13 @@ async function findStudentDocuments(
           approvedById: true,
         },
       },
+      correctionSubmission: {
+        select: {
+          correctionOrder: {
+            select: { status: true },
+          },
+        },
+      },
     },
   });
 }
@@ -252,8 +273,10 @@ function isThesisDocumentApproved(document: StudentDocumentRecord) {
 function isCorrectionDocumentReleased(document: StudentDocumentRecord) {
   return (
     document.documentType === DocumentType.CORRECTION &&
-    document.correctionDocument?.isApproved === true &&
-    document.correctionDocument.approvedById !== null
+    ((document.correctionDocument?.isApproved === true &&
+      document.correctionDocument.approvedById !== null) ||
+      document.correctionSubmission?.correctionOrder.status ===
+        CorrectionOrderStatus.COMPLETION_APPROVED)
   );
 }
 
@@ -348,6 +371,8 @@ export function calculateStageCompletionPercentages(input: {
     input.thesisStatus === ThesisStatus.CLOSED
   ) {
     thesisCompletion = 100;
+  } else if (input.thesisStatus === ThesisStatus.CORRECTIONS_APPROVED) {
+    thesisCompletion = 90;
   } else if (input.thesisStatus === ThesisStatus.CORRECTIONS_REQUIRED) {
     thesisCompletion = 75;
   } else if (input.thesisStatus === ThesisStatus.UNDER_EXAMINATION) {
@@ -411,7 +436,8 @@ export function determineCurrentMilestone(input: {
     hasThesisDocument &&
     (input.thesisStatus === ThesisStatus.SUBMITTED ||
       input.thesisStatus === ThesisStatus.UNDER_EXAMINATION ||
-      input.thesisStatus === ThesisStatus.CORRECTIONS_REQUIRED)
+      input.thesisStatus === ThesisStatus.CORRECTIONS_REQUIRED ||
+      input.thesisStatus === ThesisStatus.CORRECTIONS_APPROVED)
   ) {
     return "thesis-submission" as ProgressMilestoneId;
   }
@@ -561,6 +587,11 @@ export async function getStudentProgressById(
   const examinerFeedbackReleased = latestThesis
     ? latestThesis.status === ThesisStatus.FINAL_ARCHIVE ||
       latestThesis.status === ThesisStatus.CLOSED ||
+      latestThesis.status === ThesisStatus.CORRECTIONS_APPROVED ||
+      latestThesis.correctionOrders?.some(
+        (order) =>
+          order.status === CorrectionOrderStatus.COMPLETION_APPROVED,
+      ) ||
       latestThesis.corrections.some(
         (correction) => correction.isApproved && correction.approvedById !== null,
       )

@@ -121,7 +121,20 @@ enum CorrectionOrderStatus {
   ORDERED
   SUBMITTED
   RETURNED
+  SUPERVISOR_CERTIFIED
+  EXAMINER_APPROVED
   COMPLETION_APPROVED
+}
+
+enum CorrectionReviewStage {
+  SUPERVISOR
+  EXAMINER
+}
+
+enum CorrectionReviewDecision {
+  CERTIFIED
+  APPROVED
+  RETURNED
 }
 
 enum CompletionStatus {
@@ -164,6 +177,7 @@ enum ThesisStatus {
   SUBMITTED
   UNDER_EXAMINATION
   CORRECTIONS_REQUIRED
+  CORRECTIONS_APPROVED
   FINAL_ARCHIVE
   CLOSED
 }
@@ -305,6 +319,8 @@ model User {
   hodDecidedVivas                 Viva[]                         @relation("VivaHodDecision")
   correctionOrders                CorrectionOrder[]              @relation("CorrectionOrderHod")
   correctionApprovals             CorrectionOrder[]              @relation("CorrectionApprovalHod")
+  correctionSubmissions           CorrectionSubmission[]         @relation("CorrectionSubmissionSubmitter")
+  correctionReviews               CorrectionReview[]             @relation("CorrectionReviewReviewer")
   completionApprovals             ProgrammeCompletion[]          @relation("CompletionHod")
   completionRecordings            ProgrammeCompletion[]          @relation("CompletionAdministrator")
   graduationRecords               GraduationRecord[]             @relation("GraduationRecorder")
@@ -773,7 +789,7 @@ model Thesis {
   documents              Document[]
   createdAt              DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
-  CorrectionOrder        CorrectionOrder[]
+  correctionOrders       CorrectionOrder[]
   ProgrammeCompletion    ProgrammeCompletion?
 
   @@index([studentId, status])
@@ -808,18 +824,20 @@ model ThesisReadinessCertification {
 }
 
 model ThesisVersion {
-  id                  String                     @id @default(cuid())
-  thesisId            String
-  versionNumber       Int
-  isCurrent           Boolean                    @default(false)
-  manifestHash        String
-  submittedByUserId   String
-  submittedAt         DateTime                   @default(now())
-  thesis              Thesis                     @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  examinerAssignments ThesisExaminerAssignment[]
-  documents           Document[]
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
+  id                          String                     @id @default(cuid())
+  thesisId                    String
+  versionNumber               Int
+  isCurrent                   Boolean                    @default(false)
+  manifestHash                String
+  submittedByUserId           String
+  submittedAt                 DateTime                   @default(now())
+  thesis                      Thesis                     @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  examinerAssignments         ThesisExaminerAssignment[]
+  originatingCorrectionOrders CorrectionOrder[]          @relation("CorrectionOriginVersion")
+  correctionSubmissions       CorrectionSubmission[]     @relation("CorrectionRevisedVersion")
+  documents                   Document[]
+  createdAt                   DateTime                   @default(now())
+  updatedAt                   DateTime                   @updatedAt
 
   @@unique([thesisId, versionNumber])
   @@index([thesisId, isCurrent])
@@ -852,6 +870,7 @@ model ThesisExaminerAssignment {
   confirmedByHod       User?                 @relation("ExaminerAssignmentHod", fields: [confirmedByHodUserId], references: [id], onDelete: SetNull)
   report               ThesisExaminerReport?
   vivaRecommendation   VivaRecommendation?
+  correctionReviews    CorrectionReview[]
   documents            Document[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -922,46 +941,76 @@ model VivaRecommendation {
 }
 
 model CorrectionOrder {
-  id                      String                 @id @default(cuid())
-  vivaId                  String
-  thesisId                String
-  orderedByHodUserId      String
-  requirementType         CorrectionType
-  requirements            String
-  dueDate                 DateTime?
-  status                  CorrectionOrderStatus  @default(ORDERED)
-  completionApprovedBy    String?
-  completionApprovedAt    DateTime?
-  completionNotes         String?
-  viva                    Viva                   @relation(fields: [vivaId], references: [id], onDelete: Restrict)
-  thesis                  Thesis                 @relation(fields: [thesisId], references: [id], onDelete: Restrict)
-  orderedByHod            User                   @relation("CorrectionOrderHod", fields: [orderedByHodUserId], references: [id], onDelete: Restrict)
-  completionApprovedByHod User?                  @relation("CorrectionApprovalHod", fields: [completionApprovedBy], references: [id], onDelete: SetNull)
-  submissions             CorrectionSubmission[]
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
+  id                         String                 @id @default(cuid())
+  vivaId                     String
+  thesisId                   String
+  originatingThesisVersionId String?
+  orderedByHodUserId         String
+  requirementType            CorrectionType
+  requiresExaminerReview     Boolean                @default(false)
+  requirements               String
+  dueDate                    DateTime?
+  status                     CorrectionOrderStatus  @default(ORDERED)
+  completionApprovedBy       String?
+  completionApprovedAt       DateTime?
+  completionNotes            String?
+  viva                       Viva                   @relation(fields: [vivaId], references: [id], onDelete: Restrict)
+  thesis                     Thesis                 @relation(fields: [thesisId], references: [id], onDelete: Restrict)
+  originatingThesisVersion   ThesisVersion?         @relation("CorrectionOriginVersion", fields: [originatingThesisVersionId], references: [id], onDelete: Restrict)
+  orderedByHod               User                   @relation("CorrectionOrderHod", fields: [orderedByHodUserId], references: [id], onDelete: Restrict)
+  completionApprovedByHod    User?                  @relation("CorrectionApprovalHod", fields: [completionApprovedBy], references: [id], onDelete: SetNull)
+  submissions                CorrectionSubmission[]
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
 
   @@index([thesisId, status])
+  @@index([originatingThesisVersionId])
   @@index([orderedByHodUserId, createdAt])
   @@map("correction_orders")
 }
 
 model CorrectionSubmission {
-  id                String          @id @default(cuid())
-  correctionOrderId String
-  versionNumber     Int
-  responseSummary   String
-  submittedByUserId String
-  submittedAt       DateTime        @default(now())
-  returnedAt        DateTime?
-  returnReason      String?
-  correctionOrder   CorrectionOrder @relation(fields: [correctionOrderId], references: [id], onDelete: Cascade)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                     String             @id @default(cuid())
+  correctionOrderId      String
+  revisedThesisVersionId String?
+  versionNumber          Int
+  responseSummary        String
+  manifestHash           String?
+  submittedByUserId      String
+  submittedAt            DateTime           @default(now())
+  returnedAt             DateTime?
+  returnReason           String?
+  correctionOrder        CorrectionOrder    @relation(fields: [correctionOrderId], references: [id], onDelete: Cascade)
+  revisedThesisVersion   ThesisVersion?     @relation("CorrectionRevisedVersion", fields: [revisedThesisVersionId], references: [id], onDelete: Restrict)
+  submittedBy            User               @relation("CorrectionSubmissionSubmitter", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  documents              Document[]
+  reviews                CorrectionReview[]
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@unique([correctionOrderId, versionNumber])
+  @@unique([revisedThesisVersionId])
   @@index([submittedByUserId, submittedAt])
   @@map("correction_submissions")
+}
+
+model CorrectionReview {
+  id                         String                    @id @default(cuid())
+  correctionSubmissionId     String
+  stage                      CorrectionReviewStage
+  decision                   CorrectionReviewDecision
+  reviewerUserId             String
+  thesisExaminerAssignmentId String?
+  notes                      String?
+  createdAt                  DateTime                  @default(now())
+  correctionSubmission       CorrectionSubmission      @relation(fields: [correctionSubmissionId], references: [id], onDelete: Cascade)
+  reviewer                   User                      @relation("CorrectionReviewReviewer", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  thesisExaminerAssignment   ThesisExaminerAssignment? @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: Restrict)
+
+  @@unique([correctionSubmissionId, stage, reviewerUserId])
+  @@unique([correctionSubmissionId, thesisExaminerAssignmentId])
+  @@index([reviewerUserId, createdAt])
+  @@map("correction_reviews")
 }
 
 model CorrectionDocument {
@@ -1059,6 +1108,7 @@ model Document {
   thesisVersionId              String?
   thesisExaminerAssignmentId   String?
   correctionDocumentId         String?
+  correctionSubmissionId       String?
   evaluationFormId             String?
   applicationProposalVersionId String?
   progressReportVersionId      String?
@@ -1072,6 +1122,7 @@ model Document {
   thesisVersion                ThesisVersion?              @relation(fields: [thesisVersionId], references: [id], onDelete: SetNull)
   thesisExaminerAssignment     ThesisExaminerAssignment?   @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
   correctionDocument           CorrectionDocument?         @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
+  correctionSubmission         CorrectionSubmission?       @relation(fields: [correctionSubmissionId], references: [id], onDelete: SetNull)
   evaluationForm               EvaluationForm?             @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
   applicationProposalVersion   ApplicationProposalVersion? @relation(fields: [applicationProposalVersionId], references: [id], onDelete: SetNull)
   progressReportVersion        ProgressReportVersion?      @relation(fields: [progressReportVersionId], references: [id], onDelete: SetNull)
@@ -1087,6 +1138,7 @@ model Document {
   @@index([thesisId, version])
   @@index([thesisVersionId])
   @@index([thesisExaminerAssignmentId])
+  @@index([correctionSubmissionId])
   @@index([evaluationFormId])
   @@index([applicationProposalVersionId])
   @@index([progressReportVersionId])

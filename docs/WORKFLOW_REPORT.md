@@ -9,8 +9,8 @@ progress-Examiner, Supervisor sign-off, and Examiner-outcome workflow report.
 | Actor | Authority |
 |---|---|
 | Student | Own application evidence, assigned milestones, ethics evidence, thesis versions, and ordered correction submissions |
-| Supervisor | Proposed-Supervisor consent; assigned proposal reviews; active primary-Supervisor progress/readiness decisions |
-| Examiner | Exact assigned proposal/thesis version report and independent viva recommendation |
+| Supervisor | Proposed-Supervisor consent; assigned proposal reviews; active primary-Supervisor progress/readiness, ethics, and correction certification |
+| Examiner | Exact assigned proposal/thesis version report, independent viva recommendation, and required correction review |
 | PG Coordinator (`ADMINISTRATOR`) | Operational intake, assignments, admission execution, scheduling, completion recording, graduation, archive, reporting, and outbox recovery |
 | HOD | Department admission decision, examiner confirmation, final viva outcome, correction closure, and academic completion |
 
@@ -29,14 +29,16 @@ progress-Examiner, Supervisor sign-off, and Examiner-outcome workflow report.
 5. The Student submits a milestone-bound progress version. Only the active
    primary Supervisor may return or approve it; approval completes the
    milestone.
-6. Department ethics applicability/status and primary-Supervisor readiness
-   certification gate examination.
+6. Student ethics declaration passes through Supervisor recommendation, PG
+   Coordinator recording, and HOD confirmation; primary-Supervisor/HOD
+   readiness then gates examination.
 7. The PG Coordinator proposes exact current thesis-version Examiner
    assignments. The Examiner receives access only after HOD confirmation.
 8. Confirmed Examiners submit independent reports and viva recommendations.
    The PG Coordinator schedules; the HOD records the final outcome.
-9. Corrections are ordered from that outcome, versioned by the Student, and
-   closed by the HOD.
+9. Corrections are ordered from that outcome and originating thesis version.
+   Verified Student resubmission versions pass primary-Supervisor certification,
+   assigned-Examiner review when required, and final HOD closure.
 10. HOD academic completion, PG Coordinator completion recording, graduation,
     and archive are separate commands and records.
 

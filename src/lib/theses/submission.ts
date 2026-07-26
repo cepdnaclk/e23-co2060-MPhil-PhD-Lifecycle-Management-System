@@ -200,6 +200,7 @@ async function findThesisStudentContext(
               ThesisStatus.SUBMITTED,
               ThesisStatus.UNDER_EXAMINATION,
               ThesisStatus.CORRECTIONS_REQUIRED,
+              ThesisStatus.CORRECTIONS_APPROVED,
             ],
           },
         },
@@ -307,10 +308,14 @@ async function requireStudentThesisContext(auth: AuthenticatedUserContext) {
 
   const activeThesis = student.activeTheses[0] ?? null;
 
-  if (
-    activeThesis &&
-    activeThesis.status !== ThesisStatus.CORRECTIONS_REQUIRED
-  ) {
+  if (activeThesis?.status === ThesisStatus.CORRECTIONS_REQUIRED) {
+    throw new ThesisSubmissionError(
+      "Submit revised thesis evidence through the active HOD correction order.",
+      409,
+    );
+  }
+
+  if (activeThesis) {
     throw new ThesisSubmissionError(
       "Only one active thesis submission is allowed at a time.",
       409,
@@ -486,13 +491,21 @@ export async function submitThesis(
               ThesisStatus.SUBMITTED,
               ThesisStatus.UNDER_EXAMINATION,
               ThesisStatus.CORRECTIONS_REQUIRED,
+              ThesisStatus.CORRECTIONS_APPROVED,
             ],
           },
         },
         select: { id: true, status: true },
       });
 
-      if (thesis && thesis.status !== ThesisStatus.CORRECTIONS_REQUIRED) {
+      if (thesis?.status === ThesisStatus.CORRECTIONS_REQUIRED) {
+        throw new ThesisSubmissionError(
+          "Submit revised thesis evidence through the active HOD correction order.",
+          409,
+        );
+      }
+
+      if (thesis) {
         throw new ThesisSubmissionError(
           "Only one active thesis submission is allowed at a time.",
           409,

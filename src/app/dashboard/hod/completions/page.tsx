@@ -8,10 +8,20 @@ export default async function HodCompletionsPage() {
   await getServerDashboardContext("hod");
   const [corrections, students] = await Promise.all([
     prisma.correctionOrder.findMany({
-      where: { status: CorrectionOrderStatus.SUBMITTED },
+      where: {
+        status: {
+          in: [
+            CorrectionOrderStatus.SUPERVISOR_CERTIFIED,
+            CorrectionOrderStatus.EXAMINER_APPROVED,
+          ],
+        },
+      },
       select: {
         id: true,
         requirementType: true,
+        requiresExaminerReview: true,
+        status: true,
+        requirements: true,
         thesis: { select: { student: { select: { user: { select: { displayName: true } } } } } },
         _count: { select: { submissions: true } },
       },
@@ -41,7 +51,15 @@ export default async function HodCompletionsPage() {
     <div className="space-y-6 p-4 pt-6 md:p-8">
       <div><h1 className="text-3xl font-bold tracking-tight">Completion decisions</h1><p className="mt-2 text-muted-foreground">Close submitted corrections and approve academic completion.</p></div>
       <HodCompletionDecisionPanel
-        corrections={corrections.map((order) => ({ id: order.id, studentName: order.thesis.student.user.displayName, requirementType: order.requirementType, submissionCount: order._count.submissions }))}
+        corrections={corrections.map((order) => ({
+          id: order.id,
+          studentName: order.thesis.student.user.displayName,
+          requirementType: order.requirementType,
+          requiresExaminerReview: order.requiresExaminerReview,
+          status: order.status,
+          requirements: order.requirements,
+          submissionCount: order._count.submissions,
+        }))}
         students={students.map((student) => ({ id: student.id, studentName: student.user.displayName, thesisTitle: student.theses[0]?.title ?? "Thesis" }))}
       />
     </div>

@@ -101,13 +101,25 @@ export function HodApplicationDecisionPanel({
 export function HodExaminationDecisionPanel({
   assignments,
   vivas,
+  correctionVivas,
 }: {
   assignments: Array<{ id: string; thesisTitle: string; examinerName: string }>;
   vivas: Array<{ id: string; thesisTitle: string; recommendationCount: number }>;
+  correctionVivas: Array<{
+    id: string;
+    thesisTitle: string;
+    outcome: "MINOR_CORRECTIONS" | "MAJOR_CORRECTIONS";
+  }>;
 }) {
   const router = useRouter();
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [outcomes, setOutcomes] = useState<Record<string, string>>({});
+  const [correctionRequirements, setCorrectionRequirements] = useState<
+    Record<string, string>
+  >({});
+  const [examinerReview, setExaminerReview] = useState<Record<string, boolean>>(
+    {},
+  );
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   async function act(path: string, body: unknown, key: string) {
@@ -155,6 +167,73 @@ export function HodExaminationDecisionPanel({
           </CardContent></Card>
         ))}
       </section>
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Order corrections</h2>
+        {correctionVivas.length === 0 ? (
+          <p className="text-muted-foreground">
+            No recorded correction outcomes await an order.
+          </p>
+        ) : (
+          correctionVivas.map((viva) => {
+            const isMajor = viva.outcome === "MAJOR_CORRECTIONS";
+            return (
+              <Card key={viva.id}>
+                <CardContent className="space-y-3 pt-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="font-medium">{viva.thesisTitle}</p>
+                    <Badge>{viva.outcome.replaceAll("_", " ")}</Badge>
+                  </div>
+                  <Textarea
+                    value={correctionRequirements[viva.id] ?? ""}
+                    onChange={(event) =>
+                      setCorrectionRequirements((current) => ({
+                        ...current,
+                        [viva.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="Ordered correction requirements (at least 20 characters)"
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isMajor || examinerReview[viva.id] === true}
+                      disabled={isMajor}
+                      onChange={(event) =>
+                        setExaminerReview((current) => ({
+                          ...current,
+                          [viva.id]: event.target.checked,
+                        }))
+                      }
+                    />
+                    Require assigned Thesis Examiner review
+                    {isMajor ? " (mandatory for major corrections)" : ""}
+                  </label>
+                  <Button
+                    disabled={
+                      busy === viva.id ||
+                      (correctionRequirements[viva.id]?.trim().length ?? 0) < 20
+                    }
+                    onClick={() =>
+                      void act(
+                        `/api/hod/vivas/${viva.id}/corrections`,
+                        {
+                          requirementType: isMajor ? "MAJOR" : "MINOR",
+                          requirements: correctionRequirements[viva.id],
+                          requiresExaminerReview:
+                            isMajor || examinerReview[viva.id] === true,
+                        },
+                        viva.id,
+                      )
+                    }
+                  >
+                    Issue correction order
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </section>
     </div>
   );
 }
@@ -163,12 +242,23 @@ export function HodCompletionDecisionPanel({
   corrections,
   students,
 }: {
-  corrections: Array<{ id: string; studentName: string; requirementType: string; submissionCount: number }>;
+  corrections: Array<{
+    id: string;
+    studentName: string;
+    requirementType: string;
+    requiresExaminerReview: boolean;
+    status: string;
+    requirements: string;
+    submissionCount: number;
+  }>;
   students: Array<{ id: string; studentName: string; thesisTitle: string }>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [correctionNotes, setCorrectionNotes] = useState<
+    Record<string, string>
+  >({});
   async function act(path: string, body: unknown, key: string) {
     setBusy(key);
     setError(null);
@@ -186,7 +276,71 @@ export function HodCompletionDecisionPanel({
       {error && <p className="text-sm text-destructive">{error}</p>}
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Correction completion</h2>
-        {corrections.map((order) => <Card key={order.id}><CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6"><div><p className="font-medium">{order.studentName}</p><p className="text-sm text-muted-foreground">{order.requirementType}; {order.submissionCount} submission(s)</p></div><Button disabled={busy === order.id || order.submissionCount === 0} onClick={() => void act(`/api/hod/correction-orders/${order.id}/approve-completion`, {}, order.id)}>Approve correction completion</Button></CardContent></Card>)}
+        {corrections.map((order) => (
+          <Card key={order.id}>
+            <CardContent className="space-y-3 pt-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">{order.studentName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {order.requirementType}; {order.status.replaceAll("_", " ")};{" "}
+                    {order.submissionCount} submission(s)
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {order.requirements}
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  Examiner review{" "}
+                  {order.requiresExaminerReview ? "required" : "not required"}
+                </Badge>
+              </div>
+              <Textarea
+                value={correctionNotes[order.id] ?? ""}
+                onChange={(event) =>
+                  setCorrectionNotes((current) => ({
+                    ...current,
+                    [order.id]: event.target.value,
+                  }))
+                }
+                placeholder="HOD correction decision notes"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  disabled={busy === order.id || order.submissionCount === 0}
+                  onClick={() =>
+                    void act(
+                      `/api/hod/corrections/${order.id}/decision`,
+                      {
+                        decision: "APPROVE",
+                        notes: correctionNotes[order.id],
+                      },
+                      order.id,
+                    )
+                  }
+                >
+                  Approve correction completion
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={busy === order.id}
+                  onClick={() =>
+                    void act(
+                      `/api/hod/corrections/${order.id}/decision`,
+                      {
+                        decision: "RETURN",
+                        notes: correctionNotes[order.id],
+                      },
+                      order.id,
+                    )
+                  }
+                >
+                  Return to Student
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
         {corrections.length === 0 && <p className="text-muted-foreground">No correction orders await closure.</p>}
       </section>
       <section className="space-y-3">

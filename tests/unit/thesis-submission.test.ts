@@ -43,4 +43,22 @@ describe("thesis submission contracts", () => {
       ),
     ).toThrow("Invalid thesis status transition: SUBMITTED -> FINAL_ARCHIVE");
   });
+
+  it("prevents ordinary thesis resubmission from bypassing corrections", () => {
+    expect(() =>
+      assertValidThesisStatusTransition(
+        ThesisStatus.CORRECTIONS_REQUIRED,
+        ThesisStatus.SUBMITTED,
+      ),
+    ).toThrow(
+      "Invalid thesis status transition: CORRECTIONS_REQUIRED -> SUBMITTED",
+    );
+
+    expect(() =>
+      assertValidThesisStatusTransition(
+        ThesisStatus.CORRECTIONS_REQUIRED,
+        ThesisStatus.CORRECTIONS_APPROVED,
+      ),
+    ).not.toThrow();
+  });
 });

@@ -5,32 +5,43 @@ import { prisma } from "@/lib/prisma/client";
 export default async function StudentThesisCorrectionsPage() {
   const { auth } = await getServerDashboardContext("student");
 
-  const student = await prisma.student.findUnique({
-    where: { userId: auth.userId },
+  const order = await prisma.correctionOrder.findFirst({
+    where: {
+      thesis: {
+        student: { userId: auth.userId },
+        isArchived: false,
+      },
+    },
+    orderBy: { createdAt: "desc" },
     select: {
-      theses: {
-        orderBy: { updatedAt: "desc" },
-        take: 1,
+      id: true,
+      requirementType: true,
+      requiresExaminerReview: true,
+      requirements: true,
+      dueDate: true,
+      status: true,
+      thesis: { select: { title: true } },
+      submissions: {
+        orderBy: { versionNumber: "desc" },
         select: {
           id: true,
-          title: true,
-          status: true,
-          corrections: {
-            orderBy: { createdAt: "desc" },
+          versionNumber: true,
+          responseSummary: true,
+          submittedAt: true,
+          returnedAt: true,
+          returnReason: true,
+          documents: {
+            where: { isDeleted: false },
+            select: { id: true, fileName: true },
+          },
+          reviews: {
+            orderBy: { createdAt: "asc" },
             select: {
               id: true,
-              correctionType: true,
-              description: true,
-              isApproved: true,
-              createdAt: true,
-              documents: {
-                select: {
-                  id: true,
-                  fileName: true,
-                  storagePath: true,
-                  version: true,
-                },
-              },
+              stage: true,
+              decision: true,
+              notes: true,
+              reviewer: { select: { displayName: true } },
             },
           },
         },
@@ -38,19 +49,17 @@ export default async function StudentThesisCorrectionsPage() {
     },
   });
 
-  const thesis = student?.theses[0] ?? null;
-
   return (
     <ThesisCorrectionPanel
-      thesis={
-        thesis
+      order={
+        order
           ? {
-              ...thesis,
-              status: thesis.status,
-              corrections: thesis.corrections.map((correction) => ({
-                ...correction,
-                correctionType: correction.correctionType,
-                createdAt: correction.createdAt.toISOString(),
+              ...order,
+              dueDate: order.dueDate?.toISOString() ?? null,
+              submissions: order.submissions.map((submission) => ({
+                ...submission,
+                submittedAt: submission.submittedAt.toISOString(),
+                returnedAt: submission.returnedAt?.toISOString() ?? null,
               })),
             }
           : null

@@ -1,4 +1,3 @@
-import { CorrectionType } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,7 +6,7 @@ import {
 } from "@/lib/auth/schemas";
 import { progressReportUploadRequestSchema } from "@/lib/progress-reports/schemas";
 import {
-  correctionSubmissionSchema,
+  orderedCorrectionSubmissionSchema,
   thesisSubmissionSchema,
 } from "@/lib/theses/schemas";
 import { scheduleVivaSchema } from "@/lib/vivas/schemas";
@@ -61,14 +60,9 @@ describe("shared input validation schemas", () => {
   });
 
   it("rejects invalid correction uploads", () => {
-    const result = correctionSubmissionSchema.safeParse({
-      correctionType: CorrectionType.MINOR,
-      description: "Updated the requested sections.",
-      document: {
-        fileName: "",
-        mimeType: "application/pdf",
-        sizeBytes: 1024,
-      },
+    const result = orderedCorrectionSubmissionSchema.safeParse({
+      responseSummary: "Too short",
+      uploadSessionId: "not-a-uuid",
     });
 
     expect(result.success).toBe(false);

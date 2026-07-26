@@ -10,7 +10,11 @@ export default async function AdminThesesPage() {
   const theses = await prisma.thesis.findMany({
     where: {
       status: {
-        in: [ThesisStatus.CORRECTIONS_REQUIRED, ThesisStatus.FINAL_ARCHIVE],
+        in: [
+          ThesisStatus.CORRECTIONS_REQUIRED,
+          ThesisStatus.CORRECTIONS_APPROVED,
+          ThesisStatus.FINAL_ARCHIVE,
+        ],
       },
     },
     orderBy: { updatedAt: "desc" },
@@ -23,19 +27,29 @@ export default async function AdminThesesPage() {
           user: { select: { displayName: true, email: true } },
         },
       },
-      corrections: {
+      correctionOrders: {
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
-          correctionType: true,
-          description: true,
-          isApproved: true,
+          requirementType: true,
+          requiresExaminerReview: true,
+          requirements: true,
+          status: true,
           createdAt: true,
-          documents: {
+          submissions: {
+            orderBy: { versionNumber: "desc" },
             select: {
               id: true,
-              fileName: true,
-              storagePath: true,
+              versionNumber: true,
+              responseSummary: true,
+              submittedAt: true,
+              documents: {
+                where: { isDeleted: false },
+                select: {
+                  id: true,
+                  fileName: true,
+                },
+              },
             },
           },
         },
@@ -49,10 +63,13 @@ export default async function AdminThesesPage() {
         theses={theses.map((thesis) => ({
           ...thesis,
           status: thesis.status,
-          corrections: thesis.corrections.map((correction) => ({
-            ...correction,
-            correctionType: correction.correctionType,
-            createdAt: correction.createdAt.toISOString(),
+          correctionOrders: thesis.correctionOrders.map((order) => ({
+            ...order,
+            createdAt: order.createdAt.toISOString(),
+            submissions: order.submissions.map((submission) => ({
+              ...submission,
+              submittedAt: submission.submittedAt.toISOString(),
+            })),
           })),
         }))}
       />

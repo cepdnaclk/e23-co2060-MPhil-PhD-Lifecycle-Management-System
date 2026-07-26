@@ -108,6 +108,12 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           description: "Review assigned students and their progress.",
           href: "/dashboard/supervisor",
         },
+        {
+          id: "certify-corrections",
+          label: "Certify Corrections",
+          description: "Review exact correction versions from assigned Students.",
+          href: "/dashboard/supervisor/corrections",
+        },
       ];
     case "examiner":
       return [
@@ -127,7 +133,7 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "track-corrections",
           label: "Track Corrections",
           description: "Review corrections that need follow-up.",
-          href: "/dashboard/examiner",
+          href: "/dashboard/examiner/corrections",
         },
       ];
     case "admin":
@@ -170,8 +176,8 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
         },
         {
           id: "finalize-theses",
-          label: "Finalize Theses",
-          description: "Approve corrections and archive theses.",
+          label: "Monitor Thesis Corrections",
+          description: "Monitor ordered correction versions and decisions.",
           href: "/dashboard/admin/theses",
         },
         {
@@ -488,13 +494,26 @@ async function buildExaminerSummary(
           },
         },
       }),
-      prisma.correctionDocument.count({
+      prisma.correctionOrder.count({
         where: {
-          isApproved: false,
+          status: "SUPERVISOR_CERTIFIED",
+          requiresExaminerReview: true,
           thesis: {
             examinerAssignments: {
               some: {
                 examinerId: examiner.id,
+                status: "ACCEPTED",
+                endedAt: null,
+              },
+            },
+          },
+          submissions: {
+            some: {
+              reviews: {
+                none: {
+                  reviewerUserId: auth.userId,
+                  stage: "EXAMINER",
+                },
               },
             },
           },
@@ -512,6 +531,7 @@ async function buildExaminerSummary(
               ThesisStatus.SUBMITTED,
               ThesisStatus.UNDER_EXAMINATION,
               ThesisStatus.CORRECTIONS_REQUIRED,
+              ThesisStatus.CORRECTIONS_APPROVED,
             ],
           },
         },
@@ -715,7 +735,17 @@ async function buildHodSummary(): Promise<DashboardSummary> {
       where: { status: "PENDING", confirmedAt: null },
     }),
     prisma.correctionOrder.count({
-      where: { status: { in: ["ORDERED", "SUBMITTED", "RETURNED"] } },
+      where: {
+        status: {
+          in: [
+            "ORDERED",
+            "SUBMITTED",
+            "RETURNED",
+            "SUPERVISOR_CERTIFIED",
+            "EXAMINER_APPROVED",
+          ],
+        },
+      },
     }),
     prisma.programmeCompletion.count({
       where: { status: "PENDING" },

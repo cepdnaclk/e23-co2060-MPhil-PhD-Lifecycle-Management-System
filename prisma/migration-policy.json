@@ -30,6 +30,11 @@
       "sha256": "0f85981a92a4a8c97c406e09d235a5778e12a38757827076c1d85245d8091dcc",
       "productionDeploymentBlocked": true,
       "reason": "This migration updates legacy ethics records into the staged Department workflow and adds a partial uniqueness constraint for one active record per Student. It must remain blocked for populated deployment until duplicate active records are reconciled and the legacy-record transition to HOD confirmation is rehearsed with rollback or roll-forward evidence."
+    },
+    "20260726223000_bind_correction_reviews_and_resubmissions": {
+      "sha256": "94a4f8afdcdbb59a387485c5f996e532e7abd46a3dba580ace69340f61ff8b7e",
+      "productionDeploymentBlocked": true,
+      "reason": "This migration backfills originating thesis-version links for existing correction orders, makes legacy major orders require Examiner review, and adds exact revised-version, evidence, and reviewer relations. It must remain blocked for populated deployment until legacy response-only submissions are reconciled, every order has an unambiguous originating version, and rollback or roll-forward rehearsal evidence is approved."
     }
   }
 }
