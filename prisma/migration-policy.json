@@ -11,6 +11,11 @@
       "productionDeploymentBlocked": true,
       "reason": "WP-04 expands and backfills logical proposal/thesis versions, updates legacy relationships, and replaces the proposal evaluation uniqueness index. It must not be applied to populated production data until a sanitized rehearsal confirms the backfill, ambiguous records are reviewed, and rollback/roll-forward evidence is approved."
     },
+    "20260726135000_preserve_legacy_ethics_state": {
+      "sha256": "5849957b919350380ad812348357779640f452cb9a333b4610cc9a74d354e414",
+      "productionDeploymentBlocked": true,
+      "reason": "This migration preserves manually reintroduced legacy ethics-review columns in a temporary reconciliation table before removing the obsolete columns and enum. It must remain blocked until a populated rehearsal proves every legacy record is captured and the paired reconciliation migration restores equivalent staged-workflow state."
+    },
     "20260726140000_add_department_v1_core_domain": {
       "sha256": "8c60e3e6b53f9251e60e11cc04e9d65bab210d11b3605e6cd4199b5a0ec0c53c",
       "productionDeploymentBlocked": true,
@@ -40,6 +45,11 @@
       "sha256": "5887ba09a0c02afbfe8930e6e14fcdec5f19468ae72f7288d3feb11929172d7f",
       "productionDeploymentBlocked": true,
       "reason": "This migration replaces the legacy ADMIN_RECORDED completion label, exact-version-binds existing completion records, and backfills completion, graduation, and archive state across Students, registrations, and theses. It must remain blocked for populated deployment until ambiguous current thesis versions are reconciled and the lifecycle backfill and rollback or roll-forward plan are rehearsed."
+    },
+    "20260726232000_reconcile_legacy_ethics_state": {
+      "sha256": "2ac6a4d6845b437fb614d9414920f443ad703dccaf62e0b9801c14bd4b6aacd4",
+      "productionDeploymentBlocked": true,
+      "reason": "This migration maps preserved legacy ethics-review state into the staged Department workflow and then removes the temporary reconciliation table. It must remain blocked until a populated rehearsal verifies record counts, status mapping, reviewer identity translation, and that legacy approvals or rejections are not treated as final HOD decisions."
     }
   }
 }

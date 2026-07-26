@@ -580,6 +580,7 @@ Available scripts:
 | `npm run prisma:migrate` | Run development migrations |
 | `npm run database:reset` | Destructively reset a development database and run migrations |
 | `npm run database:seed` | Idempotently seed the four programme rules and optional existing Firebase-linked users |
+| `npm run database:reconcile-migration-ledger` | Dry-run the guarded obsolete-baseline ledger check; see the operations runbook before any `--apply` use |
 | `npm test` | Run Vitest |
 | `npm run test:unit` | Run unit tests only |
 | `npm run test:integration` | Run integration tests only |

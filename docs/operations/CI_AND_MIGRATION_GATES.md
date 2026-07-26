@@ -108,7 +108,44 @@ Before any populated-environment deployment:
 
 Application rollback uses the retained prior artifact and lockfile only when it remains schema-compatible. Prisma has no automatic down-migration guarantee. If a migration corrupts or removes data, recover from the verified backup or execute an approved roll-forward repair; do not improvise a destructive reversal.
 
-## 8. WP-02 exit evidence
+## 8. Populated migration rehearsal addendum — 26 July 2026
+
+The configured populated development database was cloned into a disposable
+local PostgreSQL instance without modifying the shared database. All 24
+application tables and 176 rows were copied with table-by-table count
+verification. The first pending Department V1 migration initially failed
+because legacy ethics-review columns had been manually reintroduced after the
+July lifecycle migration.
+
+Two paired, production-blocked migrations now preserve those legacy values
+before the Department schema change and reconcile them into the staged ethics
+workflow afterward:
+
+- `20260726135000_preserve_legacy_ethics_state`
+- `20260726232000_reconcile_legacy_ethics_state`
+
+The populated clone then applied every pending migration with zero schema
+drift, no unresolved document-migration issues, and no loss of users,
+applications, students, documents, ethics records, progress reports,
+proposals, theses, or vivas. The two legacy submitted ethics records became
+`REQUIRED`, `PENDING`, and `SUPERVISOR_RECOMMENDATION`; the temporary
+reconciliation table was removed.
+
+The database-only migration `20260430160021_test` was recovered byte-for-byte
+from Git history and archived under `docs/operations/recovered-migrations`.
+Its checksum matches the populated database ledger, but it must not be restored
+to the active Prisma migration directory because it duplicates the active
+`20260501173000_backlog_complete_init` baseline and breaks empty-database
+deployment. The guarded ledger-only repair and approval sequence are documented
+in `docs/operations/MIGRATION_HISTORY_RECONCILIATION.md`.
+
+A separate empty database successfully applied all 16 active migrations,
+reported an up-to-date migration status, and produced zero schema drift. This
+rehearsal is evidence for review, not authorization to migrate the shared
+database; backup, ledger reconciliation approval, production-blocker review,
+and a maintenance/rollback or roll-forward decision remain mandatory.
+
+## 9. WP-02 exit evidence
 
 The local checkpoint on 25 July 2026 produced:
 

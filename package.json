@@ -17,6 +17,7 @@
     "prisma:migrate:check": "node scripts/check-migration-policy.mjs",
     "database:reset": "prisma migrate reset --force",
     "database:seed": "prisma db seed",
+    "database:reconcile-migration-ledger": "node scripts/reconcile-obsolete-baseline-migration.mjs",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
