@@ -11,6 +11,7 @@ import {
 const schema = z.object({
   narrative: z.string().trim().min(20).max(20_000),
   changeSummary: z.string().trim().max(2_000).optional(),
+  uploadSessionId: z.string().uuid().optional(),
 });
 
 export const POST = withAuth<{ id: string }>(async (request: NextRequest, context) => {

@@ -83,7 +83,7 @@ describe("examiner assignment rules", () => {
         ],
       },
       examinerAssignments: [],
-      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
+      readinessCertification: { decision: ReadinessDecision.HOD_APPROVED },
       documents: [
         {
           id: "doc-1",
@@ -134,7 +134,7 @@ describe("examiner assignment rules", () => {
         supervisorAssignments: [],
       },
       examinerAssignments: [],
-      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
+      readinessCertification: { decision: ReadinessDecision.HOD_APPROVED },
       documents: [
         {
           id: "doc-1",

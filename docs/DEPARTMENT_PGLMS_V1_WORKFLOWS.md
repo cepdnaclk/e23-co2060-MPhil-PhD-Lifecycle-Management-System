@@ -1,5 +1,9 @@
 # Department PGLMS Version 1 Workflows
 
+This document defines the approved target workflows. The implementation
+register records current evidence and the remaining ethics/correction deltas;
+target arrows must not be read as proof that every stage is implemented.
+
 ## Application and admission
 
 ```text

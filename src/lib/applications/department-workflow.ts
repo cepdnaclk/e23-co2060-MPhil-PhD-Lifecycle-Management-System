@@ -4,6 +4,7 @@ import {
   SupervisorConsentStatus,
   UserRole,
 } from "@prisma/client";
+import { createHash, randomBytes } from "node:crypto";
 
 import {
   appendLifecycleEventAndEnqueue,
@@ -21,6 +22,24 @@ export class DepartmentApplicationError extends Error {
     this.name = "DepartmentApplicationError";
     this.status = status;
   }
+}
+
+const REVISION_CAPABILITY_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+
+function buildRevisionUrl(applicationId: string, token: string) {
+  const path = `/apply/revise?applicationId=${encodeURIComponent(applicationId)}&token=${encodeURIComponent(token)}`;
+  return process.env.APP_BASE_URL
+    ? `${process.env.APP_BASE_URL.replace(/\/$/, "")}${path}`
+    : `http://127.0.0.1:3000${path}`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 export async function recordProposedSupervisorConsent(
@@ -268,6 +287,14 @@ export async function recordHodAdmissionDecision(
     );
   }
 
+  const revisionToken =
+    input.decision === DepartmentDecision.REVISION_REQUIRED
+      ? randomBytes(32).toString("base64url")
+      : null;
+  const revisionTokenHash = revisionToken
+    ? createHash("sha256").update(revisionToken).digest("hex")
+    : null;
+
   return prisma.$transaction(async (tx) => {
     const application = await tx.application.findUnique({
       where: { id: applicationId },
@@ -275,6 +302,8 @@ export async function recordHodAdmissionDecision(
         id: true,
         departmentDecision: true,
         supervisorConsentStatus: true,
+        applicantName: true,
+        applicantEmail: true,
         proposalReviewerAssignments: {
           where: {
             proposalVersion: { isCurrent: true },
@@ -321,19 +350,47 @@ export async function recordHodAdmissionDecision(
         hodDecisionByUserId: auth.userId,
         hodDecisionAt: new Date(),
         hodDecisionReason: input.reason,
+        revisionCapabilityTokenHash: revisionTokenHash,
+        revisionCapabilityExpiresAt: revisionToken
+          ? new Date(Date.now() + REVISION_CAPABILITY_LIFETIME_MS)
+          : null,
       },
     });
-    await appendLifecycleEvent(tx as never, {
-      eventKey: `application:${application.id}:hod-decision:${input.decision.toLowerCase()}`,
-      eventType: LIFECYCLE_EVENT.HOD_ADMISSION_DECIDED,
-      aggregateType: "Application",
-      aggregateId: application.id,
-      actorUserId: auth.userId,
-      actorRole: auth.role,
-      previousState: DepartmentDecision.PENDING,
-      newState: input.decision,
-      metadata: { reason: input.reason },
-    });
+    const revisionUrl = revisionToken
+      ? buildRevisionUrl(application.id, revisionToken)
+      : null;
+    await appendLifecycleEventAndEnqueue(
+      tx as never,
+      {
+        eventKey: `application:${application.id}:hod-decision:${input.decision.toLowerCase()}`,
+        eventType: LIFECYCLE_EVENT.HOD_ADMISSION_DECIDED,
+        aggregateType: "Application",
+        aggregateId: application.id,
+        actorUserId: auth.userId,
+        actorRole: auth.role,
+        previousState: DepartmentDecision.PENDING,
+        newState: input.decision,
+        metadata: { reason: input.reason },
+      },
+      revisionUrl
+        ? [
+            {
+              eventKey: `application:${application.id}:revision-request:email`,
+              title: "Proposal revision requested",
+              message: input.reason,
+              actionUrl: revisionUrl,
+              payload: {
+                email: {
+                  to: application.applicantEmail,
+                  subject: "PGLMS proposal revision requested",
+                  text: `Hello ${application.applicantName},\n\nThe Department requested a proposal revision:\n${input.reason}\n\nSubmit the protected revision here: ${revisionUrl}`,
+                  html: `<p>Hello ${escapeHtml(application.applicantName)},</p><p>The Department requested a proposal revision.</p><p>${escapeHtml(input.reason)}</p><p><a href="${escapeHtml(revisionUrl)}">Submit the protected revision</a></p>`,
+                },
+              },
+            },
+          ]
+        : [],
+    );
 
     return updated;
   });

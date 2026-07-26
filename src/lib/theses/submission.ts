@@ -6,6 +6,7 @@ import {
   DocumentType,
   ProgramType,
   ProposalStatus,
+  ReadinessDecision,
   RegistrationStatus,
   ThesisStatus,
   UploadPurpose,
@@ -70,6 +71,7 @@ type ThesisStudentContext = {
     id: string;
     status: ProposalStatus;
   } | null;
+  readinessDecision: ReadinessDecision | null;
   activeTheses: ActiveThesisRecord[];
   supervisorAssignments: Array<{
     supervisor: {
@@ -168,6 +170,12 @@ async function findThesisStudentContext(
         },
         take: 1,
       },
+      readinessCertifications: {
+        take: 1,
+        select: {
+          decision: true,
+        },
+      },
       supervisorAssignments: {
         select: {
           supervisor: {
@@ -240,6 +248,8 @@ async function findThesisStudentContext(
       hasActiveRegistration: student.registrations.length > 0,
       hasEthicsSubmission: student.ethicsApprovals.length > 0,
       approvedProposal: student.researchProposals[0] ?? null,
+      readinessDecision:
+        student.readinessCertifications[0]?.decision ?? null,
       activeTheses: student.theses,
       supervisorAssignments: student.supervisorAssignments,
     };
@@ -263,6 +273,13 @@ async function requireStudentThesisContext(auth: AuthenticatedUserContext) {
   if (!student.hasEthicsSubmission) {
     throw new ThesisSubmissionError(
       "Ethics documents must be submitted before thesis submission.",
+      409,
+    );
+  }
+
+  if (student.readinessDecision !== ReadinessDecision.HOD_APPROVED) {
+    throw new ThesisSubmissionError(
+      "Student request, primary Supervisor certification, and HOD approval are required before thesis submission.",
       409,
     );
   }
@@ -491,6 +508,10 @@ export async function submitThesis(
             status: ThesisStatus.SUBMITTED,
           },
           select: { id: true, status: true },
+        });
+        await tx.thesisReadinessCertification.update({
+          where: { studentId: student.id },
+          data: { thesisId: thesis.id },
         });
       }
 

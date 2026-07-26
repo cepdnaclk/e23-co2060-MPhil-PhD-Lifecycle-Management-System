@@ -8,6 +8,16 @@ export default async function StudentThesisSubmitPage() {
   const student = await prisma.student.findUnique({
     where: { userId: auth.userId },
     select: {
+      readinessCertifications: {
+        take: 1,
+        select: {
+          id: true,
+          decision: true,
+          studentMessage: true,
+          supervisorNotes: true,
+          hodNotes: true,
+        },
+      },
       theses: {
         orderBy: { updatedAt: "desc" },
         take: 1,
@@ -35,9 +45,11 @@ export default async function StudentThesisSubmitPage() {
   });
 
   const thesis = student?.theses[0] ?? null;
+  const readiness = student?.readinessCertifications[0] ?? null;
 
   return (
     <ThesisSubmissionPanel
+      readiness={readiness}
       thesis={
         thesis
           ? {

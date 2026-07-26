@@ -2,6 +2,7 @@ import {
   AcademicStatus,
   ProgramType,
   ProposalStatus,
+  ReadinessDecision,
   ThesisStatus,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -79,6 +80,9 @@ function eligibleStudent(registrations = [{ id: "registration-1" }]) {
     },
     registrations,
     ethicsApprovals: [{ id: "ethics-1" }],
+    readinessCertifications: [
+      { decision: ReadinessDecision.HOD_APPROVED },
+    ],
     researchProposals: [{ id: "proposal-1", status: ProposalStatus.APPROVED }],
     theses: [],
     supervisorAssignments: [],
@@ -134,6 +138,9 @@ describe("thesis staged submission route", () => {
           aggregate: vi.fn().mockResolvedValue({ _max: { versionNumber: null } }),
           updateMany: vi.fn().mockResolvedValue({ count: 0 }),
           create: vi.fn().mockResolvedValue({}),
+        },
+        thesisReadinessCertification: {
+          update: vi.fn().mockResolvedValue({}),
         },
         document: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
         stagedUploadFile: { update: vi.fn().mockResolvedValue({}) },

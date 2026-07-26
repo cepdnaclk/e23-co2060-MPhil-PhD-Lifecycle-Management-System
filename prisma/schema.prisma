@@ -81,7 +81,9 @@ enum EthicsRecordStatus {
 
 enum ReadinessDecision {
   PENDING
+  REQUESTED
   CERTIFIED
+  HOD_APPROVED
   RETURNED
   REVOKED
 }
@@ -228,6 +230,7 @@ enum NotificationEvent {
   EXAMINER_REVIEW_SUBMITTED
   ADMIN_REVIEW_RELEASED
   THESIS_DOWNLOADED
+  THESIS_STATUS_CHANGED
   REGISTRATION_EXPIRY_APPROACHING
   VIVA_SCHEDULED
   CORRECTIONS_REQUIRED
@@ -274,6 +277,7 @@ model User {
   hodDecidedApplications          Application[]                  @relation("ApplicationHodDecision")
   proposalReviewerAssignments     ProposalReviewerAssignment[]   @relation("ProposalReviewerUser")
   readinessCertifications         ThesisReadinessCertification[] @relation("ReadinessCertifier")
+  readinessApprovals              ThesisReadinessCertification[] @relation("ReadinessHodApprover")
   hodConfirmedExaminerAssignments ThesisExaminerAssignment[]     @relation("ExaminerAssignmentHod")
   examinerReports                 ThesisExaminerReport[]         @relation("ExaminerReportAuthor")
   vivaRecommendations             VivaRecommendation[]           @relation("VivaRecommendationAuthor")
@@ -345,29 +349,29 @@ model Supervisor {
 }
 
 model Examiner {
-  id                    String                     @id @default(cuid())
-  userId                String                     @unique
-  department            String?
-  specialization        String?
-  user                  User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
-  assignments           ThesisExaminerAssignment[]
-  proposalEvaluations   EvaluationForm[]
-  createdAt             DateTime                   @default(now())
-  updatedAt             DateTime                   @updatedAt
+  id                  String                     @id @default(cuid())
+  userId              String                     @unique
+  department          String?
+  specialization      String?
+  user                User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments         ThesisExaminerAssignment[]
+  proposalEvaluations EvaluationForm[]
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
 
   @@map("examiners")
 }
 
 model Administrator {
-  id                              String                     @id @default(cuid())
-  userId                          String                     @unique
-  department                      String?
-  user                            User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
-  approvals                       CorrectionDocument[]
-  supervisorAssignments           SupervisorAssignment[]     @relation("SupervisorAssignmentsAssignedBy")
-  thesisExaminerAssignments       ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
-  createdAt                       DateTime                   @default(now())
-  updatedAt                       DateTime                   @updatedAt
+  id                        String                     @id @default(cuid())
+  userId                    String                     @unique
+  department                String?
+  user                      User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  approvals                 CorrectionDocument[]
+  supervisorAssignments     SupervisorAssignment[]     @relation("SupervisorAssignmentsAssignedBy")
+  thesisExaminerAssignments ThesisExaminerAssignment[] @relation("ThesisExaminerAssignmentsAssignedBy")
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
 
   @@map("administrators")
 }
@@ -404,6 +408,8 @@ model Application {
   hodDecisionByUserId         String?
   hodDecisionAt               DateTime?
   hodDecisionReason           String?
+  revisionCapabilityTokenHash String?                      @unique
+  revisionCapabilityExpiresAt DateTime?
   studentId                   String?                      @unique
   isArchived                  Boolean                      @default(false)
   student                     Student?                     @relation(fields: [studentId], references: [id], onDelete: SetNull)
@@ -437,6 +443,7 @@ model ApplicationProposalVersion {
   application         Application                  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   reviewerAssignments ProposalReviewerAssignment[]
   reviews             ProposalReview[]
+  documents           Document[]
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
 
@@ -659,27 +666,27 @@ model SupervisorAssignment {
 }
 
 model ProgressReport {
-  id                      String                   @id @default(cuid())
-  studentId               String
-  milestoneId             String?                  @unique
-  periodLabel             String
-  narrative               String
-  status                  ProgressSubmissionStatus @default(DRAFT)
-  currentVersion          Int                      @default(1)
-  submittedAt             DateTime?
-  returnedAt              DateTime?
-  returnedByUserId        String?
-  returnReason            String?
-  approvedAt              DateTime?
-  approvedByUserId        String?
-  isOverdue               Boolean                  @default(false)
-  isArchived              Boolean                  @default(false)
-  student                 Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  milestone               StudentMilestone?        @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
-  versions                ProgressReportVersion[]
-  documents               Document[]
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  id               String                   @id @default(cuid())
+  studentId        String
+  milestoneId      String?                  @unique
+  periodLabel      String
+  narrative        String
+  status           ProgressSubmissionStatus @default(DRAFT)
+  currentVersion   Int                      @default(1)
+  submittedAt      DateTime?
+  returnedAt       DateTime?
+  returnedByUserId String?
+  returnReason     String?
+  approvedAt       DateTime?
+  approvedByUserId String?
+  isOverdue        Boolean                  @default(false)
+  isArchived       Boolean                  @default(false)
+  student          Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  milestone        StudentMilestone?        @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
+  versions         ProgressReportVersion[]
+  documents        Document[]
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 
   @@unique([studentId, periodLabel])
   @@index([studentId, isOverdue])
@@ -695,6 +702,7 @@ model ProgressReportVersion {
   submittedByUserId String
   submittedAt       DateTime       @default(now())
   progressReport    ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
+  documents         Document[]
   createdAt         DateTime       @default(now())
 
   @@unique([progressReportId, versionNumber])
@@ -726,22 +734,29 @@ model Thesis {
 }
 
 model ThesisReadinessCertification {
-  id                String            @id @default(cuid())
-  thesisId          String            @unique
-  studentId         String
-  certifiedByUserId String
-  decision          ReadinessDecision @default(PENDING)
-  checklist         Json
-  comments          String?
-  decidedAt         DateTime?
-  thesis            Thesis            @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  student           Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  certifiedBy       User              @relation("ReadinessCertifier", fields: [certifiedByUserId], references: [id], onDelete: Restrict)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                  String            @id @default(cuid())
+  thesisId            String?           @unique
+  studentId           String            @unique
+  certifiedByUserId   String?
+  hodApprovedByUserId String?
+  decision            ReadinessDecision @default(PENDING)
+  studentMessage      String?
+  checklist           Json?
+  supervisorNotes     String?
+  certifiedAt         DateTime?
+  hodNotes            String?
+  hodApprovedAt       DateTime?
+  decidedAt           DateTime?
+  thesis              Thesis?           @relation(fields: [thesisId], references: [id], onDelete: SetNull)
+  student             Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  certifiedBy         User?             @relation("ReadinessCertifier", fields: [certifiedByUserId], references: [id], onDelete: SetNull)
+  hodApprovedBy       User?             @relation("ReadinessHodApprover", fields: [hodApprovedByUserId], references: [id], onDelete: SetNull)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@index([studentId, decision])
   @@index([certifiedByUserId, createdAt])
+  @@index([hodApprovedByUserId, hodApprovedAt])
   @@map("thesis_readiness_certifications")
 }
 
@@ -975,44 +990,48 @@ model StudentArchiveRecord {
 }
 
 model Document {
-  id                         String                     @id @default(cuid())
-  documentType               DocumentType
-  fileName                   String
-  storagePath                String
-  mimeType                   String
-  sizeBytes                  Int?
-  checksumSha256             String?
-  verificationStatus         DocumentVerificationStatus @default(LEGACY)
-  verifiedAt                 DateTime?
-  version                    Int                        @default(1)
-  isCurrentVersion           Boolean                    @default(true)
-  isDeleted                  Boolean                    @default(false)
-  applicationId              String?
-  studentId                  String?
-  researchProposalId         String?
-  proposalVersionId          String?
-  ethicsApprovalId           String?
-  progressReportId           String?
-  thesisId                   String?
-  thesisVersionId            String?
-  thesisExaminerAssignmentId String?
-  correctionDocumentId       String?
-  evaluationFormId           String?
-  application                Application?               @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  student                    Student?                   @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  researchProposal           ResearchProposal?          @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
-  proposalVersion            ProposalVersion?           @relation(fields: [proposalVersionId], references: [id], onDelete: SetNull)
-  ethicsApproval             EthicsApproval?            @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
-  progressReport             ProgressReport?            @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
-  thesis                     Thesis?                    @relation(fields: [thesisId], references: [id], onDelete: SetNull)
-  thesisVersion              ThesisVersion?             @relation(fields: [thesisVersionId], references: [id], onDelete: SetNull)
-  thesisExaminerAssignment   ThesisExaminerAssignment?  @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
-  correctionDocument         CorrectionDocument?        @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
-  evaluationForm             EvaluationForm?            @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
-  stagedUploadFile           StagedUploadFile?
-  accessEvents               DocumentAccessEvent[]
-  createdAt                  DateTime                   @default(now())
-  updatedAt                  DateTime                   @updatedAt
+  id                           String                      @id @default(cuid())
+  documentType                 DocumentType
+  fileName                     String
+  storagePath                  String
+  mimeType                     String
+  sizeBytes                    Int?
+  checksumSha256               String?
+  verificationStatus           DocumentVerificationStatus  @default(LEGACY)
+  verifiedAt                   DateTime?
+  version                      Int                         @default(1)
+  isCurrentVersion             Boolean                     @default(true)
+  isDeleted                    Boolean                     @default(false)
+  applicationId                String?
+  studentId                    String?
+  researchProposalId           String?
+  proposalVersionId            String?
+  ethicsApprovalId             String?
+  progressReportId             String?
+  thesisId                     String?
+  thesisVersionId              String?
+  thesisExaminerAssignmentId   String?
+  correctionDocumentId         String?
+  evaluationFormId             String?
+  applicationProposalVersionId String?
+  progressReportVersionId      String?
+  application                  Application?                @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  student                      Student?                    @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  researchProposal             ResearchProposal?           @relation(fields: [researchProposalId], references: [id], onDelete: SetNull)
+  proposalVersion              ProposalVersion?            @relation(fields: [proposalVersionId], references: [id], onDelete: SetNull)
+  ethicsApproval               EthicsApproval?             @relation(fields: [ethicsApprovalId], references: [id], onDelete: SetNull)
+  progressReport               ProgressReport?             @relation(fields: [progressReportId], references: [id], onDelete: SetNull)
+  thesis                       Thesis?                     @relation(fields: [thesisId], references: [id], onDelete: SetNull)
+  thesisVersion                ThesisVersion?              @relation(fields: [thesisVersionId], references: [id], onDelete: SetNull)
+  thesisExaminerAssignment     ThesisExaminerAssignment?   @relation(fields: [thesisExaminerAssignmentId], references: [id], onDelete: SetNull)
+  correctionDocument           CorrectionDocument?         @relation(fields: [correctionDocumentId], references: [id], onDelete: SetNull)
+  evaluationForm               EvaluationForm?             @relation(fields: [evaluationFormId], references: [id], onDelete: SetNull)
+  applicationProposalVersion   ApplicationProposalVersion? @relation(fields: [applicationProposalVersionId], references: [id], onDelete: SetNull)
+  progressReportVersion        ProgressReportVersion?      @relation(fields: [progressReportVersionId], references: [id], onDelete: SetNull)
+  stagedUploadFile             StagedUploadFile?
+  accessEvents                 DocumentAccessEvent[]
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
 
   @@index([documentType, isDeleted])
   @@index([researchProposalId, version])
@@ -1022,6 +1041,8 @@ model Document {
   @@index([thesisVersionId])
   @@index([thesisExaminerAssignmentId])
   @@index([evaluationFormId])
+  @@index([applicationProposalVersionId])
+  @@index([progressReportVersionId])
   @@map("documents")
 }
 

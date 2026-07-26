@@ -217,10 +217,10 @@ async function requireThesis(thesisId: string): Promise<ThesisAssignmentView> {
 
 function assertValidThesisState(thesis: ThesisAssignmentView) {
   if (
-    thesis.readinessCertification?.decision !== ReadinessDecision.CERTIFIED
+    thesis.readinessCertification?.decision !== ReadinessDecision.HOD_APPROVED
   ) {
     throw new ExaminerAssignmentError(
-      "Primary Supervisor thesis readiness certification is required before proposing an examiner.",
+      "HOD approval of the Supervisor-certified readiness record is required before proposing an examiner.",
       422,
     );
   }

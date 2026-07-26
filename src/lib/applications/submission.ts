@@ -439,6 +439,7 @@ export async function createApplicationSubmission(
       }
 
       const documentIds = verifiedFiles.map(() => randomUUID());
+      const proposalVersionId = randomUUID();
       const application = await tx.application.create({
         data: {
           applicantName: parsed.data.applicantName,
@@ -456,6 +457,7 @@ export async function createApplicationSubmission(
           proposedSupervisorUserId: proposedSupervisor.userId,
           proposalVersions: {
             create: {
+              id: proposalVersionId,
               versionNumber: 1,
               title: parsed.data.proposalTitle,
               abstract: parsed.data.proposalAbstract,
@@ -465,7 +467,8 @@ export async function createApplicationSubmission(
           documents: {
             create: verifiedFiles.map((document, index) => ({
               id: documentIds[index],
-              documentType: DocumentType.APPLICATION_ATTACHMENT,
+              documentType: DocumentType.PROPOSAL,
+              applicationProposalVersionId: proposalVersionId,
               fileName: document.fileName,
               storagePath: document.storagePath,
               mimeType: document.mimeType,

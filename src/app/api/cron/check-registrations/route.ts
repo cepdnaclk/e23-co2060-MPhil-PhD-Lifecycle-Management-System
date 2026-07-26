@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 import { createServerErrorResponse } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma/client";
-import { markOverdueProgressReports } from "@/lib/progress-reports/maintenance";
+import { markOverdueProgressMilestones } from "@/lib/progress-reports/maintenance";
 import { processOutboxBatch } from "@/lib/outbox/service";
 import { cleanupExpiredUploadSessions } from "@/lib/uploads/sessions";
 import { runRegistrationMaintenance } from "@/lib/registrations";
@@ -153,18 +153,18 @@ export async function POST(request: Request) {
   try {
     const [
       registrationMaintenance,
-      overdueProgressReports,
+      overdueProgressMilestones,
       uploadMaintenance,
       outboxDelivery,
     ] = await Promise.all([
       runRegistrationMaintenance(),
-      markOverdueProgressReports(),
+      markOverdueProgressMilestones(),
       cleanupExpiredUploadSessions(),
       processOutboxBatch({ workerId: `maintenance:${run.id}` }),
     ]);
     const result = {
       ...registrationMaintenance,
-      overdueProgressReports,
+      overdueProgressMilestones,
       uploadMaintenance,
       outboxDelivery,
     };

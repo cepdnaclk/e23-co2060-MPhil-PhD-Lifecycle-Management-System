@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AcademicStatus, MilestoneStatus } from "@prisma/client";
 
 vi.mock("@/lib/firebase/auth", () => ({
   authenticateBearerRequest: vi.fn(),
@@ -17,9 +18,6 @@ vi.mock("@/lib/prisma/client", () => ({
     student: {
       findUnique: vi.fn(),
     },
-    progressReport: {
-      findMany: vi.fn(),
-    },
   },
 }));
 
@@ -27,7 +25,7 @@ import { GET } from "@/app/api/student/progress-reports/route";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
 import { prisma } from "@/lib/prisma/client";
 
-describe("student progress report registration access", () => {
+describe("student fixed-milestone registration access", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -42,7 +40,9 @@ describe("student progress report registration access", () => {
     } as never);
     vi.mocked(prisma.student.findUnique).mockResolvedValue({
       id: "student-lapsed",
+      academicStatus: AcademicStatus.ACTIVE,
       registrations: [],
+      milestones: [],
     } as never);
 
     const response = await GET(
@@ -56,7 +56,7 @@ describe("student progress report registration access", () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({
       error:
-        "Your fixed registration period has ended. Contact the PG Coordinator before submitting progress.",
+        "An active Student record and fixed-term registration are required.",
     });
   });
 
@@ -68,22 +68,21 @@ describe("student progress report registration access", () => {
       email: "active@student.example",
       role: "STUDENT",
     } as never);
-    vi.mocked(prisma.student.findUnique)
-      .mockResolvedValueOnce({
-        id: "student-active",
-        registrations: [{ id: "registration-active-1" }],
-      } as never)
-      .mockResolvedValueOnce({
-        id: "student-active",
-      } as never);
-    vi.mocked(prisma.progressReport.findMany).mockResolvedValue([
-      {
-        id: "report-1",
-        studentId: "student-active",
-        periodLabel: "2026 Q1",
-        narrative: "Progress report narrative",
-      },
-    ] as never);
+    vi.mocked(prisma.student.findUnique).mockResolvedValue({
+      id: "student-active",
+      academicStatus: AcademicStatus.ACTIVE,
+      registrations: [{ id: "registration-active-1" }],
+      milestones: [
+        {
+          id: "milestone-1",
+          sequenceNumber: 1,
+          dueDate: new Date("2026-07-01T00:00:00.000Z"),
+          status: MilestoneStatus.DUE,
+          completedAt: null,
+          progressReport: null,
+        },
+      ],
+    } as never);
 
     const response = await GET(
       new Request("http://localhost/api/student/progress-reports", {
@@ -95,11 +94,11 @@ describe("student progress report registration access", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      ok: true,
-      reports: [
+      isActive: true,
+      milestones: [
         {
-          id: "report-1",
-          periodLabel: "2026 Q1",
+          id: "milestone-1",
+          sequenceNumber: 1,
         },
       ],
     });

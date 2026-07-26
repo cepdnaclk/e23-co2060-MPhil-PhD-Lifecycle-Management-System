@@ -2,8 +2,8 @@
 
 **Document ID:** PGLMS-MASTER-001  
 **Implementation baseline version:** 1.0  
-**Report revision:** 1.5<br>
-**Audit date:** 18 July 2026  
+**Report revision:** 1.6<br>
+**Audit date:** 26 July 2026
 **Audited branch:** `main`  
 **Audited commit:** `653ff632e0cecb6114f50e6fb525ebe2cb592942` — “Implement postgraduate lifecycle workflow updates”  
 **Repository:** `e23-co2060-MPhil-PhD-Lifecycle-Management-System`  
@@ -11,6 +11,16 @@
 **Canonical source:** This Markdown file.  
 **DOCX status:** The existing DOCX remains the revision 1.0 implementation snapshot and is intentionally deferred until the remediation programme is complete or an interim copy is requested.
 **Active remediation checkpoint:** WP-01 is committed at `9949fb8` and remains pending deployment/reconciliation evidence. WP-02 is implemented and verified locally as of 25 July 2026; hosted branch protection, first CI/CodeQL runs, populated-data migration rehearsal, external-service E2E, and deployment evidence remain pending. WP-03 is committed at `51e4eae` and remains pending identity reconciliation, live Firebase invitation/session tests, CSP observation/enforcement, and deployed-response evidence. WP-04 is implemented and verified locally as of 26 July 2026; its migration is deliberately blocked from populated production deployment until backfill rehearsal, ambiguity review, real storage/scanner tests, and rollout evidence are approved. The audited implementation baseline has not changed.
+
+> **Department V1 local checkpoint, not deployed.** A post-WP-04 Department
+> lifecycle implementation is recorded in
+> `docs/DEPARTMENT_PGLMS_V1_IMPLEMENTATION_REGISTER.md`. The local checkpoint
+> passes lint, type/schema/migration-policy checks, 85 ordinary test files /
+> 296 tests, a production build, and the public browser smokes. Five migrations
+> remain checksum-pinned production blockers. Full conformance is not claimed:
+> multi-party ethics confirmation, Supervisor/Examiner correction review with
+> exact submission evidence, and exact intermediate completion-state enums
+> remain release-blocking functional deltas.
 
 > **Source-of-truth rule.** This report describes the behavior implemented at the audited commit. It supersedes the workflow claims in `docs/WORKFLOW_REPORT.md` and `output/pdf/pglms_admin_handover_report.*` where those documents conflict with the current code. Update the document control, capability matrix, change register, and risk register whenever the system changes.
 

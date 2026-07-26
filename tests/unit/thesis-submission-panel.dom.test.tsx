@@ -20,7 +20,18 @@ describe("ThesisSubmissionPanel staged multi-file flow", () => {
   });
 
   it("presents a multi-file picker and accepts a two-file logical version", async () => {
-    const { container } = render(<ThesisSubmissionPanel thesis={null} />);
+    const { container } = render(
+      <ThesisSubmissionPanel
+        thesis={null}
+        readiness={{
+          id: "ready-1",
+          decision: "HOD_APPROVED",
+          studentMessage: null,
+          supervisorNotes: null,
+          hodNotes: null,
+        }}
+      />,
+    );
     const input = container.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -54,7 +65,18 @@ describe("ThesisSubmissionPanel staged multi-file flow", () => {
     const fetchMock = vi.fn(() => submissionResponse);
     vi.stubGlobal("fetch", fetchMock);
 
-    const { container } = render(<ThesisSubmissionPanel thesis={null} />);
+    const { container } = render(
+      <ThesisSubmissionPanel
+        thesis={null}
+        readiness={{
+          id: "ready-1",
+          decision: "HOD_APPROVED",
+          studentMessage: null,
+          supervisorNotes: null,
+          hodNotes: null,
+        }}
+      />,
+    );
     const titleInput = container.querySelector('input:not([type="file"])') as HTMLInputElement;
     const abstractInput = container.querySelector("textarea") as HTMLTextAreaElement;
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;

@@ -53,9 +53,9 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
       return [
         {
           id: "submit-progress-report",
-          label: "Submit Progress Report",
-          description: "Send your latest progress update to administration.",
-          href: "/dashboard/student/progress-reports/submit",
+          label: "Open Progress Milestones",
+          description: "Submit the next fixed milestone version.",
+          href: "/dashboard/student/progress-reports",
         },
         {
           id: "view-progress-reports",

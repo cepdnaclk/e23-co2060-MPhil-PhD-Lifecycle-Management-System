@@ -42,7 +42,21 @@ type ThesisSummary = {
   documents: ThesisDocument[];
 } | null;
 
-export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
+type ReadinessSummary = {
+  id: string;
+  decision: string;
+  studentMessage: string | null;
+  supervisorNotes: string | null;
+  hodNotes: string | null;
+} | null;
+
+export function ThesisSubmissionPanel({
+  thesis,
+  readiness,
+}: {
+  thesis: ThesisSummary;
+  readiness: ReadinessSummary;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(thesis?.title ?? "");
   const [abstract, setAbstract] = useState(thesis?.abstract ?? "");
@@ -50,6 +64,43 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentMessage, setStudentMessage] = useState(
+    readiness?.studentMessage ?? "",
+  );
+  const [isRequesting, setIsRequesting] = useState(false);
+  const readinessApproved = readiness?.decision === "HOD_APPROVED";
+  const canRequestReadiness =
+    !readiness ||
+    ["PENDING", "RETURNED", "REVOKED"].includes(readiness.decision);
+
+  async function requestReadiness() {
+    setIsRequesting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await secureFetch("/api/student/thesis-readiness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentMessage: studentMessage.trim() || undefined,
+        }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to request thesis readiness.");
+      }
+      setMessage("Thesis readiness requested from your primary Supervisor.");
+      router.refresh();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to request thesis readiness.",
+      );
+    } finally {
+      setIsRequesting(false);
+    }
+  }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     if (isSubmitting) {
@@ -243,6 +294,47 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
         </div>
       )}
 
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>Thesis readiness</CardTitle>
+            <Badge variant={readinessApproved ? "default" : "secondary"}>
+              {readiness?.decision.replaceAll("_", " ") ?? "NOT REQUESTED"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Submission opens only after your request, primary Supervisor
+            certification, and HOD approval.
+          </p>
+          {readiness?.supervisorNotes && (
+            <p className="text-sm">Supervisor: {readiness.supervisorNotes}</p>
+          )}
+          {readiness?.hodNotes && (
+            <p className="text-sm">HOD: {readiness.hodNotes}</p>
+          )}
+          {canRequestReadiness && !thesis && (
+            <>
+              <Textarea
+                aria-label="Message to primary Supervisor"
+                placeholder="Optional message to your primary Supervisor"
+                maxLength={2_000}
+                value={studentMessage}
+                onChange={(event) => setStudentMessage(event.target.value)}
+              />
+              <Button
+                type="button"
+                disabled={isRequesting}
+                onClick={() => void requestReadiness()}
+              >
+                {isRequesting ? "Requesting…" : "Request readiness"}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
@@ -258,7 +350,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                   <Input
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !readinessApproved}
                     required
                   />
                 </div>
@@ -268,7 +360,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                     value={abstract}
                     onChange={(event) => setAbstract(event.target.value)}
                     className="min-h-[160px]"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !readinessApproved}
                     required
                   />
                 </div>
@@ -282,7 +374,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
                     multiple
                     accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
                     onChange={handleFileChange}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !readinessApproved}
                     required
                   />
                   {files.length > 0 && (
@@ -296,7 +388,7 @@ export function ThesisSubmissionPanel({ thesis }: { thesis: ThesisSummary }) {
               </div>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !readinessApproved}
                 className="w-full"
               >
                 {isSubmitting ? "Submitting..." : thesis ? "Submit revision" : "Submit thesis"}

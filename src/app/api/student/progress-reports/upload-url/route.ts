@@ -4,8 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { withAuth } from "@/lib/firebase/with-auth";
 import {
   createProgressReportUploadUrl,
-  ProgressReportSubmissionError,
-} from "@/lib/progress-reports/submission";
+  ProgressReportUploadError,
+} from "@/lib/progress-reports/upload";
 
 export const POST = withAuth(
   async (request: NextRequest, context) => {
@@ -16,7 +16,7 @@ export const POST = withAuth(
       );
       return NextResponse.json(uploadTarget, { status: 201 });
     } catch (error) {
-      if (error instanceof ProgressReportSubmissionError) {
+      if (error instanceof ProgressReportUploadError) {
         return NextResponse.json(
           { error: error.message },
           { status: error.status },

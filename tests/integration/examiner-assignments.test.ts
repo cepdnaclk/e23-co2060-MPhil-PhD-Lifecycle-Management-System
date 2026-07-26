@@ -93,7 +93,7 @@ describe("examiner assignment integration", () => {
         supervisorAssignments: [],
       },
       examinerAssignments: [],
-      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
+      readinessCertification: { decision: ReadinessDecision.HOD_APPROVED },
       documents: [
         {
           id: "doc-1",

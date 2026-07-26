@@ -1,8 +1,13 @@
 import {
+  AcademicStatus,
   AssignmentStatus,
   ExaminerRecommendation,
+  MilestoneStatus,
+  ProposalStatus,
   ReadinessDecision,
+  RegistrationStatus,
   UserRole,
+  type Prisma,
 } from "@prisma/client";
 
 import {
@@ -24,8 +29,184 @@ export class DepartmentExaminationError extends Error {
   }
 }
 
+async function assertReadinessPreconditions(
+  tx: Prisma.TransactionClient,
+  studentId: string,
+) {
+  const student = await tx.student.findUnique({
+    where: { id: studentId },
+    select: {
+      id: true,
+      academicStatus: true,
+      userId: true,
+      registrations: {
+        where: {
+          status: RegistrationStatus.ACTIVE,
+          expirationDate: { gte: new Date() },
+        },
+        take: 1,
+        select: { id: true },
+      },
+      researchProposals: {
+        where: { status: ProposalStatus.APPROVED, isArchived: false },
+        take: 1,
+        select: { id: true },
+      },
+      milestones: {
+        select: { status: true },
+      },
+      supervisorAssignments: {
+        where: {
+          isPrimary: true,
+          effectiveTo: null,
+          supervisor: { user: { isActive: true } },
+        },
+        take: 2,
+        select: { supervisorUserId: true },
+      },
+      theses: {
+        where: { status: { in: ["FINAL_ARCHIVE", "CLOSED"] } },
+        take: 1,
+        select: { id: true },
+      },
+    },
+  });
+  if (!student) {
+    throw new DepartmentExaminationError("Student profile not found.", 404);
+  }
+  if (student.academicStatus !== AcademicStatus.ACTIVE) {
+    throw new DepartmentExaminationError(
+      "The Student must have active academic status.",
+      409,
+    );
+  }
+  if (student.registrations.length !== 1) {
+    throw new DepartmentExaminationError(
+      "An active fixed-term registration is required.",
+      409,
+    );
+  }
+  if (student.researchProposals.length !== 1) {
+    throw new DepartmentExaminationError(
+      "An approved proposal is required.",
+      409,
+    );
+  }
+  if (
+    student.milestones.length === 0 ||
+    student.milestones.some(
+      (milestone) => milestone.status !== MilestoneStatus.APPROVED,
+    )
+  ) {
+    throw new DepartmentExaminationError(
+      "Every scheduled progress milestone must be approved.",
+      409,
+    );
+  }
+  if (student.supervisorAssignments.length !== 1) {
+    throw new DepartmentExaminationError(
+      "Exactly one active primary Supervisor is required.",
+      409,
+    );
+  }
+  if (student.theses.length > 0) {
+    throw new DepartmentExaminationError(
+      "A completed thesis already exists for this Student.",
+      409,
+    );
+  }
+  await assertEthicsGateSatisfied(tx as never, student.id);
+  return {
+    studentId: student.id,
+    studentUserId: student.userId,
+    primarySupervisorUserId:
+      student.supervisorAssignments[0].supervisorUserId,
+  };
+}
+
+export async function requestThesisReadiness(
+  input: { studentMessage?: string },
+  auth: AuthenticatedUserContext,
+) {
+  if (auth.role !== UserRole.STUDENT) {
+    throw new DepartmentExaminationError(
+      "Only a Student can request thesis readiness.",
+      403,
+    );
+  }
+  return prisma.$transaction(async (tx) => {
+    const student = await tx.student.findUnique({
+      where: { userId: auth.userId },
+      select: { id: true, readinessCertifications: { take: 1 } },
+    });
+    if (!student) {
+      throw new DepartmentExaminationError("Student profile not found.", 404);
+    }
+    const gate = await assertReadinessPreconditions(tx as never, student.id);
+    const existing = student.readinessCertifications[0];
+    if (
+      existing?.decision === ReadinessDecision.CERTIFIED ||
+      existing?.decision === ReadinessDecision.HOD_APPROVED
+    ) {
+      throw new DepartmentExaminationError(
+        "The readiness request has already advanced beyond Student action.",
+        409,
+      );
+    }
+    const readiness = existing
+      ? await tx.thesisReadinessCertification.update({
+          where: { id: existing.id },
+          data: {
+            decision: ReadinessDecision.REQUESTED,
+            studentMessage: input.studentMessage,
+            certifiedByUserId: null,
+            checklist: undefined,
+            supervisorNotes: null,
+            certifiedAt: null,
+            hodApprovedByUserId: null,
+            hodNotes: null,
+            hodApprovedAt: null,
+            decidedAt: new Date(),
+          },
+        })
+      : await tx.thesisReadinessCertification.create({
+          data: {
+            studentId: student.id,
+            decision: ReadinessDecision.REQUESTED,
+            studentMessage: input.studentMessage,
+            decidedAt: new Date(),
+          },
+        });
+    await appendLifecycleEventAndEnqueue(
+      tx as never,
+      {
+        eventKey: `thesis-readiness:${readiness.id}:requested:${readiness.updatedAt.toISOString()}`,
+        eventType: LIFECYCLE_EVENT.THESIS_READINESS_REQUESTED,
+        aggregateType: "ThesisReadinessCertification",
+        aggregateId: readiness.id,
+        actorUserId: auth.userId,
+        actorRole: auth.role,
+        previousState: existing?.decision ?? ReadinessDecision.PENDING,
+        newState: ReadinessDecision.REQUESTED,
+      },
+      [
+        {
+          eventKey: `thesis-readiness:${readiness.id}:requested:notify:${gate.primarySupervisorUserId}`,
+          recipientId: gate.primarySupervisorUserId,
+          studentId: student.id,
+          notificationEvent: "THESIS_STATUS_CHANGED",
+          title: "Thesis readiness requested",
+          message: "A Student is ready for your thesis-readiness decision.",
+          actionUrl: "/dashboard/supervisor/progress-reports",
+        },
+      ],
+    );
+    return readiness;
+  });
+}
+
 export async function certifyThesisReadiness(
-  thesisId: string,
+  readinessId: string,
   input: {
     decision: "CERTIFIED" | "RETURNED";
     checklist: Record<string, boolean>;
@@ -41,13 +222,12 @@ export async function certifyThesisReadiness(
   }
 
   return prisma.$transaction(async (tx) => {
-    const thesis = await tx.thesis.findUnique({
-      where: { id: thesisId },
-      select: {
-        id: true,
-        studentId: true,
+    const readiness = await tx.thesisReadinessCertification.findUnique({
+      where: { id: readinessId },
+      include: {
         student: {
           select: {
+            userId: true,
             supervisorAssignments: {
               where: {
                 isPrimary: true,
@@ -57,20 +237,19 @@ export async function certifyThesisReadiness(
               take: 1,
               select: { id: true },
             },
-            milestones: {
-              select: { status: true },
-            },
           },
         },
-        readinessCertification: true,
       },
     });
 
-    if (!thesis) {
-      throw new DepartmentExaminationError("Thesis not found.", 404);
+    if (!readiness) {
+      throw new DepartmentExaminationError(
+        "Thesis-readiness request not found.",
+        404,
+      );
     }
 
-    if (thesis.student.supervisorAssignments.length !== 1) {
+    if (readiness.student.supervisorAssignments.length !== 1) {
       throw new DepartmentExaminationError(
         "You are not the active primary supervisor.",
         403,
@@ -78,14 +257,10 @@ export async function certifyThesisReadiness(
     }
 
     if (
-      input.decision === ReadinessDecision.CERTIFIED &&
-      (thesis.student.milestones.length === 0 ||
-        thesis.student.milestones.some(
-          (milestone) => milestone.status !== "APPROVED",
-        ))
+      readiness.decision !== ReadinessDecision.REQUESTED
     ) {
       throw new DepartmentExaminationError(
-        "Every scheduled progress milestone must be approved.",
+        "Only a requested readiness record can be decided by the Supervisor.",
         409,
       );
     }
@@ -101,44 +276,139 @@ export async function certifyThesisReadiness(
     }
 
     if (input.decision === ReadinessDecision.CERTIFIED) {
-      await assertEthicsGateSatisfied(tx as never, thesis.studentId);
+      await assertReadinessPreconditions(tx as never, readiness.studentId);
     }
 
-    const certification = thesis.readinessCertification
-      ? await tx.thesisReadinessCertification.update({
-          where: { id: thesis.readinessCertification.id },
-          data: {
-            decision: input.decision,
-            checklist: input.checklist,
-            comments: input.comments,
-            certifiedByUserId: auth.userId,
-            decidedAt: new Date(),
-          },
-        })
-      : await tx.thesisReadinessCertification.create({
-          data: {
-            thesisId: thesis.id,
-            studentId: thesis.studentId,
-            decision: input.decision,
-            checklist: input.checklist,
-            comments: input.comments,
-            certifiedByUserId: auth.userId,
-            decidedAt: new Date(),
-          },
-        });
-    await appendLifecycleEvent(tx as never, {
-      eventKey: `thesis:${thesis.id}:readiness:${input.decision.toLowerCase()}:${Date.now()}`,
-      eventType: LIFECYCLE_EVENT.THESIS_READINESS_CERTIFIED,
-      aggregateType: "Thesis",
-      aggregateId: thesis.id,
-      actorUserId: auth.userId,
-      actorRole: auth.role,
-      previousState:
-        thesis.readinessCertification?.decision ?? ReadinessDecision.PENDING,
-      newState: input.decision,
+    const certification = await tx.thesisReadinessCertification.update({
+      where: { id: readiness.id },
+      data: {
+        decision: input.decision,
+        checklist: input.checklist,
+        supervisorNotes: input.comments,
+        certifiedByUserId: auth.userId,
+        certifiedAt:
+          input.decision === ReadinessDecision.CERTIFIED ? new Date() : null,
+        decidedAt: new Date(),
+      },
     });
+    await appendLifecycleEventAndEnqueue(
+      tx as never,
+      {
+        eventKey: `thesis-readiness:${readiness.id}:supervisor:${input.decision.toLowerCase()}:${certification.updatedAt.toISOString()}`,
+        eventType: LIFECYCLE_EVENT.THESIS_READINESS_CERTIFIED,
+        aggregateType: "ThesisReadinessCertification",
+        aggregateId: readiness.id,
+        actorUserId: auth.userId,
+        actorRole: auth.role,
+        previousState: readiness.decision,
+        newState: input.decision,
+      },
+      [
+        {
+          eventKey: `thesis-readiness:${readiness.id}:supervisor:${input.decision.toLowerCase()}:notify:${readiness.student.userId}`,
+          recipientId: readiness.student.userId,
+          studentId: readiness.studentId,
+          notificationEvent: "THESIS_STATUS_CHANGED",
+          title:
+            input.decision === ReadinessDecision.CERTIFIED
+              ? "Thesis readiness certified"
+              : "Thesis readiness returned",
+          message:
+            input.comments ??
+            "Your primary Supervisor recorded a thesis-readiness decision.",
+          actionUrl: "/dashboard/student/theses/submit",
+        },
+      ],
+    );
 
     return certification;
+  });
+}
+
+export async function recordHodReadinessDecision(
+  readinessId: string,
+  input: {
+    decision: "APPROVED" | "RETURNED";
+    notes?: string;
+  },
+  auth: AuthenticatedUserContext,
+) {
+  if (auth.role !== UserRole.HOD) {
+    throw new DepartmentExaminationError(
+      "Only the Head of Department can approve examination readiness.",
+      403,
+    );
+  }
+  return prisma.$transaction(async (tx) => {
+    const readiness = await tx.thesisReadinessCertification.findUnique({
+      where: { id: readinessId },
+      select: {
+        id: true,
+        studentId: true,
+        decision: true,
+        student: { select: { userId: true } },
+      },
+    });
+    if (!readiness) {
+      throw new DepartmentExaminationError(
+        "Thesis-readiness record not found.",
+        404,
+      );
+    }
+    if (readiness.decision !== ReadinessDecision.CERTIFIED) {
+      throw new DepartmentExaminationError(
+        "Primary Supervisor certification is required first.",
+        409,
+      );
+    }
+    if (input.decision === "APPROVED") {
+      await assertReadinessPreconditions(tx as never, readiness.studentId);
+    }
+    const nextDecision =
+      input.decision === "APPROVED"
+        ? ReadinessDecision.HOD_APPROVED
+        : ReadinessDecision.RETURNED;
+    const updated = await tx.thesisReadinessCertification.update({
+      where: { id: readiness.id },
+      data: {
+        decision: nextDecision,
+        hodApprovedByUserId: auth.userId,
+        hodNotes: input.notes,
+        hodApprovedAt:
+          nextDecision === ReadinessDecision.HOD_APPROVED ? new Date() : null,
+        decidedAt: new Date(),
+      },
+    });
+    await appendLifecycleEventAndEnqueue(
+      tx as never,
+      {
+        eventKey: `thesis-readiness:${readiness.id}:hod:${nextDecision.toLowerCase()}`,
+        eventType: LIFECYCLE_EVENT.THESIS_READINESS_HOD_DECIDED,
+        aggregateType: "ThesisReadinessCertification",
+        aggregateId: readiness.id,
+        actorUserId: auth.userId,
+        actorRole: auth.role,
+        previousState: readiness.decision,
+        newState: nextDecision,
+      },
+      [
+        {
+          eventKey: `thesis-readiness:${readiness.id}:hod:${nextDecision.toLowerCase()}:notify:${readiness.student.userId}`,
+          recipientId: readiness.student.userId,
+          studentId: readiness.studentId,
+          notificationEvent: "THESIS_STATUS_CHANGED",
+          title:
+            nextDecision === ReadinessDecision.HOD_APPROVED
+              ? "Approved to submit thesis for examination"
+              : "Thesis readiness returned by HOD",
+          message:
+            input.notes ??
+            "The Head of Department recorded a thesis-readiness decision.",
+          actionUrl: "/dashboard/student/theses/submit",
+        },
+      ],
+    );
+    return updated;
   });
 }
 
@@ -180,10 +450,10 @@ export async function confirmThesisExaminerAssignment(
 
     if (
       assignment.thesis.readinessCertification?.decision !==
-      ReadinessDecision.CERTIFIED
+      ReadinessDecision.HOD_APPROVED
     ) {
       throw new DepartmentExaminationError(
-        "Thesis readiness must be certified first.",
+        "Thesis readiness must be approved by the HOD first.",
         409,
       );
     }

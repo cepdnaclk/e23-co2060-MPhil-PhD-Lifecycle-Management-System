@@ -19,7 +19,7 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 vi.mock("@/lib/progress-reports/maintenance", () => ({
-  markOverdueProgressReports: vi.fn(),
+  markOverdueProgressMilestones: vi.fn(),
 }));
 
 vi.mock("@/lib/uploads/sessions", () => ({
@@ -45,7 +45,7 @@ vi.mock("@/lib/outbox/service", () => ({
 
 import * as cronRoute from "@/app/api/cron/check-registrations/route";
 import { prisma } from "@/lib/prisma/client";
-import { markOverdueProgressReports } from "@/lib/progress-reports/maintenance";
+import { markOverdueProgressMilestones } from "@/lib/progress-reports/maintenance";
 import { runRegistrationMaintenance } from "@/lib/registrations";
 
 const CRON_SECRET = "s".repeat(48);
@@ -92,7 +92,7 @@ describe("POST /api/cron/check-registrations", () => {
       lapsedCount: 2,
       reminderCount: 3,
     });
-    vi.mocked(markOverdueProgressReports).mockResolvedValue(4);
+    vi.mocked(markOverdueProgressMilestones).mockResolvedValue(4);
   });
 
   it("does not export a state-changing GET handler", () => {
@@ -107,7 +107,7 @@ describe("POST /api/cron/check-registrations", () => {
     expect(response.status).toBe(503);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
     expect(runRegistrationMaintenance).not.toHaveBeenCalled();
-    expect(markOverdueProgressReports).not.toHaveBeenCalled();
+    expect(markOverdueProgressMilestones).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid signature before claiming or running work", async () => {
@@ -146,7 +146,7 @@ describe("POST /api/cron/check-registrations", () => {
       select: { id: true },
     });
     expect(runRegistrationMaintenance).toHaveBeenCalledTimes(1);
-    expect(markOverdueProgressReports).toHaveBeenCalledTimes(1);
+    expect(markOverdueProgressMilestones).toHaveBeenCalledTimes(1);
     expect(prisma.maintenanceRun.update).toHaveBeenCalledWith({
       where: { id: "maintenance-run-1" },
       data: expect.objectContaining({
@@ -154,7 +154,7 @@ describe("POST /api/cron/check-registrations", () => {
         result: {
           lapsedCount: 2,
           reminderCount: 3,
-          overdueProgressReports: 4,
+          overdueProgressMilestones: 4,
           uploadMaintenance: {
             expiredSessionCount: 0,
             deletedObjectCount: 0,
@@ -174,7 +174,7 @@ describe("POST /api/cron/check-registrations", () => {
       runKey: expectedRunKey,
       lapsedCount: 2,
       reminderCount: 3,
-      overdueProgressReports: 4,
+      overdueProgressMilestones: 4,
       uploadMaintenance: {
         expiredSessionCount: 0,
         deletedObjectCount: 0,
@@ -191,7 +191,7 @@ describe("POST /api/cron/check-registrations", () => {
 
     expect(response.status).toBe(409);
     expect(runRegistrationMaintenance).not.toHaveBeenCalled();
-    expect(markOverdueProgressReports).not.toHaveBeenCalled();
+    expect(markOverdueProgressMilestones).not.toHaveBeenCalled();
   });
 
   it("rejects a caller-chosen run key that does not match the signed UTC day", async () => {

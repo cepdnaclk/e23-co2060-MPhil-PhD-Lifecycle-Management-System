@@ -12,6 +12,7 @@ read-only profile/report routes are retained from WP-01–WP-04.
 | `POST /api/applications/drafts` | Public capability | Protected draft |
 | `POST/DELETE /api/applications/upload` | Public capability | Staged evidence |
 | `POST /api/applications` | Public capability | Finalize application and proposal v1 |
+| `POST /api/applications/:id/proposal-revisions` | Scoped one-time public capability | Finalize a requested exact proposal version and renew Reviewer assignments |
 | `POST /api/admin/applications/:id/start-review` | PG Coordinator | Begin review |
 | `POST /api/applications/:id/supervisor-consent` | Named Supervisor | Consent/decline |
 | `POST /api/applications/:id/proposal-reviewers` | PG Coordinator | Assign exact-version Reviewer |
@@ -24,6 +25,8 @@ read-only profile/report routes are retained from WP-01–WP-04.
 | Method and route | Authorized actor | Purpose |
 |---|---|---|
 | `POST /api/progress/milestones/:id/submit` | Owning Student | Submit/resubmit milestone version |
+| `GET /api/student/progress-reports` | Owning Student | Fixed milestone schedule and immutable version history |
+| `POST /api/student/progress-reports/upload-url` | Owning Student | Sealed optional evidence for the exact milestone version |
 | `POST /api/supervisor/progress-reports/:id/decision` | Active primary Supervisor | Return/approve |
 | `POST /api/ethics/students/:id/applicability` | Assigned Supervisor/PG Coordinator/HOD | Record applicability |
 | `POST /api/ethics/:id/status` | PG Coordinator/HOD | Record Department status |
@@ -34,7 +37,9 @@ read-only profile/report routes are retained from WP-01–WP-04.
 
 | Method and route | Authorized actor | Purpose |
 |---|---|---|
-| `POST /api/theses/:id/readiness` | Active primary Supervisor | Readiness decision |
+| `POST /api/student/thesis-readiness` | Owning Student | Request readiness before a thesis exists |
+| `POST /api/supervisor/thesis-readiness/:id/certify` | Active primary Supervisor | Certify or return a Student request |
+| `POST /api/hod/thesis-readiness/:id/approve` | HOD | Approve or return examination readiness |
 | `POST /api/assignments/examiners` | PG Coordinator | Propose exact current-version assignment |
 | `POST /api/hod/examiner-assignments/:id/decision` | HOD | Confirm/decline assignment |
 | `POST /api/examiner-assignments/:id/report` | Confirmed exact Examiner | Independent report |
@@ -75,3 +80,14 @@ Removed rather than hidden:
 Legacy proposal/thesis upload and version-download APIs retained from WP-04 are
 document-integrity compatibility surfaces; they are not academic decision
 routes.
+
+The free-text progress submission service and thesis-bound Supervisor-only
+readiness route are removed. The old Student progress URLs redirect to the
+canonical fixed-milestone pages.
+
+## Known incomplete target routes
+
+The active route surface still has no separate Supervisor/HOD ethics
+recommendation/confirmation commands and no Supervisor/Examiner correction
+review commands. These are recorded as release-blocking functional deltas in
+the implementation register.

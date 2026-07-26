@@ -5,7 +5,7 @@ import {
   createSessionRequestSchema,
   loginCredentialsSchema,
 } from "@/lib/auth/schemas";
-import { progressReportSubmissionSchema } from "@/lib/progress-reports/schemas";
+import { progressReportUploadRequestSchema } from "@/lib/progress-reports/schemas";
 import {
   correctionSubmissionSchema,
   thesisSubmissionSchema,
@@ -30,18 +30,19 @@ describe("shared input validation schemas", () => {
     expect(result.success).toBe(false);
   });
 
-  it("trims and validates progress report submissions", () => {
-    const result = progressReportSubmissionSchema.safeParse({
-      periodLabel: "   2026 Q1   ",
-      narrative:
-        "This narrative easily exceeds one hundred characters so it should pass once the surrounding whitespace is normalized.",
+  it("requires sealed evidence metadata instead of a free-text progress period", () => {
+    const result = progressReportUploadRequestSchema.safeParse({
+      idempotencyKey: "70fdd15a-f5e4-435b-983d-c65db72ab2b0",
+      files: [
+        {
+          fileName: "milestone.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 1_024,
+        },
+      ],
     });
 
     expect(result.success).toBe(true);
-
-    if (result.success) {
-      expect(result.data.periodLabel).toBe("2026 Q1");
-    }
   });
 
   it("rejects non-PDF thesis uploads", () => {
