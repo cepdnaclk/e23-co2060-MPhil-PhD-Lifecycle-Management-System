@@ -78,6 +78,7 @@ export function StudentProgressDashboard({
     student: {
       displayName: string;
       programType: string;
+      academicStatus: string;
       enrollmentDate: string | Date;
     };
     currentMilestone: string;
@@ -94,6 +95,15 @@ export function StudentProgressDashboard({
       approvedDocumentVersions: number;
     };
     examinerFeedbackReleased: boolean;
+    lifecycleStatus: {
+      completion: string | null;
+      completionApprovedAt: string | Date | null;
+      completedAt: string | Date | null;
+      graduation: string | null;
+      graduationDate: string | Date | null;
+      archive: string | null;
+      archivedAt: string | Date | null;
+    };
   };
 }) {
   return (
@@ -107,7 +117,7 @@ export function StudentProgressDashboard({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -116,6 +126,18 @@ export function StudentProgressDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{progress.currentMilestone}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Academic Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {progress.student.academicStatus.replaceAll("_", " ")}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -195,9 +217,30 @@ export function StudentProgressDashboard({
             })}
           </div>
 
-          {progress.examinerFeedbackReleased ? (
+          {progress.lifecycleStatus.archive === "ARCHIVED" ? (
             <div className="mt-8 rounded-md border border-green-500/50 bg-green-500/10 p-4 text-sm font-medium text-green-700 dark:text-green-400">
-              Examination result released. The thesis lifecycle has been officially finalized and archived.
+              The PG Coordinator archived the completed lifecycle record.
+              Documents and audit history remain retained.
+            </div>
+          ) : progress.lifecycleStatus.graduation === "GRADUATED" ? (
+            <div className="mt-8 rounded-md border border-green-500/50 bg-green-500/10 p-4 text-sm font-medium text-green-700 dark:text-green-400">
+              Confirmed graduation has been recorded. Archive remains a
+              separate administrative step.
+            </div>
+          ) : progress.lifecycleStatus.completion === "COMPLETED" ? (
+            <div className="mt-8 rounded-md border border-green-500/50 bg-green-500/10 p-4 text-sm font-medium text-green-700 dark:text-green-400">
+              Programme completion has been recorded. Graduation is recorded
+              only after external confirmation.
+            </div>
+          ) : progress.lifecycleStatus.completion === "HOD_APPROVED" ? (
+            <div className="mt-8 rounded-md border border-blue-500/50 bg-blue-500/10 p-4 text-sm font-medium text-blue-700 dark:text-blue-400">
+              The HOD approved academic completion. PG Coordinator recording is
+              pending.
+            </div>
+          ) : progress.examinerFeedbackReleased ? (
+            <div className="mt-8 rounded-md border border-blue-500/50 bg-blue-500/10 p-4 text-sm font-medium text-blue-700 dark:text-blue-400">
+              Examination or correction closure is recorded. Academic
+              completion remains a separate HOD and PG Coordinator workflow.
             </div>
           ) : (
             <div className="mt-8 rounded-md border border-dashed p-4 text-center">

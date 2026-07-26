@@ -109,8 +109,11 @@ A typical lifecycle flow is:
    assignments.
 7. Examiners submit independent reports and recommendations; the HOD records
    the viva outcome and any ordered corrections.
-8. HOD academic completion, PG Coordinator completion recording, graduation,
-   and archival remain separate controlled actions.
+8. HOD academic completion requires every fixed milestone, the confirmed
+   ethics gate, a verified exact thesis version, and a PASS or closed
+   corrections outcome. PG Coordinator completion recording, externally
+   confirmed graduation, and later non-destructive archive remain separate
+   controlled actions.
 
 ---
 

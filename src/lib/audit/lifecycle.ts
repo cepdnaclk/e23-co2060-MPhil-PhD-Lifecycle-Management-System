@@ -44,6 +44,7 @@ export const LIFECYCLE_EVENT = {
   CORRECTIONS_EXAMINER_REVIEWED: "corrections.examiner_reviewed",
   CORRECTIONS_HOD_DECIDED: "corrections.hod_decided",
   CORRECTIONS_COMPLETION_APPROVED: "corrections.hod_completion_approved",
+  PROGRAMME_COMPLETION_APPROVED: "student.programme_completion_approved",
   PROGRAMME_COMPLETION_RECORDED: "student.programme_completion_recorded",
   GRADUATION_RECORDED: "student.graduation_recorded",
   RECORD_ARCHIVED: "student.record_archived",

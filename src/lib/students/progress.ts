@@ -1,6 +1,10 @@
 import {
+  AcademicStatus,
+  ArchiveStatus,
+  CompletionStatus,
   CorrectionOrderStatus,
   DocumentType,
+  GraduationStatus,
   ProgressSubmissionStatus,
   ProgramType,
   ProposalStatus,
@@ -37,6 +41,7 @@ type StudentProgressRecord = {
   id: string;
   userId: string;
   programType: ProgramType;
+  academicStatus: AcademicStatus;
   enrollmentDate: Date;
   user: {
     id: string;
@@ -68,6 +73,19 @@ type StudentProgressRecord = {
     id: string;
     updatedAt: Date;
   }>;
+  programmeCompletion: {
+    status: CompletionStatus;
+    hodApprovedAt: Date | null;
+    completedAt: Date | null;
+  } | null;
+  graduationRecord: {
+    status: GraduationStatus;
+    graduationDate: Date | null;
+  } | null;
+  archiveRecord: {
+    status: ArchiveStatus;
+    archivedAt: Date | null;
+  } | null;
 };
 
 type StudentDocumentRecord = {
@@ -119,6 +137,7 @@ async function findStudentProgressRecord(
       id: true,
       userId: true,
       programType: true,
+      academicStatus: true,
       enrollmentDate: true,
       user: {
         select: {
@@ -175,6 +194,25 @@ async function findStudentProgressRecord(
         select: {
           id: true,
           updatedAt: true,
+        },
+      },
+      programmeCompletion: {
+        select: {
+          status: true,
+          hodApprovedAt: true,
+          completedAt: true,
+        },
+      },
+      graduationRecord: {
+        select: {
+          status: true,
+          graduationDate: true,
+        },
+      },
+      archiveRecord: {
+        select: {
+          status: true,
+          archivedAt: true,
         },
       },
     },
@@ -265,7 +303,8 @@ function isThesisDocumentApproved(document: StudentDocumentRecord) {
   return (
     document.documentType === DocumentType.THESIS &&
     document.isCurrentVersion &&
-    (document.thesis?.status === ThesisStatus.FINAL_ARCHIVE ||
+    (document.thesis?.status === ThesisStatus.COMPLETED ||
+      document.thesis?.status === ThesisStatus.FINAL_ARCHIVE ||
       document.thesis?.status === ThesisStatus.CLOSED)
   );
 }
@@ -367,6 +406,7 @@ export function calculateStageCompletionPercentages(input: {
   let thesisCompletion = 0;
 
   if (
+    input.thesisStatus === ThesisStatus.COMPLETED ||
     input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
     input.thesisStatus === ThesisStatus.CLOSED
   ) {
@@ -418,6 +458,7 @@ export function determineCurrentMilestone(input: {
   documents: StudentDocumentRecord[];
 }) {
   if (
+    input.thesisStatus === ThesisStatus.COMPLETED ||
     input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
     input.thesisStatus === ThesisStatus.CLOSED
   ) {
@@ -585,7 +626,8 @@ export async function getStudentProgressById(
   const latestThesis = student.theses[0] ?? null;
   const latestEthicsApproval = student.ethicsApprovals?.[0] ?? null;
   const examinerFeedbackReleased = latestThesis
-    ? latestThesis.status === ThesisStatus.FINAL_ARCHIVE ||
+    ? latestThesis.status === ThesisStatus.COMPLETED ||
+      latestThesis.status === ThesisStatus.FINAL_ARCHIVE ||
       latestThesis.status === ThesisStatus.CLOSED ||
       latestThesis.status === ThesisStatus.CORRECTIONS_APPROVED ||
       latestThesis.correctionOrders?.some(
@@ -617,6 +659,7 @@ export async function getStudentProgressById(
       displayName: student.user.displayName,
       email: student.user.email,
       programType: student.programType,
+      academicStatus: student.academicStatus,
       enrollmentDate: student.enrollmentDate,
     },
     latestStatuses: {
@@ -643,6 +686,16 @@ export async function getStudentProgressById(
         stageProgress.ethics.approvedVersions +
         stageProgress.dataCollection.approvedVersions +
         stageProgress.thesis.approvedVersions,
+    },
+    lifecycleStatus: {
+      completion: student.programmeCompletion?.status ?? null,
+      completionApprovedAt:
+        student.programmeCompletion?.hodApprovedAt ?? null,
+      completedAt: student.programmeCompletion?.completedAt ?? null,
+      graduation: student.graduationRecord?.status ?? null,
+      graduationDate: student.graduationRecord?.graduationDate ?? null,
+      archive: student.archiveRecord?.status ?? null,
+      archivedAt: student.archiveRecord?.archivedAt ?? null,
     },
     examinerFeedbackReleased,
   };

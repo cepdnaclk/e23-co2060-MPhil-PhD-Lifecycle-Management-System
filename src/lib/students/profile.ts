@@ -161,7 +161,10 @@ function toStudentProfileResponse(student: StudentProfileRecord) {
     programType: student.programType,
     academicStatus: student.academicStatus,
     isArchived: student.isArchived,
-    isReadOnly: student.academicStatus === AcademicStatus.GRADUATED,
+    isReadOnly:
+      student.academicStatus === AcademicStatus.COMPLETED ||
+      student.academicStatus === AcademicStatus.GRADUATED ||
+      student.academicStatus === AcademicStatus.ARCHIVED,
     enrollmentDate: student.enrollmentDate,
     updatedBy: student.updatedBy,
     updatedAt: student.updatedAt,
@@ -202,9 +205,13 @@ export async function updateStudentProfileById(
 
   assertStudentProfileAccess(auth, student);
 
-  if (student.academicStatus === AcademicStatus.GRADUATED) {
+  if (
+    student.academicStatus === AcademicStatus.COMPLETED ||
+    student.academicStatus === AcademicStatus.GRADUATED ||
+    student.academicStatus === AcademicStatus.ARCHIVED
+  ) {
     throw new StudentProfileError(
-      "Graduated student profiles are read-only.",
+      "Completed, graduated, and archived Student profiles are read-only.",
       409,
     );
   }

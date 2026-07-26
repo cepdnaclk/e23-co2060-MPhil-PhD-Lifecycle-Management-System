@@ -32,5 +32,22 @@ describe("Department V1 schema contract", () => {
     expect(schema).toContain("model ProgrammeCompletion");
     expect(schema).toContain("model GraduationRecord");
     expect(schema).toContain("model StudentArchiveRecord");
+    expect(schema).toContain("thesisVersionId       String");
+    expect(schema).toContain("confirmationReference String");
+  });
+
+  it("keeps completion distinct from graduation and archive states", () => {
+    expect(schema).toMatch(
+      /enum CompletionStatus \{[\s\S]*?HOD_APPROVED[\s\S]*?COMPLETED[\s\S]*?\}/,
+    );
+    expect(schema).toMatch(
+      /enum AcademicStatus \{[\s\S]*?COMPLETED[\s\S]*?GRADUATED[\s\S]*?ARCHIVED[\s\S]*?\}/,
+    );
+    expect(schema).toMatch(
+      /enum RegistrationStatus \{[\s\S]*?COMPLETED[\s\S]*?ARCHIVED[\s\S]*?\}/,
+    );
+    expect(schema).toMatch(
+      /enum ThesisStatus \{[\s\S]*?CORRECTIONS_APPROVED[\s\S]*?COMPLETED[\s\S]*?FINAL_ARCHIVE[\s\S]*?\}/,
+    );
   });
 });

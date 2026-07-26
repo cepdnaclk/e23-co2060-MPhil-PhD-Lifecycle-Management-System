@@ -8,7 +8,9 @@ import {
 } from "@/lib/completion/department-workflow";
 import { withAuth } from "@/lib/firebase/with-auth";
 
-const schema = z.object({ comments: z.string().trim().max(5_000).optional() });
+const schema = z.object({
+  comments: z.string().trim().min(10).max(5_000),
+});
 
 export const POST = withAuth<{ id: string }>(async (request: NextRequest, context) => {
   const parsed = schema.safeParse(await request.json());

@@ -43,18 +43,26 @@ The project is built with:
 
 ## 3. High-Level Purpose
 
-The system is designed to manage the complete postgraduate academic lifecycle from first contact to final completion.
+The system manages the Department-level M.Phil./Ph.D. lifecycle from public
+application through completion, confirmed graduation, and archive.
 
 The typical flow is:
 
 1. A public applicant submits an application.
-2. Administrators review the application and intake status.
-3. Once admitted, the student enters the research lifecycle.
-4. The student submits proposals, progress reports, and thesis documents.
-5. Supervisors evaluate and sign off on academic work.
-6. Examiners and administrators manage viva and thesis workflows.
-7. Corrections are submitted, reviewed, and approved.
-8. Final records are archived.
+2. The proposed Supervisor consents, assigned Proposal Reviewers assess the
+   exact proposal version, and the HOD makes the Department decision.
+3. The PG Coordinator executes approved admission and creates the fixed
+   registration and six-month milestone schedule.
+4. The Student submits milestone-bound progress versions; the active primary
+   Supervisor returns or approves them.
+5. Department ethics and thesis-readiness gates precede verified thesis
+   submission and exact-version Examiner assignment.
+6. Assigned Examiners submit independent reports and recommendations; the HOD
+   records the viva outcome.
+7. Ordered corrections use verified revised versions and Supervisor/Examiner
+   review before HOD closure.
+8. HOD completion approval, PG Coordinator completion execution, externally
+   confirmed graduation, and later archive are separate controlled states.
 
 This makes the project a combination of:
 
@@ -67,47 +75,57 @@ This makes the project a combination of:
 
 ## 4. User Roles
 
-The application supports four main roles.
+The application supports five separate roles.
 
 ### Student
 
 Students can:
 
-- submit research proposals
-- submit progress reports
+- submit the proposal with the public application
+- submit fixed-milestone progress versions
 - track academic progress
 - submit thesis documents
-- upload correction files
-- follow lifecycle status updates
+- submit verified ordered correction versions
+- view released completion, graduation, and archive status
 
 ### Supervisor
 
 Supervisors can:
 
 - view assigned students
-- review and evaluate proposals
-- sign off progress reports
+- record proposed-Supervisor consent and complete assigned proposal reviews
+- return or approve primary-Supervisor milestone reports
+- certify thesis readiness, ethics, and correction submissions
 - monitor student progress and workload
 
 ### Examiner
 
 Examiners can:
 
-- access assigned viva workspaces
-- review examination-related information
-- record viva outcomes
+- access only explicitly assigned proposal/thesis versions
+- submit independent thesis reports and viva recommendations
+- review correction submissions when the exact assignment requires it
 
 ### Administrator
 
-Administrators can:
+PG Coordinators (`ADMINISTRATOR`) can:
 
 - manage user accounts
-- review applications
-- approve or reject proposals
+- operate application intake and proposal-review assignments
+- execute HOD-approved admissions
 - assign supervisors and examiners
 - schedule vivas
-- finalize thesis workflows
+- record HOD-approved completion, confirmed graduation, and archive
 - access reporting and operational controls
+
+### Head of Department
+
+HOD users can:
+
+- make final Department application decisions
+- approve thesis readiness and confirm Examiner assignments
+- record the final viva outcome and correction closure
+- approve academic completion after all required evidence is satisfied
 
 ---
 
@@ -571,7 +589,10 @@ From the structure of the repository, the strongest qualities of the project are
 
 ## 17. In One Sentence
 
-This project is a **role-based full-stack postgraduate academic workflow system** built with Next.js, Prisma, Firebase, and Supabase to manage the full lifecycle from application to final thesis completion.
+This project is a **role-based full-stack Department M.Phil./Ph.D. lifecycle
+system** built with Next.js, Prisma, Firebase, and Supabase to manage application,
+fixed milestones, examination, completion, confirmed graduation, and archive as
+separate controlled states.
 
 ---
 

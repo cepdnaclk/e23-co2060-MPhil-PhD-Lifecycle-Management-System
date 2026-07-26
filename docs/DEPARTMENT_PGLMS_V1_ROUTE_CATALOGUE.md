@@ -56,10 +56,14 @@ read-only profile/report routes are retained from WP-01–WP-04.
 | `POST /api/supervisor/corrections/:id/review` | Active primary Supervisor | Certify or return the exact submission version |
 | `POST /api/examiner/corrections/:id/review` | Assigned Thesis Examiner | Independently approve or return when required |
 | `POST /api/hod/corrections/:id/decision` | HOD | Approve or return correction completion |
-| `POST /api/hod/students/:id/completion` | HOD | Academic completion |
-| `POST /api/admin/students/:id/completion` | PG Coordinator | Record completion |
-| `POST /api/admin/students/:id/graduation` | PG Coordinator | Record graduation |
-| `POST /api/admin/students/:id/archive` | PG Coordinator | Archive after graduation |
+| `POST /api/hod/students/:id/completion` | HOD | Evidence-gated academic completion approval bound to the exact thesis version |
+| `POST /api/admin/students/:id/completion` | PG Coordinator | Atomically complete the Student, registration, thesis, audit, and outbox |
+| `POST /api/admin/students/:id/graduation` | PG Coordinator | Record externally confirmed graduation date and reference |
+| `POST /api/admin/students/:id/archive` | PG Coordinator | Non-destructively archive after confirmed graduation |
+
+The PG Coordinator operates these commands from
+`/dashboard/admin/completions`; the Student sees only released lifecycle state
+on `/dashboard/student/progress`.
 
 ## Audit, delivery, and maintenance
 

@@ -39,8 +39,11 @@ progress-Examiner, Supervisor sign-off, and Examiner-outcome workflow report.
 9. Corrections are ordered from that outcome and originating thesis version.
    Verified Student resubmission versions pass primary-Supervisor certification,
    assigned-Examiner review when required, and final HOD closure.
-10. HOD academic completion, PG Coordinator completion recording, graduation,
-    and archive are separate commands and records.
+10. HOD academic completion is bound to the exact verified thesis version and
+    requires fixed milestones, ethics, viva, and correction evidence. The PG
+    Coordinator then atomically completes the Student, registration, and thesis.
+    Externally confirmed graduation and later non-destructive archive remain
+    separate commands and records.
 
 ## Fixed programme rules
 
@@ -61,6 +64,9 @@ new term.
   transaction.
 - Critical notification intents use idempotent outbox keys, leases, bounded
   retry, attempt history, dead-letter state, and Administrator recovery.
+- Completion, graduation, and archive each write their own audit event and
+  durable notification intent; archive retains documents and does not alter
+  the academic completion timestamp or Firebase identity.
 - Document access remains assignment- and version-scoped; pending Examiner
   assignments do not confer thesis access.
 - Four progress tables derive completion and overdue values from milestone

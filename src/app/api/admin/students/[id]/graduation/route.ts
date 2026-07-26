@@ -8,7 +8,11 @@ import {
 } from "@/lib/completion/department-workflow";
 import { withAuth } from "@/lib/firebase/with-auth";
 
-const schema = z.object({ graduationDate: z.coerce.date() });
+const schema = z.object({
+  graduationDate: z.coerce.date(),
+  confirmationReference: z.string().trim().min(5).max(500),
+  notes: z.string().trim().max(5_000).optional(),
+});
 
 export const POST = withAuth<{ id: string }>(async (request: NextRequest, context) => {
   const parsed = schema.safeParse(await request.json());
@@ -18,7 +22,7 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, contex
   try {
     const graduation = await recordGraduation(
       context.params?.id ?? "",
-      parsed.data.graduationDate,
+      parsed.data,
       context.auth,
     );
     return NextResponse.json({ graduation });

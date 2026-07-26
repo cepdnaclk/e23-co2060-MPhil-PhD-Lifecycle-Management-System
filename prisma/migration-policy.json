@@ -35,6 +35,11 @@
       "sha256": "94a4f8afdcdbb59a387485c5f996e532e7abd46a3dba580ace69340f61ff8b7e",
       "productionDeploymentBlocked": true,
       "reason": "This migration backfills originating thesis-version links for existing correction orders, makes legacy major orders require Examiner review, and adds exact revised-version, evidence, and reviewer relations. It must remain blocked for populated deployment until legacy response-only submissions are reconciled, every order has an unambiguous originating version, and rollback or roll-forward rehearsal evidence is approved."
+    },
+    "20260726231000_finalize_completion_graduation_archive_states": {
+      "sha256": "5887ba09a0c02afbfe8930e6e14fcdec5f19468ae72f7288d3feb11929172d7f",
+      "productionDeploymentBlocked": true,
+      "reason": "This migration replaces the legacy ADMIN_RECORDED completion label, exact-version-binds existing completion records, and backfills completion, graduation, and archive state across Students, registrations, and theses. It must remain blocked for populated deployment until ambiguous current thesis versions are reconciled and the lifecycle backfill and rollback or roll-forward plan are rehearsed."
     }
   }
 }

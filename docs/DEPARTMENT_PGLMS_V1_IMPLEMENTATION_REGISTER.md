@@ -57,8 +57,8 @@
 | D6 Progress/tables/CSV | Implemented | Milestone return/resubmit/approve, four fixed tables, scoped complete formula-safe CSV and export audit |
 | D7 Ethics | Implemented | Student declaration, Supervisor recommendation, PG Coordinator record, HOD confirmation, immutable decision history, and confirmed gate |
 | D8 Thesis examination | Implemented | Primary-Supervisor readiness, pending exact-version assignment, HOD confirmation, independent reports |
-| D9 Viva/corrections/completion | Partial | Independent recommendations, HOD outcome, verified version-bound correction submissions, Supervisor/Examiner reviews, and HOD closure exist; exact completion-state enums remain |
-| D10 UI/cleanup/docs | Partial locally | HOD and assignment queues, role navigation, retired route/model removal, and canonical docs exist; completion-state alignment and external browser/DB checks remain |
+| D9 Viva/corrections/completion | Implemented locally | Independent recommendations, HOD outcome, version-bound correction review, evidence-gated HOD completion approval, atomic PG Coordinator completion, confirmed graduation, and later archive |
+| D10 UI/cleanup/docs | Implemented locally | Role workspaces, completion lifecycle queue, Student released-state display, retired route/model removal, and canonical docs exist; external deployment checks remain |
 
 ## Deployment limitations
 
@@ -114,8 +114,8 @@ link one account for every role when existing Firebase UIDs are supplied via
 - Added public Supervisor selection, Administrator reviewer assignment,
   Supervisor/Examiner review work, HOD decision queues, and fixed progress
   tables for Administrator/HOD/Supervisor.
-- Final ordinary suite: 87 passing files / 306 passing tests; the guarded
-  real-database test remains opt-in.
+- Final ordinary suite: 88 passing files / 312 passing tests; the guarded
+  real-database test also passed 1/1 against a disposable PostgreSQL database.
 
 The final route-to-target audit also closed three gaps found after the first
 D4–D10 pass:
@@ -131,16 +131,23 @@ D4–D10 pass:
 - HOD-derived corrections tied to the originating thesis version, sealed
   Student resubmission versions, primary-Supervisor certification, required
   independent Examiner approvals, and HOD closure.
+- Completion approval bound to the exact verified current thesis version and
+  gated by every fixed milestone, the HOD-confirmed ethics state, the final
+  viva outcome, and closed corrections. PG Coordinator completion now updates
+  the Student, fixed registration, thesis, audit, and outbox atomically;
+  confirmed graduation and non-destructive archive remain later commands.
+- Added
+  `20260726231000_finalize_completion_graduation_archive_states`, which
+  replaces legacy completion enums, exact-version-binds existing completion
+  rows, and is checksum-pinned against populated deployment until its fail-closed
+  backfill is rehearsed.
 
-## Remaining functional deltas
+## Remaining release limitations
 
-This branch is not a complete implementation of every approved target rule:
-
-1. Completion, graduation, and archive are separate records, but the legacy
-   `AcademicStatus`, `RegistrationStatus`, and `ThesisStatus` enums do not yet
-   express all target intermediate `COMPLETED`/`FAILED` states directly.
-
-These are release blockers for claiming full Department PGLMS V1 conformance.
+No known Department V1 completion-state delta remains in the local
+implementation. This does not remove the populated-data rehearsal, live
+Firebase/Supabase/storage/scanner/SMTP checks, hosted CI evidence, recovery
+rehearsal, or deployment approval listed above.
 
 | Final command | Result |
 |---|---|
@@ -149,8 +156,8 @@ These are release blockers for claiming full Department PGLMS V1 conformance.
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
 | `npm run prisma:validate` | Passed |
-| `npm run prisma:migrate:check` | Passed; seven checksum-pinned production blockers |
-| `npm test -- --run` | Passed: 87 files / 306 tests; 1 guarded database test skipped |
-| `npm run build` | Passed: 88 static pages generated and active route manifest compiled |
+| `npm run prisma:migrate:check` | Passed; eight checksum-pinned production blockers |
+| `npm test` | Passed: 88 files / 312 tests; 1 guarded database test skipped |
+| `npm run build` | Passed: 89 static pages generated and active route manifest compiled |
 | `npm run test:e2e` | Passed: 2/2 public Chromium/accessibility tests |
-| `npm run test:database` | Skipped safely: opted-in `TEST_DATABASE_URL` unavailable |
+| `npm run test:database` | Passed: 1/1 against a disposable PostgreSQL database after all 14 migrations |

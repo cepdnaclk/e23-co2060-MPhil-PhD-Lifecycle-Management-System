@@ -175,6 +175,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments", icon: UserSearch },
         { href: "/dashboard/admin/vivas/schedule", label: "Schedule Vivas", icon: CalendarDays },
         { href: "/dashboard/admin/theses", label: "Finalize Theses", icon: GraduationCap },
+        { href: "/dashboard/admin/completions", label: "Completion Records", icon: ClipboardCheck },
         { href: "/dashboard/admin/documents", label: "Documents", icon: FolderOpen },
         { href: "/dashboard/admin/notification-log", label: "Notification Log", icon: Bell },
         { href: "/dashboard/admin/outbox", label: "Notification Recovery", icon: RotateCcw },

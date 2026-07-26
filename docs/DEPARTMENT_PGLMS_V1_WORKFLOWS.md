@@ -76,15 +76,27 @@ HOD outcome MINOR/MAJOR
 → independent assigned-Examiner approval when required
 → HOD approval or version-return
 → CORRECTIONS_APPROVED
-→ HOD completion approval
-→ Admin completion execution
-→ graduation record
-→ archive record
+→ HOD completion approval bound to the exact verified current thesis version
+→ PG Coordinator completion execution
+   → ProgrammeCompletion COMPLETED
+   → Student AcademicStatus COMPLETED
+   → Registration COMPLETED
+   → Thesis COMPLETED
+→ PG Coordinator records externally confirmed graduation
+   → Student AcademicStatus GRADUATED
+→ PG Coordinator archives the later lifecycle record
+   → Student/Registration ARCHIVED
+   → Thesis FINAL_ARCHIVE
 ```
 
 Correction type derives from the HOD outcome. Ordinary thesis resubmission
 cannot bypass the correction requirement. Every return preserves the reviewed
-version and opens the order for a new verified submission version.
+version and opens the order for a new verified submission version. HOD
+completion approval additionally requires every fixed milestone, the
+HOD-confirmed ethics gate, verified current thesis evidence, a PASS or closed
+corrections outcome, and no unresolved correction order. Archive retains
+documents, audit history, and the original completion timestamp and does not
+deactivate Firebase.
 
 ## Transaction boundary
 

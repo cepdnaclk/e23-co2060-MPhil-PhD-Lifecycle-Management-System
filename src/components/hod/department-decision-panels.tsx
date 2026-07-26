@@ -251,12 +251,25 @@ export function HodCompletionDecisionPanel({
     requirements: string;
     submissionCount: number;
   }>;
-  students: Array<{ id: string; studentName: string; thesisTitle: string }>;
+  students: Array<{
+    id: string;
+    studentName: string;
+    thesisTitle: string;
+    programmeLabel: string;
+    milestoneSummary: string;
+    ethicsSummary: string;
+    thesisVersionSummary: string;
+    outcomeSummary: string;
+    ready: boolean;
+  }>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [correctionNotes, setCorrectionNotes] = useState<
+    Record<string, string>
+  >({});
+  const [completionReasons, setCompletionReasons] = useState<
     Record<string, string>
   >({});
   async function act(path: string, body: unknown, key: string) {
@@ -345,7 +358,55 @@ export function HodCompletionDecisionPanel({
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Academic completion</h2>
-        {students.map((student) => <Card key={student.id}><CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6"><div><p className="font-medium">{student.studentName}</p><p className="text-sm text-muted-foreground">{student.thesisTitle}</p></div><Button disabled={busy === student.id} onClick={() => void act(`/api/hod/students/${student.id}/completion`, { comments: "Department academic completion approved." }, student.id)}>Approve programme completion</Button></CardContent></Card>)}
+        {students.map((student) => (
+          <Card key={student.id}>
+            <CardContent className="space-y-4 pt-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium">{student.studentName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {student.thesisTitle} · {student.programmeLabel}
+                  </p>
+                </div>
+                <Badge variant={student.ready ? "default" : "secondary"}>
+                  {student.ready ? "Evidence complete" : "Not ready"}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="outline">{student.milestoneSummary}</Badge>
+                <Badge variant="outline">{student.ethicsSummary}</Badge>
+                <Badge variant="outline">{student.thesisVersionSummary}</Badge>
+                <Badge variant="outline">{student.outcomeSummary}</Badge>
+              </div>
+              <Textarea
+                value={completionReasons[student.id] ?? ""}
+                onChange={(event) =>
+                  setCompletionReasons((current) => ({
+                    ...current,
+                    [student.id]: event.target.value,
+                  }))
+                }
+                placeholder="Academic completion approval reason (at least 10 characters)"
+              />
+              <Button
+                disabled={
+                  !student.ready ||
+                  busy === student.id ||
+                  (completionReasons[student.id]?.trim().length ?? 0) < 10
+                }
+                onClick={() =>
+                  void act(
+                    `/api/hod/students/${student.id}/completion`,
+                    { comments: completionReasons[student.id] },
+                    student.id,
+                  )
+                }
+              >
+                Approve programme completion
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
         {students.length === 0 && <p className="text-muted-foreground">No students await academic completion.</p>}
       </section>
     </div>

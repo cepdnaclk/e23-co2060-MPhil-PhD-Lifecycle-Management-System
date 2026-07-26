@@ -140,7 +140,7 @@ enum CorrectionReviewDecision {
 enum CompletionStatus {
   PENDING
   HOD_APPROVED
-  ADMIN_RECORDED
+  COMPLETED
 }
 
 enum GraduationStatus {
@@ -156,6 +156,7 @@ enum ArchiveStatus {
 enum RegistrationStatus {
   ACTIVE
   LAPSED
+  COMPLETED
   ARCHIVED
 }
 
@@ -178,6 +179,7 @@ enum ThesisStatus {
   UNDER_EXAMINATION
   CORRECTIONS_REQUIRED
   CORRECTIONS_APPROVED
+  COMPLETED
   FINAL_ARCHIVE
   CLOSED
 }
@@ -192,8 +194,10 @@ enum VivaOutcome {
 enum AcademicStatus {
   ACTIVE
   UNDER_REVIEW
+  COMPLETED
   GRADUATED
   ARCHIVED
+  FAILED
 }
 
 enum DocumentType {
@@ -269,6 +273,9 @@ enum NotificationEvent {
   REGISTRATION_EXPIRY_APPROACHING
   VIVA_SCHEDULED
   CORRECTIONS_REQUIRED
+  PROGRAMME_COMPLETION_STATUS_CHANGED
+  GRADUATION_RECORDED
+  RECORD_ARCHIVED
   THESIS_ARCHIVED
 }
 
@@ -568,6 +575,8 @@ model Registration {
   durationMonths     Int                 @default(24)
   isFixedTerm        Boolean             @default(true)
   status             RegistrationStatus  @default(ACTIVE)
+  completedAt        DateTime?
+  archivedAt         DateTime?
   student            Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   admissionExecution AdmissionExecution?
   createdAt          DateTime            @default(now())
@@ -790,7 +799,7 @@ model Thesis {
   createdAt              DateTime                      @default(now())
   updatedAt              DateTime                      @updatedAt
   correctionOrders       CorrectionOrder[]
-  ProgrammeCompletion    ProgrammeCompletion?
+  programmeCompletion    ProgrammeCompletion?
 
   @@index([studentId, status])
   @@map("theses")
@@ -835,6 +844,7 @@ model ThesisVersion {
   examinerAssignments         ThesisExaminerAssignment[]
   originatingCorrectionOrders CorrectionOrder[]          @relation("CorrectionOriginVersion")
   correctionSubmissions       CorrectionSubmission[]     @relation("CorrectionRevisedVersion")
+  programmeCompletion         ProgrammeCompletion?
   documents                   Document[]
   createdAt                   DateTime                   @default(now())
   updatedAt                   DateTime                   @updatedAt
@@ -1035,14 +1045,17 @@ model ProgrammeCompletion {
   id                    String           @id @default(cuid())
   studentId             String           @unique
   thesisId              String           @unique
+  thesisVersionId       String           @unique
   status                CompletionStatus @default(PENDING)
   approvedByHodUserId   String?
   hodApprovedAt         DateTime?
   hodComments           String?
   recordedByAdminUserId String?
   adminRecordedAt       DateTime?
+  completedAt           DateTime?
   student               Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
   thesis                Thesis           @relation(fields: [thesisId], references: [id], onDelete: Restrict)
+  thesisVersion         ThesisVersion    @relation(fields: [thesisVersionId], references: [id], onDelete: Restrict)
   approvedByHod         User?            @relation("CompletionHod", fields: [approvedByHodUserId], references: [id], onDelete: SetNull)
   recordedByAdmin       User?            @relation("CompletionAdministrator", fields: [recordedByAdminUserId], references: [id], onDelete: SetNull)
   createdAt             DateTime         @default(now())
@@ -1054,16 +1067,17 @@ model ProgrammeCompletion {
 }
 
 model GraduationRecord {
-  id               String           @id @default(cuid())
-  studentId        String           @unique
-  status           GraduationStatus @default(NOT_RECORDED)
-  graduationDate   DateTime?
-  recordedByUserId String
-  notes            String?
-  student          Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  recordedBy       User             @relation("GraduationRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                    String           @id @default(cuid())
+  studentId             String           @unique
+  status                GraduationStatus @default(NOT_RECORDED)
+  graduationDate        DateTime?
+  confirmationReference String
+  recordedByUserId      String
+  notes                 String?
+  student               Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  recordedBy            User             @relation("GraduationRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   @@index([status, graduationDate])
   @@map("graduation_records")
