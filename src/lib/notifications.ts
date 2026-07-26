@@ -264,7 +264,7 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         null,
         NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
         `Registration expiry reminder`,
-        `Your registration expires on ${payload.expirationDateLabel}. Please renew within ${payload.daysRemaining ?? 14} days.`,
+        `Your fixed registration period ends on ${payload.expirationDateLabel}. Contact the PG Coordinator if action is required.`,
       );
       break;
     }

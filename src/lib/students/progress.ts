@@ -1,5 +1,6 @@
 import {
   DocumentType,
+  ProgressSubmissionStatus,
   ProgramType,
   ProposalStatus,
   ThesisStatus,
@@ -76,7 +77,7 @@ type StudentDocumentRecord = {
     status: ProposalStatus;
   } | null;
   progressReport: {
-    isSupervisorSignedOff: boolean;
+    status: ProgressSubmissionStatus;
   } | null;
   thesis: {
     status: ThesisStatus;
@@ -191,7 +192,7 @@ async function findStudentDocuments(
       },
       progressReport: {
         select: {
-          isSupervisorSignedOff: true,
+          status: true,
         },
       },
       thesis: {

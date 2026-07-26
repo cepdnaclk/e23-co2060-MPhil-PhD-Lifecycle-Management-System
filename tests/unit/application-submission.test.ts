@@ -1,8 +1,10 @@
 import {
   AcademicStatus,
   ApplicationStatus,
+  DepartmentDecision,
   ProgramType,
   RegistrationStatus,
+  StudyMode,
   UserRole,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +17,11 @@ vi.mock("@/lib/firebase/admin", () => ({
 }));
 
 vi.mock("@/lib/email", () => ({
+  buildWelcomeAccountTemplate: vi.fn().mockReturnValue({
+    subject: "Account ready",
+    html: "<p>Ready</p>",
+    text: "Ready",
+  }),
   notifyEthicsApprovalSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyApplicationSubmittedToAdministrator: vi.fn().mockResolvedValue({
@@ -43,11 +50,11 @@ vi.mock("@/lib/prisma/client", () => ({
 import {
   applicationSubmissionSchema,
   assertValidApplicationUploadFile,
+  executeApprovedAdmission,
   updateApplicationStatus,
 } from "@/lib/applications/submission";
 import {
   createFirebaseAuthUser,
-  deleteFirebaseAuthUser,
   generateFirebasePasswordSetupLink,
   setCustomClaimsForUser,
 } from "@/lib/firebase/admin";
@@ -92,6 +99,11 @@ describe("application submission utilities", () => {
       applicantEmail: "applicant@example.com",
       applicantPhone: "+94770000000",
       programType: "MPHIL",
+      studyMode: "FULL_TIME",
+      proposalTitle: "Adaptive learning systems",
+      proposalAbstract:
+        "A detailed proposal for adaptive learning systems in postgraduate education.",
+      proposedSupervisorId: "supervisor-1",
       researchArea: "AI",
       statementOfPurpose:
         "I want to pursue a long-term research problem in adaptive systems for education.",
@@ -116,6 +128,11 @@ describe("application submission utilities", () => {
       applicantEmail: "applicant@example.com",
       applicantPhone: "+94770000000",
       programType: "MPHIL",
+      studyMode: "FULL_TIME",
+      proposalTitle: "Adaptive learning systems",
+      proposalAbstract:
+        "A detailed proposal for adaptive learning systems in postgraduate education.",
+      proposedSupervisorId: "supervisor-1",
       researchArea: "AI",
       statementOfPurpose:
         "I want to pursue a long-term research problem in adaptive systems for education.",
@@ -152,7 +169,7 @@ describe("application submission utilities", () => {
     });
   });
 
-  it("deletes the Firebase user if the admission database transaction fails", async () => {
+  it("blocks the retired generic admission mutation before provisioning", async () => {
     vi.mocked(prisma.application.findUnique).mockResolvedValue({
       id: "application-admit-1",
       status: ApplicationStatus.UNDER_REVIEW,
@@ -161,37 +178,18 @@ describe("application submission utilities", () => {
       programType: ProgramType.MPHIL,
       studentId: null,
     } as never);
-    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
-    vi.mocked(createFirebaseAuthUser).mockResolvedValue({
-      uid: "firebase-student-1",
-    } as never);
-    vi.mocked(setCustomClaimsForUser).mockResolvedValue(undefined);
-    vi.mocked(prisma.$transaction).mockRejectedValue(new Error("DB transaction failed"));
-
     await expect(
       updateApplicationStatus("application-admit-1", ApplicationStatus.ADMITTED),
     ).rejects.toMatchObject({
-      status: 500,
-      message: "DB transaction failed",
+      status: 410,
+      message:
+        "Admission must be executed through the approved Department admission route.",
     });
 
-    expect(createFirebaseAuthUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: "admit@example.com",
-        displayName: "Applicant Admit",
-      }),
-    );
-    expect(vi.mocked(createFirebaseAuthUser).mock.calls[0]?.[0]).not.toHaveProperty(
-      "password",
-    );
-    expect(setCustomClaimsForUser).toHaveBeenCalledWith(
-      "firebase-student-1",
-      "STUDENT",
-    );
-    expect(deleteFirebaseAuthUser).toHaveBeenCalledWith("firebase-student-1");
+    expect(createFirebaseAuthUser).not.toHaveBeenCalled();
   });
 
-  it("creates student, registration, and admitted application records in one admission flow", async () => {
+  it("executes HOD-approved admission with fixed registration and milestones", async () => {
     vi.mocked(prisma.application.findUnique)
       .mockResolvedValueOnce({
         id: "application-admit-2",
@@ -199,6 +197,8 @@ describe("application submission utilities", () => {
         applicantName: "Applicant Success",
         applicantEmail: "success@example.com",
         programType: ProgramType.PHD,
+        studyMode: StudyMode.PART_TIME,
+        departmentDecision: DepartmentDecision.APPROVED,
         studentId: null,
       } as never)
       .mockResolvedValueOnce({
@@ -242,6 +242,15 @@ describe("application submission utilities", () => {
             studentId: "student-2",
           }),
         },
+        admissionExecution: {
+          create: vi.fn().mockResolvedValue({ id: "execution-2" }),
+        },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-2" }),
+        },
+        outboxMessage: {
+          create: vi.fn().mockResolvedValue({ id: "outbox-2" }),
+        },
       };
 
       const result = await callback(tx as never);
@@ -260,6 +269,12 @@ describe("application submission utilities", () => {
             userId: "user-student-2",
             academicStatus: AcademicStatus.ACTIVE,
             programType: ProgramType.PHD,
+            studyMode: StudyMode.PART_TIME,
+            milestones: {
+              create: expect.arrayContaining([
+                expect.objectContaining({ sequenceNumber: 9 }),
+              ]),
+            },
           }),
         }),
       );
@@ -268,6 +283,9 @@ describe("application submission utilities", () => {
           data: expect.objectContaining({
             studentId: "student-2",
             status: RegistrationStatus.ACTIVE,
+            studyMode: StudyMode.PART_TIME,
+            durationMonths: 54,
+            isFixedTerm: true,
           }),
         }),
       );
@@ -280,9 +298,14 @@ describe("application submission utilities", () => {
       studentId: "student-2",
     } as never);
 
-    const result = await updateApplicationStatus(
+    const result = await executeApprovedAdmission(
       "application-admit-2",
-      ApplicationStatus.ADMITTED,
+      {
+        uid: "firebase-admin",
+        userId: "admin-user-1",
+        firebaseUid: "firebase-admin",
+        role: UserRole.ADMINISTRATOR,
+      },
     );
 
     expect(result).toMatchObject({

@@ -13,9 +13,13 @@ import {
 } from "@prisma/client";
 
 import {
+  buildWelcomeAccountTemplate,
   notifyApplicationSubmittedToAdministrator,
-  notifyWelcomeAccountCreated,
 } from "@/lib/email";
+import {
+  appendLifecycleEventAndEnqueue,
+  LIFECYCLE_EVENT,
+} from "@/lib/audit/lifecycle";
 import {
   createFirebaseAuthUser,
   deleteFirebaseAuthUser,
@@ -25,6 +29,8 @@ import {
 import { assertValidApplicationStatusTransition } from "@/lib/prisma/application-status";
 import { prisma } from "@/lib/prisma/client";
 import { withSerializableRetry } from "@/lib/prisma/transactions";
+import { buildProgrammeSchedule } from "@/lib/programmes/rules";
+import type { AuthenticatedUserContext } from "@/types/auth";
 import {
   assertApplicationAttachmentConstraints,
   buildApplicationAttachmentStoragePath,
@@ -71,16 +77,6 @@ export class ApplicationSubmissionError extends Error {
     this.name = "ApplicationSubmissionError";
     this.status = status;
   }
-}
-
-function buildInitialRegistrationWindow(startDate = new Date()) {
-  const expirationDate = new Date(startDate);
-  expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-
-  return {
-    startDate,
-    expirationDate,
-  };
 }
 
 function buildLoginUrl() {
@@ -339,6 +335,26 @@ export async function createApplicationSubmission(
     });
   }
 
+  const proposedSupervisor = await prisma.supervisor.findUnique({
+    where: { id: parsed.data.proposedSupervisorId },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          isActive: true,
+        },
+      },
+    },
+  });
+
+  if (!proposedSupervisor?.user.isActive) {
+    throw new ApplicationSubmissionError(
+      "The selected proposed supervisor is not available.",
+      409,
+    );
+  }
+
   const claimed = await prisma.uploadSession.updateMany({
     where: { id: draft.id, status: UploadSessionStatus.OPEN },
     data: { status: UploadSessionStatus.FINALIZING },
@@ -433,6 +449,19 @@ export async function createApplicationSubmission(
           statementOfPurpose: parsed.data.statementOfPurpose,
           status: ApplicationStatus.SUBMITTED,
           programType: parsed.data.programType,
+          studyMode: parsed.data.studyMode,
+          proposalTitle: parsed.data.proposalTitle,
+          proposalAbstract: parsed.data.proposalAbstract,
+          proposedSupervisorId: proposedSupervisor.id,
+          proposedSupervisorUserId: proposedSupervisor.userId,
+          proposalVersions: {
+            create: {
+              versionNumber: 1,
+              title: parsed.data.proposalTitle,
+              abstract: parsed.data.proposalAbstract,
+              isCurrent: true,
+            },
+          },
           documents: {
             create: verifiedFiles.map((document, index) => ({
               id: documentIds[index],
@@ -465,6 +494,32 @@ export async function createApplicationSubmission(
           result: { applicationId: application.id },
         },
       });
+
+      await appendLifecycleEventAndEnqueue(
+        tx as never,
+        {
+          eventKey: `application:${application.id}:submitted`,
+          eventType: LIFECYCLE_EVENT.APPLICATION_SUBMITTED,
+          aggregateType: "Application",
+          aggregateId: application.id,
+          actorLabel: parsed.data.applicantEmail,
+          newState: ApplicationStatus.SUBMITTED,
+          metadata: {
+            programType: parsed.data.programType,
+            studyMode: parsed.data.studyMode,
+          },
+        },
+        [
+          {
+            eventKey: `application:${application.id}:supervisor-consent:notify:${proposedSupervisor.userId}`,
+            recipientId: proposedSupervisor.userId,
+            notificationEvent: "APPLICATION_STATUS_CHANGED",
+            title: "Proposed supervisor consent requested",
+            message: `${parsed.data.applicantName} named you as proposed supervisor for "${parsed.data.proposalTitle}".`,
+            actionUrl: "/dashboard/supervisor/applications",
+          },
+        ],
+      );
       return application.id;
     });
 
@@ -549,35 +604,63 @@ export async function updateApplicationStatus(
     );
   }
 
-  if (nextStatus !== ApplicationStatus.ADMITTED) {
-    return prisma.application.update({
-      where: {
-        id: applicationId,
-      },
-      data: {
-        status: nextStatus,
-      },
-    });
+  if (nextStatus === ApplicationStatus.ADMITTED) {
+    throw new ApplicationSubmissionError(
+      "Admission must be executed through the approved Department admission route.",
+      410,
+    );
+  }
+
+  return prisma.application.update({
+    where: { id: applicationId },
+    data: { status: nextStatus },
+  });
+}
+
+export async function executeApprovedAdmission(
+  applicationId: string,
+  auth: AuthenticatedUserContext,
+) {
+  if (auth.role !== UserRole.ADMINISTRATOR) {
+    throw new ApplicationSubmissionError(
+      "Only the PG Coordinator can execute an approved admission.",
+      403,
+    );
+  }
+
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
+    select: {
+      id: true,
+      applicantName: true,
+      applicantEmail: true,
+      programType: true,
+      studyMode: true,
+      departmentDecision: true,
+      studentId: true,
+    },
+  });
+
+  if (!application) {
+    throw new ApplicationSubmissionError("Application not found.", 404);
+  }
+
+  if (application.departmentDecision !== "APPROVED") {
+    throw new ApplicationSubmissionError(
+      "HOD approval is required before admission execution.",
+      409,
+    );
   }
 
   if (application.studentId) {
-    return prisma.application.update({
-      where: {
-        id: applicationId,
-      },
-      data: {
-        status: nextStatus,
-      },
+    return prisma.application.findUniqueOrThrow({
+      where: { id: application.id },
     });
   }
 
   const existingUser = await prisma.user.findUnique({
-    where: {
-      email: application.applicantEmail,
-    },
-    select: {
-      id: true,
-    },
+    where: { email: application.applicantEmail },
+    select: { id: true },
   });
 
   if (existingUser) {
@@ -596,16 +679,23 @@ export async function updateApplicationStatus(
   try {
     const accountSetupUrl = await generateFirebasePasswordSetupLink(
       application.applicantEmail,
-      {
-        url: buildLoginUrl(),
-      },
+      { url: buildLoginUrl() },
     );
+    await setCustomClaimsForUser(firebaseUser.uid, UserRole.STUDENT);
 
-    await setCustomClaimsForUser(firebaseUser.uid, "STUDENT");
+    const registrationStartDate = new Date();
+    const schedule = buildProgrammeSchedule({
+      programType: application.programType,
+      studyMode: application.studyMode,
+      registrationStartDate,
+    });
+    const welcome = buildWelcomeAccountTemplate({
+      recipientName: application.applicantName,
+      roleLabel: "Student",
+      accountSetupUrl,
+    });
 
-    const { startDate, expirationDate } = buildInitialRegistrationWindow();
-
-    const admittedApplication = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
           email: application.applicantEmail,
@@ -615,68 +705,98 @@ export async function updateApplicationStatus(
           isActive: true,
         },
       });
-
       const student = await tx.student.create({
         data: {
           userId: createdUser.id,
           programType: application.programType,
+          studyMode: application.studyMode,
           academicStatus: AcademicStatus.ACTIVE,
-          enrollmentDate: startDate,
+          enrollmentDate: registrationStartDate,
+          expectedCompletionDate: schedule.registrationEndDate,
+          milestones: {
+            create: schedule.milestones.map((milestone) => ({
+              sequenceNumber: milestone.sequenceNumber,
+              dueDate: milestone.dueDate,
+            })),
+          },
         },
       });
-
-      await tx.registration.create({
+      const registration = await tx.registration.create({
         data: {
           studentId: student.id,
-          startDate,
-          expirationDate,
+          startDate: registrationStartDate,
+          expirationDate: schedule.registrationEndDate,
           status: RegistrationStatus.ACTIVE,
+          studyMode: application.studyMode,
+          durationMonths: schedule.rule.durationMonths,
+          isFixedTerm: true,
         },
       });
 
       await tx.application.update({
-        where: {
-          id: application.id,
-        },
+        where: { id: application.id },
         data: {
           status: ApplicationStatus.ADMITTED,
           studentId: student.id,
         },
       });
-
-      return {
-        createdUser,
-        student,
-      };
-    });
-
-    void notifyWelcomeAccountCreated({
-      recipientUserId: admittedApplication.createdUser.id,
-      to: admittedApplication.createdUser.email,
-      recipientName: admittedApplication.createdUser.displayName,
-      roleLabel: admittedApplication.createdUser.role,
-      accountSetupUrl,
+      await tx.admissionExecution.create({
+        data: {
+          applicationId: application.id,
+          executedByUserId: auth.userId,
+          studentId: student.id,
+          registrationId: registration.id,
+        },
+      });
+      await appendLifecycleEventAndEnqueue(
+        tx as never,
+        {
+          eventKey: `application:${application.id}:admission-executed`,
+          eventType: LIFECYCLE_EVENT.ADMISSION_EXECUTED,
+          aggregateType: "Application",
+          aggregateId: application.id,
+          actorUserId: auth.userId,
+          actorRole: auth.role,
+          previousState: ApplicationStatus.UNDER_REVIEW,
+          newState: ApplicationStatus.ADMITTED,
+          metadata: {
+            studentId: student.id,
+            registrationId: registration.id,
+            durationMonths: schedule.rule.durationMonths,
+          },
+        },
+        [
+          {
+            eventKey: `application:${application.id}:admission-executed:welcome`,
+            recipientId: createdUser.id,
+            studentId: student.id,
+            notificationEvent: "APPLICATION_STATUS_CHANGED",
+            title: "Admission executed",
+            message: `Your ${application.programType} admission has been executed.`,
+            actionUrl: "/dashboard/student",
+            payload: {
+              email: {
+                to: application.applicantEmail,
+                ...welcome,
+              },
+            },
+          },
+        ],
+      );
     });
 
     return prisma.application.findUniqueOrThrow({
-      where: {
-        id: application.id,
-      },
+      where: { id: application.id },
     });
   } catch (error) {
-    try {
-      await deleteFirebaseAuthUser(firebaseUser.uid);
-    } catch (cleanupError) {
-      console.error("Failed to roll back Firebase student account creation.", cleanupError);
-    }
-
-    if (error instanceof ApplicationSubmissionError) {
-      throw error;
-    }
-
-    throw new ApplicationSubmissionError(
-      error instanceof Error ? error.message : "Unable to admit application.",
-      500,
-    );
+    await deleteFirebaseAuthUser(firebaseUser.uid).catch((cleanupError) => {
+      console.error("Failed to roll back Firebase student account.", cleanupError);
+    });
+    throw error instanceof ApplicationSubmissionError
+      ? error
+      : new ApplicationSubmissionError(
+          error instanceof Error ? error.message : "Unable to execute admission.",
+          500,
+        );
   }
 }

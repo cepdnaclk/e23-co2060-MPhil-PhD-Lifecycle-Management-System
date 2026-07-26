@@ -213,7 +213,7 @@ export async function submitProgressReport(
           studentId: true,
           periodLabel: true,
           narrative: true,
-          isSupervisorSignedOff: true,
+          status: true,
           isOverdue: true,
           createdAt: true,
           updatedAt: true,

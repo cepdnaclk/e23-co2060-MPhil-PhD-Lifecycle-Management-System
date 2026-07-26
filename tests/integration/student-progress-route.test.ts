@@ -229,7 +229,7 @@ describe("student progress route", () => {
         progressReport:
           index >= 12
             ? {
-                isSupervisorSignedOff: index % 2 === 0,
+                status: index % 2 === 0 ? "APPROVED" : "SUBMITTED",
               }
             : null,
         thesis: null,

@@ -20,7 +20,8 @@ const assignedViva = {
   id: "viva-1",
   scheduledDate: "2026-05-15T10:00:00.000Z",
   venue: "Boardroom 1",
-  outcome: null,
+      outcome: null,
+      recommendation: null,
   thesis: {
     id: "thesis-1",
     title: "Adaptive Systems Thesis",

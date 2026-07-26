@@ -10,6 +10,7 @@ type ExaminerViva = {
   scheduledDate: string | Date;
   venue: string;
   outcome: string | null;
+  recommendation: string | null;
   thesis: {
     id: string;
     title: string;
@@ -49,12 +50,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [downloadingThesisId, setDownloadingThesisId] = useState<string | null>(null);
   const [selectedOutcome, setSelectedOutcome] = useState<Record<string, string>>({});
+  const [rationales, setRationales] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,10 +69,11 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     FAIL: "Fail",
   };
 
-  async function recordOutcome(vivaId: string) {
-    const outcome = selectedOutcome[vivaId];
-    if (!outcome) {
-      setError("Select an outcome before recording the viva result.");
+  async function recordRecommendation(vivaId: string) {
+    const recommendation = selectedOutcome[vivaId];
+    const rationale = rationales[vivaId]?.trim() ?? "";
+    if (!recommendation || rationale.length < 20) {
+      setError("Select a recommendation and provide a rationale of at least 20 characters.");
       return;
     }
     setBusyId(vivaId);
@@ -77,25 +81,20 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     setError(null);
 
     try {
-      const response = await secureFetch(`/api/vivas/${vivaId}/outcome`, {
+      const response = await secureFetch(`/api/vivas/${vivaId}/recommendation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ outcome }),
+        body: JSON.stringify({ recommendation, rationale }),
       });
       const payload = (await response.json()) as {
         error?: string;
-        requiresAdministrativeApproval?: boolean;
       };
-      if (!response.ok) throw new Error(payload.error ?? "Unable to record viva outcome.");
-      setMessage(
-        payload.requiresAdministrativeApproval
-          ? "Viva outcome recorded. Final archive is waiting for administrator approval."
-          : "Viva outcome recorded successfully.",
-      );
+      if (!response.ok) throw new Error(payload.error ?? "Unable to submit viva recommendation.");
+      setMessage("Independent viva recommendation submitted to the Head of Department.");
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to record viva outcome.");
+      setError(caught instanceof Error ? caught.message : "Unable to submit viva recommendation.");
     } finally {
       setBusyId(null);
     }
@@ -135,7 +134,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Assigned Vivas</h2>
           <p className="text-muted-foreground mt-2">
-            Review thesis documents and record final examination outcomes.
+            Review thesis documents and submit your independent recommendation.
           </p>
         </div>
       </div>
@@ -163,7 +162,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
         ) : (
           vivas.map((viva) => {
             const canRecord = viva.thesis.status === "UNDER_EXAMINATION";
-            const isRecorded = Boolean(viva.outcome);
+            const isRecorded = Boolean(viva.recommendation);
 
             return (
               <Card key={viva.id}>
@@ -185,7 +184,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                     </div>
                     {isRecorded ? (
                       <Badge variant="default" className="w-fit">
-                        {viva.outcome?.replaceAll("_", " ")}
+                        {viva.recommendation?.replaceAll("_", " ")}
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="w-fit">
@@ -218,7 +217,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                     {!isRecorded && (
                       <div className="flex flex-col sm:flex-row items-end gap-4 flex-1">
                         <div className="w-full sm:max-w-xs space-y-1.5 ml-auto">
-                          <Label>Final Outcome</Label>
+                          <Label>Recommendation</Label>
                           <Select
                             value={selectedOutcome[viva.id] ?? ""}
                             onValueChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
@@ -236,11 +235,30 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="w-full space-y-1.5">
+                          <Label>Rationale</Label>
+                          <Textarea
+                            value={rationales[viva.id] ?? ""}
+                            onChange={(event) =>
+                              setRationales((current) => ({
+                                ...current,
+                                [viva.id]: event.target.value,
+                              }))
+                            }
+                            disabled={!canRecord}
+                            placeholder="Explain the basis for your recommendation."
+                          />
+                        </div>
                         <Button
-                          disabled={!canRecord || busyId === viva.id || !selectedOutcome[viva.id]}
-                          onClick={() => void recordOutcome(viva.id)}
+                          disabled={
+                            !canRecord ||
+                            busyId === viva.id ||
+                            !selectedOutcome[viva.id] ||
+                            (rationales[viva.id]?.trim().length ?? 0) < 20
+                          }
+                          onClick={() => void recordRecommendation(viva.id)}
                         >
-                          {busyId === viva.id ? "Recording..." : "Record Outcome"}
+                          {busyId === viva.id ? "Submitting..." : "Submit Recommendation"}
                         </Button>
                       </div>
                     )}

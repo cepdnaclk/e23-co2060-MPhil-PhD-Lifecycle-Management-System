@@ -170,7 +170,6 @@ describe("GET /api/documents/[id] student access", () => {
       AND: expect.arrayContaining([
         { documentType: DocumentType.REVIEW_ATTACHMENT },
         { evaluationFormId: { not: null } },
-        { progressReportReviewId: null },
         { thesisExaminerAssignmentId: null },
         {
           evaluationForm: {

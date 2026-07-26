@@ -41,6 +41,9 @@ describe("supervisor assignment rules", () => {
           updateMany: prisma.supervisorAssignment.updateMany,
           update: prisma.supervisorAssignment.update,
         },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
       } as never),
     );
 
@@ -107,6 +110,7 @@ describe("supervisor assignment rules", () => {
       where: {
         studentId: "student-1",
         isPrimary: true,
+        effectiveTo: null,
       },
       data: {
         isPrimary: false,

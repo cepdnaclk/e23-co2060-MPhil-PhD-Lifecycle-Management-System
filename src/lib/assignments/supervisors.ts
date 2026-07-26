@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  appendLifecycleEvent,
+  LIFECYCLE_EVENT,
+} from "@/lib/audit/lifecycle";
 import { notifySupervisorAssigned } from "@/lib/email";
 import { prisma } from "@/lib/prisma/client";
 import type { AuthenticatedUserContext } from "@/types/auth";
@@ -39,6 +43,7 @@ type StudentAssignmentView = {
     supervisorId: string;
     supervisorUserId: string;
     isPrimary: boolean;
+    effectiveTo: Date | null;
   }>;
   examinerAssignments: Array<{
     examinerUserId: string;
@@ -93,11 +98,15 @@ async function requireStudent(studentId: string): Promise<StudentAssignmentView>
         },
       },
       supervisorAssignments: {
+        where: {
+          effectiveTo: null,
+        },
         select: {
           id: true,
           supervisorId: true,
           supervisorUserId: true,
           isPrimary: true,
+          effectiveTo: true,
         },
       },
       examinerAssignments: {
@@ -218,6 +227,7 @@ async function promoteAssignmentToPrimary(studentId: string, assignmentId: strin
       where: {
         studentId,
         isPrimary: true,
+        effectiveTo: null,
       },
       data: {
         isPrimary: false,
@@ -288,6 +298,7 @@ export async function assignSupervisorToStudent(
         where: {
           studentId: student.id,
           isPrimary: true,
+          effectiveTo: null,
         },
         data: {
           isPrimary: false,
@@ -295,13 +306,14 @@ export async function assignSupervisorToStudent(
       });
     }
 
-    return tx.supervisorAssignment.create({
+    const created = await tx.supervisorAssignment.create({
       data: {
         studentId: student.id,
         supervisorId: supervisor.id,
         supervisorUserId: supervisor.userId,
         isPrimary: shouldBePrimary,
         assignedAt: new Date(),
+        effectiveFrom: new Date(),
         assignedBy: administrator.id,
       },
       select: {
@@ -314,6 +326,22 @@ export async function assignSupervisorToStudent(
         assignedBy: true,
       },
     });
+
+    await appendLifecycleEvent(tx as never, {
+      eventKey: `supervisor-assignment:${created.id}:assigned`,
+      eventType: LIFECYCLE_EVENT.SUPERVISOR_ASSIGNED,
+      aggregateType: "SupervisorAssignment",
+      aggregateId: created.id,
+      actorUserId: auth.userId,
+      actorRole: auth.role,
+      newState: shouldBePrimary ? "PRIMARY_ACTIVE" : "CO_SUPERVISOR_ACTIVE",
+      metadata: {
+        studentId: student.id,
+        supervisorId: supervisor.id,
+      },
+    });
+
+    return created;
   });
 
   await notifySupervisorAssigned({
@@ -346,11 +374,16 @@ export async function setPrimarySupervisorAssignment(
       isPrimary: true,
       assignedAt: true,
       assignedBy: true,
+      effectiveTo: true,
     },
   });
 
   if (!assignment) {
     throw new SupervisorAssignmentError("Assignment not found.", 404);
+  }
+
+  if (assignment.effectiveTo) {
+    throw new SupervisorAssignmentError("Assignment has already ended.", 409);
   }
 
   if (assignment.isPrimary) {
@@ -393,6 +426,7 @@ export async function removeSupervisorFromStudent(
           id: {
             not: assignment.id,
           },
+          effectiveTo: null,
         },
         orderBy: {
           assignedAt: "asc",
@@ -404,8 +438,24 @@ export async function removeSupervisorFromStudent(
     : null;
 
   await prisma.$transaction(async (tx) => {
-    await tx.supervisorAssignment.delete({
+    await tx.supervisorAssignment.update({
       where: { id: assignmentId },
+      data: {
+        effectiveTo: new Date(),
+        endReason: "Ended by PG Coordinator.",
+        isPrimary: false,
+      },
+    });
+    await appendLifecycleEvent(tx as never, {
+      eventKey: `supervisor-assignment:${assignment.id}:ended`,
+      eventType: LIFECYCLE_EVENT.SUPERVISOR_ASSIGNMENT_ENDED,
+      aggregateType: "SupervisorAssignment",
+      aggregateId: assignment.id,
+      actorUserId: auth.userId,
+      actorRole: auth.role,
+      previousState: assignment.isPrimary ? "PRIMARY_ACTIVE" : "CO_SUPERVISOR_ACTIVE",
+      newState: "ENDED",
+      metadata: { studentId: assignment.studentId },
     });
 
     if (replacement) {
@@ -443,6 +493,9 @@ export async function getAllStudentAssignments(auth: AuthenticatedUserContext) {
         },
       },
       supervisorAssignments: {
+        where: {
+          effectiveTo: null,
+        },
         select: {
           id: true,
           isPrimary: true,

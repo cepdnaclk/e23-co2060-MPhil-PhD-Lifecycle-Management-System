@@ -34,6 +34,11 @@ type ApplicationDetails = {
   statementOfPurpose: string;
   programType: string;
   status: string;
+  departmentDecision: string;
+  supervisorConsentStatus: string;
+  studyMode: string;
+  proposalTitle: string | null;
+  proposalAbstract: string | null;
   createdAt: string;
   documents: {
     id: string;
@@ -42,24 +47,49 @@ type ApplicationDetails = {
   }[];
 };
 
+type ReviewerOption = {
+  id: string;
+  displayName: string;
+  email: string;
+  role: "SUPERVISOR" | "EXAMINER";
+  isActive: boolean;
+};
+
 export function ApplicationReviewPanel({ applicationId }: { applicationId: string }) {
   const router = useRouter();
   const [application, setApplication] = useState<ApplicationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [reviewers, setReviewers] = useState<ReviewerOption[]>([]);
+  const [selectedReviewerId, setSelectedReviewerId] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState<{
     show: boolean;
-    type: "ADMITTED" | "REJECTED" | null;
+    type: "UNDER_REVIEW" | "EXECUTE" | null;
   }>({ show: false, type: null });
 
   useEffect(() => {
     async function fetchDetails() {
       try {
-        const res = await secureFetch(`/api/applications/${applicationId}`);
+        const [res, supervisorsResponse, examinersResponse] = await Promise.all([
+          secureFetch(`/api/applications/${applicationId}`),
+          secureFetch("/api/admin/users?role=SUPERVISOR"),
+          secureFetch("/api/admin/users?role=EXAMINER"),
+        ]);
         if (!res.ok) throw new Error("Failed to load application details");
         const data = await res.json();
         setApplication(data.application);
+        const supervisorPayload = supervisorsResponse.ok
+          ? ((await supervisorsResponse.json()) as { users: ReviewerOption[] })
+          : { users: [] };
+        const examinerPayload = examinersResponse.ok
+          ? ((await examinersResponse.json()) as { users: ReviewerOption[] })
+          : { users: [] };
+        setReviewers(
+          [...supervisorPayload.users, ...examinerPayload.users].filter(
+            (reviewer) => reviewer.isActive,
+          ),
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred.");
       } finally {
@@ -83,6 +113,28 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     }
   };
 
+  const assignReviewer = async () => {
+    if (!selectedReviewerId) return;
+    setIsUpdating(true);
+    try {
+      const response = await secureFetch(
+        `/api/applications/${applicationId}/proposal-reviewers`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reviewerUserId: selectedReviewerId }),
+        },
+      );
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Unable to assign reviewer.");
+      setSelectedReviewerId("");
+    } catch (caught) {
+      alert(caught instanceof Error ? caught.message : "Unable to assign reviewer.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleUpdateStatus = async () => {
     const status = showConfirmModal.type;
     if (!status) return;
@@ -91,10 +143,15 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     setShowConfirmModal({ show: false, type: null });
 
     try {
-      const res = await secureFetch(`/api/applications/${applicationId}/status`, {
-        method: "PATCH",
+      const executeAdmission = status === "EXECUTE";
+      const res = await secureFetch(
+        executeAdmission
+          ? `/api/admin/applications/${applicationId}/execute-admission`
+          : `/api/admin/applications/${applicationId}/start-review`,
+        {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: undefined,
       });
 
       if (!res.ok) {
@@ -140,10 +197,13 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {showConfirmModal.type === "ADMITTED" ? "Confirm Admission" : "Confirm Rejection"}
+              {showConfirmModal.type === "EXECUTE"
+                ? "Execute Approved Admission"
+                : "Begin Department Review"}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to {showConfirmModal.type === "ADMITTED" ? "admit" : "reject"} <strong>{application.applicantName}</strong>?
+              Confirm this controlled workflow action for{" "}
+              <strong>{application.applicantName}</strong>.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -151,7 +211,6 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
               Cancel
             </Button>
             <Button
-              variant={showConfirmModal.type === "ADMITTED" ? "default" : "destructive"}
               onClick={handleUpdateStatus}
             >
               Yes, Proceed
@@ -194,13 +253,40 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Supervisor Hint</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Proposal</h3>
                 <div className="rounded-md border bg-muted/50 p-4 text-base">
-                  {application.supervisor || "No supervisor hint provided."}
+                  <p className="font-medium">{application.proposalTitle}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">
+                    {application.proposalAbstract}
+                  </p>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Applicant hint only. Use supervisor assignments after admission to assign staff.
+                  Proposed supervisor consent: {application.supervisorConsentStatus}.
                 </p>
+                {application.supervisorConsentStatus === "CONSENTED" && (
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <select
+                      className="h-10 flex-1 rounded-md border bg-background px-3 text-sm"
+                      value={selectedReviewerId}
+                      onChange={(event) => setSelectedReviewerId(event.target.value)}
+                    >
+                      <option value="">Select a proposal reviewer</option>
+                      {reviewers.map((reviewer) => (
+                        <option key={reviewer.id} value={reviewer.id}>
+                          {reviewer.displayName} — {reviewer.role}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={!selectedReviewerId || isUpdating}
+                      onClick={() => void assignReviewer()}
+                    >
+                      Assign reviewer
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -244,19 +330,27 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
           </div>
         </CardContent>
         <CardFooter className="flex flex-col-reverse justify-end gap-4 border-t pt-6 sm:flex-row">
-          <Button
-            variant="destructive"
-            onClick={() => setShowConfirmModal({ show: true, type: "REJECTED" })}
-            disabled={isUpdating}
-          >
-            Reject Application
-          </Button>
-          <Button
-            onClick={() => setShowConfirmModal({ show: true, type: "ADMITTED" })}
-            disabled={isUpdating}
-          >
-            {isUpdating ? "Processing..." : "Admit Student"}
-          </Button>
+          {application.status === "SUBMITTED" && (
+            <Button
+              onClick={() =>
+                setShowConfirmModal({ show: true, type: "UNDER_REVIEW" })
+              }
+              disabled={isUpdating}
+            >
+              Begin Department Review
+            </Button>
+          )}
+          {application.departmentDecision === "APPROVED" &&
+            application.status !== "ADMITTED" && (
+              <Button
+                onClick={() =>
+                  setShowConfirmModal({ show: true, type: "EXECUTE" })
+                }
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Processing..." : "Execute Admission"}
+              </Button>
+            )}
         </CardFooter>
       </Card>
     </div>

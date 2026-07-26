@@ -52,6 +52,25 @@ describe("admin system reports", () => {
     );
   });
 
+  it("does not paginate a filtered CSV export", async () => {
+    vi.mocked(prisma.student.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.student.count).mockResolvedValue(125 as never);
+
+    await listStudentReport(
+      parseAdminReportFilters({
+        format: "csv",
+        programType: ProgramType.PHD,
+        page: 2,
+        limit: 10,
+      }),
+    );
+
+    const query = vi.mocked(prisma.student.findMany).mock.calls[0]?.[0];
+    expect(query).not.toHaveProperty("skip");
+    expect(query).not.toHaveProperty("take");
+    expect(query?.where).toMatchObject({ programType: ProgramType.PHD });
+  });
+
   it("filters thesis pipeline by thesis status", async () => {
     vi.mocked(prisma.thesis.findMany).mockResolvedValue([] as never);
     vi.mocked(prisma.thesis.count).mockResolvedValue(0 as never);
@@ -104,6 +123,25 @@ describe("admin system reports", () => {
 
     expect(csv).toContain("Student ID,Student Name,Email,Program Type,Academic Status");
     expect(csv).toContain("student-1,Student One,student1@example.com,PHD,ACTIVE");
+  });
+
+  it("neutralizes spreadsheet formulas in CSV text fields", () => {
+    const csv = buildStudentReportCsv([
+      {
+        studentId: "student-formula",
+        studentName: "=HYPERLINK(\"https://example.invalid\")",
+        email: "formula@example.com",
+        programType: ProgramType.PHD,
+        academicStatus: AcademicStatus.ACTIVE,
+        enrollmentDate: new Date("2024-01-15T00:00:00.000Z"),
+        primarySupervisorId: null,
+        primarySupervisorName: "Unassigned",
+        currentThesisStatus: null,
+      },
+    ]);
+
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).not.toContain(",=HYPERLINK");
   });
 
   it("builds thesis pipeline csv with status columns", () => {

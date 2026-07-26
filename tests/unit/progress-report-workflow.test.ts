@@ -82,7 +82,7 @@ describe("progress report workflow", () => {
       studentId: "student-1",
       periodLabel: "2026 Q1",
       narrative: "Progress narrative",
-      isSupervisorSignedOff: false,
+      status: "SUBMITTED",
       isOverdue: false,
       createdAt: new Date("2026-05-01T08:00:00.000Z"),
       updatedAt: new Date("2026-05-01T08:00:00.000Z"),
@@ -154,7 +154,9 @@ describe("progress report workflow", () => {
     expect(prisma.progressReport.updateMany).toHaveBeenCalledWith({
       where: {
         isArchived: false,
-        isSupervisorSignedOff: false,
+        status: {
+          in: ["DRAFT", "SUBMITTED", "RETURNED"],
+        },
         isOverdue: false,
         createdAt: {
           lt: new Date("2026-06-01T00:00:00.000Z"),

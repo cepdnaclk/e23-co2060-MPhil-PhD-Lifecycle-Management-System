@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   applicationProgramTypes,
+  applicationStudyModes,
   applicationSubmissionSchema,
 } from "@/lib/applications/schemas";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,10 @@ const applicantStepSchema = applicationSubmissionSchema.pick({
 
 const researchStepSchema = applicationSubmissionSchema.pick({
   programType: true,
+  studyMode: true,
+  proposalTitle: true,
+  proposalAbstract: true,
+  proposedSupervisorId: true,
   researchArea: true,
   supervisor: true,
   statementOfPurpose: true,
@@ -61,11 +66,18 @@ export function ApplicationForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
   const [documents, setDocuments] = useState<UploadedSupportingDocument[]>([]);
+  const [supervisors, setSupervisors] = useState<
+    Array<{ id: string; displayName: string; specialization: string | null }>
+  >([]);
   const [formValues, setFormValues] = useState({
     applicantName: "",
     applicantEmail: "",
     applicantPhone: "",
     programType: "MPHIL" as (typeof applicationProgramTypes)[number],
+    studyMode: "FULL_TIME" as (typeof applicationStudyModes)[number],
+    proposalTitle: "",
+    proposalAbstract: "",
+    proposedSupervisorId: "",
     researchArea: "",
     supervisor: "",
     statementOfPurpose: "",
@@ -110,6 +122,27 @@ export function ApplicationForm() {
     };
   }, []);
 
+  useEffect(() => {
+    void fetch("/api/public/supervisors", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as {
+          supervisors?: typeof supervisors;
+        };
+        if (response.ok) {
+          const availableSupervisors = payload.supervisors ?? [];
+          setSupervisors(availableSupervisors);
+          setFormValues((current) => ({
+            ...current,
+            proposedSupervisorId:
+              current.proposedSupervisorId ||
+              availableSupervisors[0]?.id ||
+              "",
+          }));
+        }
+      })
+      .catch(() => setSupervisors([]));
+  }, []);
+
   function updateField(name: keyof typeof formValues, value: string) {
     setIsReviewConfirmed(false);
     setFormValues((current) => ({
@@ -138,6 +171,10 @@ export function ApplicationForm() {
     if (stepToValidate === 1) {
       const parsed = researchStepSchema.safeParse({
         programType: formValues.programType,
+        studyMode: formValues.studyMode,
+        proposalTitle: formValues.proposalTitle,
+        proposalAbstract: formValues.proposalAbstract,
+        proposedSupervisorId: formValues.proposedSupervisorId,
         researchArea: formValues.researchArea,
         supervisor: formValues.supervisor,
         statementOfPurpose: formValues.statementOfPurpose,
@@ -409,6 +446,10 @@ export function ApplicationForm() {
         applicantEmail: "",
         applicantPhone: "",
         programType: "MPHIL",
+        studyMode: "FULL_TIME",
+        proposalTitle: "",
+        proposalAbstract: "",
+        proposedSupervisorId: "",
         researchArea: "",
         supervisor: "",
         statementOfPurpose: "",
@@ -570,6 +611,24 @@ export function ApplicationForm() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Study mode</Label>
+              <Select
+                value={formValues.studyMode}
+                onValueChange={(value) => updateField("studyMode", value)}
+              >
+                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                  <SelectValue placeholder="Select study mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {applicationStudyModes.map((studyMode) => (
+                    <SelectItem key={studyMode} value={studyMode}>
+                      {studyMode === "FULL_TIME" ? "Full-time" : "Part-time"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="researchArea">Research area</Label>
               <Input
                 id="researchArea"
@@ -582,19 +641,52 @@ export function ApplicationForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="supervisor">Preferred supervisor hint</Label>
-              <Input
-                id="supervisor"
-                value={formValues.supervisor}
-                onChange={(event) =>
-                  updateField("supervisor", event.target.value)
+              <Label>Proposed supervisor</Label>
+              <Select
+                value={formValues.proposedSupervisorId}
+                onValueChange={(value) =>
+                  updateField("proposedSupervisorId", value)
                 }
-                placeholder="Optional name or research expertise"
+              >
+                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                  <SelectValue placeholder="Select a proposed supervisor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {supervisors.map((supervisor) => (
+                    <SelectItem key={supervisor.id} value={supervisor.id}>
+                      {supervisor.displayName}
+                      {supervisor.specialization
+                        ? ` — ${supervisor.specialization}`
+                        : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Consent is required before the application can proceed.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="proposalTitle">Proposal title</Label>
+              <Input
+                id="proposalTitle"
+                value={formValues.proposalTitle}
+                onChange={(event) =>
+                  updateField("proposalTitle", event.target.value)
+                }
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
-              <p className="text-xs text-muted-foreground">
-                This is only a hint for admins and does not assign a supervisor.
-              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="proposalAbstract">Proposal abstract</Label>
+              <Textarea
+                id="proposalAbstract"
+                value={formValues.proposalAbstract}
+                onChange={(event) =>
+                  updateField("proposalAbstract", event.target.value)
+                }
+                className="min-h-40 border-zinc-400 focus-visible:ring-zinc-900"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="statementOfPurpose">Statement of purpose</Label>
@@ -696,13 +788,29 @@ export function ApplicationForm() {
                   <p className="mt-1 text-sm text-foreground break-words">{formValues.programType}</p>
                 </div>
                 <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Study mode</p>
+                  <p className="mt-1 text-sm text-foreground break-words">
+                    {formValues.studyMode === "FULL_TIME" ? "Full-time" : "Part-time"}
+                  </p>
+                </div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Research area</p>
                   <p className="mt-1 text-sm text-foreground break-all">{formValues.researchArea}</p>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Supervisor hint</p>
-                  <p className="mt-1 text-sm text-foreground break-words">{formValues.supervisor || "Not provided"}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proposed supervisor</p>
+                  <p className="mt-1 text-sm text-foreground break-words">
+                    {supervisors.find((supervisor) => supervisor.id === formValues.proposedSupervisorId)?.displayName ?? "Selected supervisor"}
+                  </p>
                 </div>
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proposal</p>
+                <p className="mt-1 text-sm font-medium text-foreground">{formValues.proposalTitle}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground">
+                  {formValues.proposalAbstract}
+                </p>
               </div>
 
               <div className="min-w-0">

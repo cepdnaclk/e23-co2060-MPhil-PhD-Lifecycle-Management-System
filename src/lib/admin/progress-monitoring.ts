@@ -223,7 +223,8 @@ export function groupOverdueProgressReports(
 }
 
 function escapeCsvField(value: string | number) {
-  const text = String(value);
+  const raw = String(value);
+  const text = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
 
   if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
     return `"${text.replaceAll("\"", "\"\"")}"`;

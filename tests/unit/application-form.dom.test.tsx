@@ -48,6 +48,15 @@ async function moveToDocumentsStep(user: ReturnType<typeof userEvent.setup>) {
   fireEvent.change(screen.getByPlaceholderText("Machine Learning for Education"), {
     target: { value: "Machine Learning" },
   });
+  fireEvent.change(screen.getByLabelText("Proposal title"), {
+    target: { value: "Adaptive learning systems" },
+  });
+  fireEvent.change(screen.getByLabelText("Proposal abstract"), {
+    target: {
+      value:
+        "A detailed proposal for adaptive learning systems in postgraduate education.",
+    },
+  });
   fireEvent.change(
     screen.getByPlaceholderText(
       "Describe your motivation, proposed area, and fit for the programme.",
@@ -80,6 +89,17 @@ describe("ApplicationForm", () => {
       createJsonResponse({
         draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
         draftToken: "a".repeat(43),
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      createJsonResponse({
+        supervisors: [
+          {
+            id: "supervisor-1",
+            displayName: "Dr. Supervisor",
+            specialization: "AI",
+          },
+        ],
       }),
     );
     fetchMock.mockResolvedValueOnce(
@@ -144,6 +164,17 @@ describe("ApplicationForm", () => {
       )
       .mockResolvedValueOnce(
         createJsonResponse({
+          supervisors: [
+            {
+              id: "supervisor-1",
+              displayName: "Dr. Supervisor",
+              specialization: "AI",
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        createJsonResponse({
           storagePath: "applications/application-1/proposal.pdf",
           fileName: "proposal.pdf",
           mimeType: "application/pdf",
@@ -181,7 +212,7 @@ describe("ApplicationForm", () => {
 
     expect(fileInput).not.toBeDisabled();
     expect(global.fetch).toHaveBeenNthCalledWith(
-      3,
+      4,
       "/api/applications/upload",
       expect.objectContaining({
         method: "DELETE",

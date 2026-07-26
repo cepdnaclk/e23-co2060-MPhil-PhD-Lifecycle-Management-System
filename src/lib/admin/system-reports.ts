@@ -127,7 +127,8 @@ function buildPageMeta(total: number, page: number, limit: number): ReportPageMe
 }
 
 function escapeCsvField(value: string | number) {
-  const text = String(value);
+  const raw = String(value);
+  const text = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
 
   if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
     return `"${text.replaceAll("\"", "\"\"")}"`;
@@ -390,6 +391,7 @@ export function buildGraduationsCsv(rows: GraduationReportRow[]) {
 
 export async function listStudentReport(filters: AdminReportFilters) {
   const { page, limit, skip } = normalizePagination(filters);
+  const pagination = filters.format === "csv" ? {} : { skip, take: limit };
   const where = buildStudentWhere(filters);
 
   const [students, total] = await Promise.all([
@@ -400,8 +402,7 @@ export async function listStudentReport(filters: AdminReportFilters) {
           displayName: "asc",
         },
       },
-      skip,
-      take: limit,
+      ...pagination,
       select: {
         id: true,
         programType: true,
@@ -416,6 +417,7 @@ export async function listStudentReport(filters: AdminReportFilters) {
         supervisorAssignments: {
           where: {
             isPrimary: true,
+            effectiveTo: null,
           },
           take: 1,
           select: {
@@ -472,6 +474,7 @@ export async function listStudentReport(filters: AdminReportFilters) {
 
 export async function listThesisPipelineReport(filters: AdminReportFilters) {
   const { page, limit, skip } = normalizePagination(filters);
+  const pagination = filters.format === "csv" ? {} : { skip, take: limit };
   const where = buildThesisWhere(filters);
 
   const [theses, total, stageCountsRaw] = await Promise.all([
@@ -480,8 +483,7 @@ export async function listThesisPipelineReport(filters: AdminReportFilters) {
       orderBy: {
         updatedAt: "desc",
       },
-      skip,
-      take: limit,
+      ...pagination,
       select: {
         id: true,
         title: true,
@@ -500,6 +502,7 @@ export async function listThesisPipelineReport(filters: AdminReportFilters) {
             supervisorAssignments: {
               where: {
                 isPrimary: true,
+                effectiveTo: null,
               },
               take: 1,
               select: {
@@ -544,6 +547,7 @@ export async function listThesisPipelineReport(filters: AdminReportFilters) {
 
 export async function listGraduationsReport(filters: AdminReportFilters) {
   const { page, limit, skip } = normalizePagination(filters);
+  const pagination = filters.format === "csv" ? {} : { skip, take: limit };
   const where: Prisma.StudentWhereInput = {
     ...buildStudentWhere(filters),
     academicStatus: AcademicStatus.GRADUATED,
@@ -555,8 +559,7 @@ export async function listGraduationsReport(filters: AdminReportFilters) {
       orderBy: {
         updatedAt: "desc",
       },
-      skip,
-      take: limit,
+      ...pagination,
       select: {
         id: true,
         programType: true,

@@ -1,4 +1,5 @@
 import {
+  ProgressSubmissionStatus,
   ProgramType,
   ProposalStatus,
   ThesisStatus,
@@ -82,7 +83,7 @@ describe("student progress utilities", () => {
           updatedAt: new Date("2026-06-02T04:00:00.000Z"),
           researchProposal: null,
           progressReport: {
-            isSupervisorSignedOff: true,
+            status: ProgressSubmissionStatus.APPROVED,
           },
           thesis: null,
           correctionDocument: null,

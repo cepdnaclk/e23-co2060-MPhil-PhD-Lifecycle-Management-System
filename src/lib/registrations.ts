@@ -30,17 +30,6 @@ function addUtcDays(date: Date, days: number) {
   return new Date(startOfUtcDay(date).getTime() + days * DAY_IN_MS);
 }
 
-function buildRegistrationWindow(startDate = new Date()) {
-  const normalizedStartDate = new Date(startDate);
-  const expirationDate = new Date(normalizedStartDate);
-  expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-
-  return {
-    startDate: normalizedStartDate,
-    expirationDate,
-  };
-}
-
 function formatDateLabel(date: Date) {
   return date.toLocaleDateString("en-GB", {
     year: "numeric",
@@ -144,91 +133,6 @@ export async function runRegistrationMaintenance(referenceDate = new Date()) {
   };
 }
 
-export async function renewRegistration(
-  registrationId: string,
-  auth: AuthenticatedUserContext,
-) {
-  const registration = await prisma.registration.findUnique({
-    where: {
-      id: registrationId,
-    },
-    select: {
-      id: true,
-      status: true,
-      studentId: true,
-      expirationDate: true,
-      student: {
-        select: {
-          userId: true,
-        },
-      },
-    },
-  });
-
-  if (!registration) {
-    throw new RegistrationError("Registration not found.", 404);
-  }
-
-  const isAdmin = auth.role === "ADMINISTRATOR";
-  const isOwner = registration.student.userId === auth.userId;
-
-  if (!isAdmin && !isOwner) {
-    throw new RegistrationError("You cannot renew this registration.", 403);
-  }
-
-  const activeRegistration = await prisma.registration.findFirst({
-    where: {
-      studentId: registration.studentId,
-      status: RegistrationStatus.ACTIVE,
-      expirationDate: {
-        gte: new Date(),
-      },
-      id: {
-        not: registration.id,
-      },
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (activeRegistration) {
-    throw new RegistrationError(
-      "This student already has an active registration.",
-      409,
-    );
-  }
-
-  const baseDate =
-    registration.expirationDate > new Date()
-      ? registration.expirationDate
-      : new Date();
-  const { startDate, expirationDate } = buildRegistrationWindow(baseDate);
-
-  return prisma.$transaction(async (tx) => {
-    await tx.registration.update({
-      where: {
-        id: registration.id,
-      },
-      data: {
-        status:
-          registration.status === RegistrationStatus.ACTIVE
-            ? RegistrationStatus.ARCHIVED
-            : registration.status,
-      },
-    });
-
-    return tx.registration.create({
-      data: {
-        studentId: registration.studentId,
-        startDate,
-        expirationDate,
-        status: RegistrationStatus.ACTIVE,
-      },
-    });
-  });
-}
-
 export async function assertStudentHasActiveRegistration(
   auth: AuthenticatedUserContext,
 ) {
@@ -262,7 +166,7 @@ export async function assertStudentHasActiveRegistration(
 
   if (!student?.registrations.length) {
     throw new RegistrationError(
-      "Your registration is lapsed. Renew it before submitting progress reports.",
+      "Your fixed registration period has ended. Contact the PG Coordinator before submitting progress.",
       403,
     );
   }

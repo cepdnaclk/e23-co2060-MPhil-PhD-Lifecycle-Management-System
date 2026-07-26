@@ -5,10 +5,9 @@ import { prisma } from "@/lib/prisma/client";
 import { getCurrentThesisDownloadUrl, ThesisVersionError } from "@/lib/theses/versions";
 import {
   scheduleVivaSchema,
-  vivaOutcomeSubmissionSchema,
 } from "@/lib/vivas/schemas";
 import type { AuthenticatedUserContext } from "@/types/auth";
-export { scheduleVivaSchema, vivaOutcomeSubmissionSchema };
+export { scheduleVivaSchema };
 
 export class VivaWorkflowError extends Error {
   status: 400 | 403 | 404 | 409 | 500;
@@ -39,6 +38,7 @@ type VivaExaminerRecord = {
     examinerAssignments: Array<{
       examinerId: string;
       examinerUserId: string;
+      status: string;
     }>;
   };
 };
@@ -98,6 +98,7 @@ async function requireVivaRecord(vivaId: string): Promise<VivaExaminerRecord> {
             select: {
               examinerId: true,
               examinerUserId: true,
+              status: true,
             },
           },
         },
@@ -118,33 +119,13 @@ function assertExaminerAssigned(
 ) {
   const isAssigned = viva.thesis.examinerAssignments.some(
     (assignment) =>
-      assignment.examinerId === examiner.id ||
-      assignment.examinerUserId === examiner.userId,
+      (assignment.examinerId === examiner.id ||
+        assignment.examinerUserId === examiner.userId) &&
+      assignment.status === "ACCEPTED",
   );
 
   if (!isAssigned) {
     throw new VivaWorkflowError("Viva access denied.", 403);
-  }
-}
-
-function assertOutcomeWindowOpen(viva: VivaExaminerRecord) {
-  if (viva.thesis.status !== ThesisStatus.UNDER_EXAMINATION) {
-    throw new VivaWorkflowError(
-      "Viva outcomes can only be recorded while the thesis is UNDER_EXAMINATION.",
-      409,
-    );
-  }
-}
-
-export function mapVivaOutcomeToThesisStatus(outcome: VivaOutcome): ThesisStatus {
-  switch (outcome) {
-    case VivaOutcome.PASS:
-      return ThesisStatus.FINAL_ARCHIVE;
-    case VivaOutcome.MINOR_CORRECTIONS:
-    case VivaOutcome.MAJOR_CORRECTIONS:
-      return ThesisStatus.CORRECTIONS_REQUIRED;
-    case VivaOutcome.FAIL:
-      return ThesisStatus.CLOSED;
   }
 }
 
@@ -177,8 +158,8 @@ export async function getExaminerVivaWorkspace(
         },
       },
       download,
-      canRecordOutcome: viva.thesis.status === ThesisStatus.UNDER_EXAMINATION,
-      outcomeFormReadOnly: viva.thesis.status !== ThesisStatus.UNDER_EXAMINATION,
+      canSubmitRecommendation:
+        viva.thesis.status === ThesisStatus.UNDER_EXAMINATION,
     };
   } catch (error) {
     if (error instanceof ThesisVersionError) {
@@ -187,71 +168,6 @@ export async function getExaminerVivaWorkspace(
 
     throw error;
   }
-}
-
-export async function recordVivaOutcome(
-  vivaId: string,
-  input: { outcome: VivaOutcome },
-  auth: AuthenticatedUserContext,
-) {
-  const parsed = vivaOutcomeSubmissionSchema.safeParse(input);
-
-  if (!parsed.success) {
-    throw new VivaWorkflowError(
-      parsed.error.issues[0]?.message ?? "Invalid viva outcome payload.",
-      400,
-    );
-  }
-
-  const examiner = await requireExaminerContext(auth);
-  const viva = await requireVivaRecord(vivaId);
-
-  assertExaminerAssigned(viva, examiner);
-  assertOutcomeWindowOpen(viva);
-
-  const nextThesisStatus = mapVivaOutcomeToThesisStatus(parsed.data.outcome);
-
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedViva = await tx.viva.update({
-      where: {
-        id: viva.id,
-      },
-      data: {
-        outcome: parsed.data.outcome,
-      },
-      select: {
-        id: true,
-        thesisId: true,
-        outcome: true,
-        updatedAt: true,
-      },
-    });
-
-    const updatedThesis = await tx.thesis.update({
-      where: {
-        id: viva.thesis.id,
-      },
-      data: {
-        status: nextThesisStatus,
-      },
-      select: {
-        id: true,
-        status: true,
-        title: true,
-      },
-    });
-
-    return {
-      viva: updatedViva,
-      thesis: updatedThesis,
-    };
-  });
-
-  return {
-    ...result,
-    nextThesisStatus,
-    requiresAdministrativeApproval: parsed.data.outcome === VivaOutcome.PASS,
-  };
 }
 
 export async function scheduleViva(

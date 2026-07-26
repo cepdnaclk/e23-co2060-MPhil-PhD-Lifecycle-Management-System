@@ -26,7 +26,7 @@ type ProgressReportSummary = {
   id: string;
   periodLabel: string;
   narrative: string;
-  isSupervisorSignedOff: boolean;
+  status: "DRAFT" | "SUBMITTED" | "RETURNED" | "APPROVED";
   isOverdue: boolean;
   createdAt: string | Date;
   documents: ProgressReportDocument[];
@@ -97,8 +97,8 @@ export function ProgressReportList() {
                     Overdue
                   </Badge>
                 )}
-                <Badge variant={report.isSupervisorSignedOff ? "default" : "secondary"}>
-                  {report.isSupervisorSignedOff ? "Signed Off" : "Pending Sign-off"}
+                <Badge variant={report.status === "APPROVED" ? "default" : "secondary"}>
+                  {report.status.replace("_", " ")}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">

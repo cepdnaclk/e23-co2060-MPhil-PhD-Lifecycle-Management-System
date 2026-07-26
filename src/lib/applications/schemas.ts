@@ -1,4 +1,4 @@
-import { ProgramType } from "@prisma/client";
+import { ProgramType, StudyMode } from "@prisma/client";
 import { z } from "zod";
 
 import {
@@ -16,6 +16,11 @@ export const APPLICATION_ATTACHMENT_MAX_SIZE_BYTES =
 export const applicationProgramTypes = [
   ProgramType.MPHIL,
   ProgramType.PHD,
+] as const;
+
+export const applicationStudyModes = [
+  StudyMode.FULL_TIME,
+  StudyMode.PART_TIME,
 ] as const;
 
 const uploadedApplicationDocumentSchema = z.object({
@@ -46,6 +51,19 @@ export const applicationSubmissionSchema = z.object({
     ProgramType.MPHIL,
     ProgramType.PHD,
   ]),
+  studyMode: z.enum(applicationStudyModes),
+  proposalTitle: sanitizedString.min(
+    5,
+    "Proposal title must be at least 5 characters long.",
+  ),
+  proposalAbstract: sanitizedString.min(
+    20,
+    "Proposal abstract must be at least 20 characters long.",
+  ),
+  proposedSupervisorId: sanitizedString.min(
+    1,
+    "Select a proposed supervisor.",
+  ),
   supervisor: sanitizedString.max(200).optional().nullable(),
   researchArea: sanitizedString.min(2, "Research area must be at least 2 characters long."),
   statementOfPurpose: sanitizedString.min(1, "Provide a short statement of purpose."),

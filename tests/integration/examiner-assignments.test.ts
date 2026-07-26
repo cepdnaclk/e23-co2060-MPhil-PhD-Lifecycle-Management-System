@@ -1,4 +1,4 @@
-import { ThesisStatus } from "@prisma/client";
+import { AssignmentStatus, ReadinessDecision, ThesisStatus } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
@@ -34,6 +34,10 @@ vi.mock("@/lib/prisma/client", () => ({
     thesisExaminerAssignment: {
       create: vi.fn(),
     },
+    lifecycleAuditEvent: {
+      create: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -43,16 +47,21 @@ vi.mock("@/lib/documents", () => ({
   ),
 }));
 
-import { notifyExaminerAssignedToThesis } from "@/lib/email";
 import { assignExaminerToThesis } from "@/lib/assignments/examiners";
 import { prisma } from "@/lib/prisma/client";
 
 describe("examiner assignment integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        thesisExaminerAssignment: prisma.thesisExaminerAssignment,
+        lifecycleAuditEvent: prisma.lifecycleAuditEvent,
+      } as never),
+    );
   });
 
-  it("notifies the assigned examiner with a secure thesis download link", async () => {
+  it("creates a pending assignment without disclosing the thesis before HOD confirmation", async () => {
     vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
       id: "admin-1",
       user: {
@@ -84,6 +93,7 @@ describe("examiner assignment integration", () => {
         supervisorAssignments: [],
       },
       examinerAssignments: [],
+      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
       documents: [
         {
           id: "doc-1",
@@ -111,6 +121,7 @@ describe("examiner assignment integration", () => {
       examinerUserId: "user-examiner-1",
       assignedAt: new Date("2026-05-01T04:05:00.000Z"),
       assignedBy: "admin-1",
+      status: AssignmentStatus.PENDING,
     } as never);
 
     const result = await assignExaminerToThesis(
@@ -127,17 +138,10 @@ describe("examiner assignment integration", () => {
       },
     );
 
-    expect(result.secureDownloadUrl).toContain("storage.example.test/read");
-    expect(notifyExaminerAssignedToThesis).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientUserId: "user-examiner-1",
-        examinerName: "Examiner One",
-        studentName: "Student One",
-        thesisTitle: "Adaptive Systems Thesis",
-        assignedByName: "Admin One",
-        secureDownloadUrl:
-          "https://storage.example.test/read?path=theses%2Fstudent-1%2Fthesis.pdf",
-      }),
-    );
+    expect(result).toMatchObject({
+      awaitingHodConfirmation: true,
+      assignment: { status: AssignmentStatus.PENDING },
+    });
+    expect(prisma.lifecycleAuditEvent.create).toHaveBeenCalled();
   });
 });

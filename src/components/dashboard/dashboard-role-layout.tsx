@@ -158,15 +158,16 @@ function getNavItems(role: DashboardRole) {
     case "supervisor":
       return [
         { href: "/dashboard/supervisor/students", label: "Student Roster", icon: Users },
+        { href: "/dashboard/supervisor/applications", label: "Application Work", icon: Inbox },
         { href: "/dashboard/supervisor/proposals/evaluate", label: "Monitor Proposals", icon: ClipboardCheck },
-        { href: "/dashboard/supervisor/progress-reports/sign", label: "Monitor Reports", icon: TrendingUp },
+        { href: "/dashboard/supervisor/progress-reports", label: "Monitor Reports", icon: TrendingUp },
         { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];
     case "admin":
       return [
         { href: "/dashboard/admin/users", label: "Manage Users", icon: UserCog },
         { href: "/dashboard/admin/applications", label: "Applications", icon: Inbox },
-        { href: "/dashboard/admin/proposals/evaluate", label: "Approve Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/admin/progress", label: "Department Progress", icon: TrendingUp },
         { href: "/dashboard/admin/ethics", label: "Ethics Documents", icon: ClipboardCheck },
         { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments", icon: UserCheck },
         { href: "/dashboard/admin/assignments/examiners", label: "Examiner Assignments", icon: UserSearch },
@@ -178,12 +179,14 @@ function getNavItems(role: DashboardRole) {
       ];
     case "examiner":
       return [
+        { href: "/dashboard/examiner/proposals", label: "Assigned Proposals", icon: ClipboardCheck },
         { href: "/dashboard/examiner/vivas", label: "Assigned Vivas", icon: CalendarDays },
         { href: "/dashboard/examiner/documents", label: "Documents", icon: FolderOpen },
       ];
     case "hod":
       return [
         { href: "/dashboard/hod/applications", label: "Admission Decisions", icon: Inbox },
+        { href: "/dashboard/hod/progress", label: "Department Progress", icon: TrendingUp },
         { href: "/dashboard/hod/examinations", label: "Examination Decisions", icon: GraduationCap },
         { href: "/dashboard/hod/completions", label: "Completion Decisions", icon: ClipboardCheck },
       ];

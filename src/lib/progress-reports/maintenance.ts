@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma/client";
+import { ProgressSubmissionStatus } from "@prisma/client";
 
 export const PROGRESS_REPORT_OVERDUE_AFTER_DAYS = Number(
   process.env.PROGRESS_REPORT_OVERDUE_AFTER_DAYS ?? 30,
@@ -22,7 +23,13 @@ export async function markOverdueProgressReports(
   const result = await prisma.progressReport.updateMany({
     where: {
       isArchived: false,
-      isSupervisorSignedOff: false,
+      status: {
+        in: [
+          ProgressSubmissionStatus.DRAFT,
+          ProgressSubmissionStatus.SUBMITTED,
+          ProgressSubmissionStatus.RETURNED,
+        ],
+      },
       isOverdue: false,
       createdAt: {
         lt: cutoff,

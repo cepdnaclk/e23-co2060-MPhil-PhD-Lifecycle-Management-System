@@ -42,6 +42,9 @@ describe("supervisor assignment integration", () => {
           updateMany: prisma.supervisorAssignment.updateMany,
           update: prisma.supervisorAssignment.update,
         },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
       } as never),
     );
   });

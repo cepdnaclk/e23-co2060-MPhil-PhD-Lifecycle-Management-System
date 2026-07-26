@@ -1,4 +1,4 @@
-import { ThesisStatus } from "@prisma/client";
+import { ReadinessDecision, ThesisStatus } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/email", () => ({
@@ -83,6 +83,7 @@ describe("examiner assignment rules", () => {
         ],
       },
       examinerAssignments: [],
+      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
       documents: [
         {
           id: "doc-1",
@@ -133,6 +134,7 @@ describe("examiner assignment rules", () => {
         supervisorAssignments: [],
       },
       examinerAssignments: [],
+      readinessCertification: { decision: ReadinessDecision.CERTIFIED },
       documents: [
         {
           id: "doc-1",

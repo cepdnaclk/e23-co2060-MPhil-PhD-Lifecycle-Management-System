@@ -226,12 +226,12 @@ export function buildRegistrationExpiryTemplate(input: {
     `Dear ${input.studentName},`,
     "",
     `Your registration will expire on ${input.expirationDateLabel}.`,
-    `Please renew within the next ${daysRemaining} days to avoid a lapse.`,
+    `Your fixed registration period ends in ${daysRemaining} days. Contact the PG Coordinator if action is required.`,
   ].join("\n");
   const html = emailHtml`
     <p>Dear ${input.studentName},</p>
     <p>Your registration will expire on <strong>${input.expirationDateLabel}</strong>.</p>
-    <p>Please renew within the next <strong>${daysRemaining} days</strong> to avoid a lapse.</p>
+    <p>Your fixed registration period ends in <strong>${daysRemaining} days</strong>. Contact the PG Coordinator if action is required.</p>
   `;
 
   return { subject, html, text };

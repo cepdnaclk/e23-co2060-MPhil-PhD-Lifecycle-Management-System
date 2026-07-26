@@ -269,7 +269,7 @@ async function buildAccessScope(
       }
 
       const assignments = await prisma.thesisExaminerAssignment.findMany({
-        where: { examinerId: examiner.id },
+        where: { examinerId: examiner.id, status: "ACCEPTED" },
         select: { thesisId: true, thesisVersionId: true },
       });
 
@@ -342,8 +342,8 @@ type RepositoryDocumentRecord = Prisma.DocumentGetPayload<{
       select: {
         periodLabel: true;
         narrative: true;
+        status: true;
         isOverdue: true;
-        isSupervisorSignedOff: true;
       };
     };
     thesis: {
@@ -398,7 +398,6 @@ function buildReleasedReviewAttachmentScope(
         AND: [
           { documentType: DocumentType.REVIEW_ATTACHMENT },
           { evaluationFormId: { not: null } },
-          { progressReportReviewId: null },
           { thesisExaminerAssignmentId: null },
           {
             evaluationForm: {
@@ -418,27 +417,6 @@ function buildReleasedReviewAttachmentScope(
         AND: [
           { documentType: DocumentType.REVIEW_ATTACHMENT },
           { evaluationFormId: null },
-          { progressReportReviewId: { not: null } },
-          { thesisExaminerAssignmentId: null },
-          {
-            progressReportReview: {
-              is: {
-                releasedAt: { not: null },
-                progressReport: {
-                  is: {
-                    studentId: { in: accessibleStudentIds },
-                  },
-                },
-              },
-            },
-          },
-        ],
-      },
-      {
-        AND: [
-          { documentType: DocumentType.REVIEW_ATTACHMENT },
-          { evaluationFormId: null },
-          { progressReportReviewId: null },
           { thesisExaminerAssignmentId: { not: null } },
           {
             thesisExaminerAssignment: {
@@ -480,7 +458,6 @@ function buildRepositoryScope(
             },
           },
           { evaluationFormId: null },
-          { progressReportReviewId: null },
           { thesisExaminerAssignmentId: null },
         ],
       },
@@ -548,7 +525,7 @@ function buildTagFilter(tag?: string | null): Prisma.DocumentWhereInput {
     return {
       progressReport: {
         is: {
-          isSupervisorSignedOff: true,
+          status: "APPROVED",
         },
       },
     };
@@ -859,8 +836,8 @@ function mapDocumentTags(document: RepositoryDocumentRecord) {
       tags.add("overdue");
     }
 
-    if (document.progressReport.isSupervisorSignedOff) {
-      tags.add("signed-off");
+    if (document.progressReport.status === "APPROVED") {
+      tags.add("approved");
     }
   }
 
@@ -1070,8 +1047,8 @@ export async function searchDocuments(
         select: {
           periodLabel: true,
           narrative: true,
+          status: true,
           isOverdue: true,
-          isSupervisorSignedOff: true,
         },
       },
       thesis: {

@@ -86,24 +86,31 @@ The platform supports the complete postgraduate lifecycle, including:
 
 - public programme applications
 - admissions and onboarding
-- registration and renewal tracking
-- proposal submission and review
-- progress report submission and supervisor sign-off
+- fixed-term registration and milestone tracking
+- application-bound proposal review and HOD decision
+- milestone progress submission and primary-Supervisor decision
 - thesis submission and versioning
 - viva scheduling and outcome recording
-- correction upload and approval
-- final archival and administrative oversight
+- ordered correction submissions and HOD closure
+- separate academic completion, graduation, and archival records
 
 A typical lifecycle flow is:
 
 1. A public applicant submits an application.
-2. Administrators review the application and intake status.
-3. Once admitted, the applicant becomes a student in the research lifecycle.
-4. The student submits proposals, progress reports, thesis documents, and corrections.
-5. Supervisors evaluate and sign off academic work.
-6. Examiners and administrators manage viva and thesis workflows.
-7. Corrections are submitted, reviewed, and approved.
-8. Final records are archived for long-term administrative reference.
+2. The proposed Supervisor records consent and two assigned Reviewers assess
+   the exact application proposal version.
+3. The HOD makes the Department admission decision; the PG Coordinator
+   executes an approved admission.
+4. Admission creates one fixed registration and M1–M4, M1–M6, or M1–M9
+   six-month milestones according to programme and study mode.
+5. The Student submits milestone versions and the active primary Supervisor
+   returns or approves them.
+6. Ethics and thesis-readiness gates precede exact-version Examiner
+   assignments.
+7. Examiners submit independent reports and recommendations; the HOD records
+   the viva outcome and any ordered corrections.
+8. HOD academic completion, PG Coordinator completion recording, graduation,
+   and archival remain separate controlled actions.
 
 ---
 
@@ -112,9 +119,10 @@ A typical lifecycle flow is:
 | Role | Main Responsibilities |
 |---|---|
 | **Student** | Submit proposals, progress reports, theses, and corrections while tracking academic progress |
-| **Supervisor** | Review assigned students, evaluate proposals, sign progress reports, and monitor progress |
-| **Examiner** | Access assigned viva workspaces, review examination context, and record examination outcomes |
-| **Administrator** | Manage users, applications, assignments, scheduling, final decisions, and archival workflows |
+| **Supervisor** | Record proposed-Supervisor consent, review assigned work, and decide primary-Supervisor milestone reports |
+| **Examiner** | Review only explicitly assigned proposal/thesis versions and submit independent recommendations |
+| **Administrator** | Operate intake, assignments, admission execution, scheduling, completion, graduation, archive, reports, and outbox recovery |
+| **Head of Department** | Make Department admission, examiner-confirmation, viva-outcome, correction, and academic-completion decisions |
 
 ---
 
@@ -420,10 +428,10 @@ Representative endpoints:
 | **Authentication** | Login, identity verification, role-aware access control, and session handling |
 | **Dashboard** | Role-based summaries, KPI cards, quick actions, and dashboard navigation |
 | **Proposals** | Submission, version handling, supervisor evaluations, approval, and rejection workflows |
-| **Progress Reports** | Recurring student reporting cycles and supervisor sign-off |
-| **Theses** | Thesis submission, examiner assignment, corrections, version tracking, and final archival |
-| **Vivas** | Scheduling, venue/date management, outcome recording, and post-viva lifecycle transitions |
-| **Administration** | User management, assignments, scheduling, finalization, and operational control |
+| **Progress Reports** | Fixed milestone versions with primary-Supervisor return/resubmit/approve decisions |
+| **Theses** | Readiness, exact-version assignment, independent reports, ordered corrections, and version tracking |
+| **Vivas** | PG Coordinator scheduling, independent Examiner recommendations, and HOD outcome |
+| **Administration** | Operational execution separated from HOD academic authority |
 | **Notifications and Monitoring** | Delivery auditing, user-facing notifications, oversight, and logging |
 
 ---
@@ -443,16 +451,18 @@ The codebase is centered around a lifecycle-oriented model that includes:
 - supervisors
 - examiners
 - administrators
+- heads of department
 - applications
-- registrations
-- research proposals
-- evaluation forms
-- progress reports
-- review panels
+- application proposal versions and exact reviewer assignments
+- fixed registrations and programme rules
+- student milestones and versioned progress reports
+- ethics and thesis-readiness records
 - theses
-- thesis examiner assignments
-- vivas
-- correction documents
+- exact thesis examiner assignments and reports
+- vivas and independent recommendations
+- correction orders and versioned submissions
+- programme completion, graduation, and archive records
+- append-only lifecycle audit and transactional outbox
 - documents
 - notifications
 - notification logs

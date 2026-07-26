@@ -52,13 +52,13 @@
 | D1 Audit and outbox | Implemented | Append-only database trigger, atomic helper, idempotent queue keys, lease/retry/dead-letter worker, Administrator recovery UI, 13 focused tests |
 | D2 Core schema/reset | Implemented | Reviewed fail-closed migration, reset/seed commands, four exact programme rules, milestone calendar tests |
 | D3 HOD identity | Implemented | HOD role/profile/claim, isolated route shell and navigation, HOD creation and redirect tests |
-| D4 Application/proposal | Planned | Public proposal, assignments, revision, HOD decision |
-| D5 Admission/milestones | Planned | Idempotent admission and four schedules |
-| D6 Progress/tables/CSV | Planned | Return/resubmit/approve, fixed tables, complete safe export |
-| D7 Ethics | Planned | Applicability, confirmation, readiness gate |
-| D8 Thesis examination | Planned | Readiness, exact assignment, independent reports |
-| D9 Viva/corrections/completion | Planned | Independent recommendations, HOD outcome and completion |
-| D10 UI/cleanup/docs | Planned | Role shells, route crawl, accessibility, full verification |
+| D4 Application/proposal | Implemented | Public proposal, named-Supervisor consent, exact reviewer assignments/reviews, HOD decision and staff work queues |
+| D5 Admission/milestones | Implemented | HOD gate, idempotent execution record, four exact fixed schedules, effective-dated Supervisor assignments |
+| D6 Progress/tables/CSV | Implemented | Milestone return/resubmit/approve, four fixed tables, scoped complete formula-safe CSV and export audit |
+| D7 Ethics | Implemented | Applicability/status records and readiness gate |
+| D8 Thesis examination | Implemented | Primary-Supervisor readiness, pending exact-version assignment, HOD confirmation, independent reports |
+| D9 Viva/corrections/completion | Implemented | Independent recommendations, HOD outcome, ordered versioned corrections, separate completion/graduation/archive |
+| D10 UI/cleanup/docs | Implemented locally | HOD and assignment queues, role navigation, retired routes/model removal, canonical docs; external browser/DB checks remain |
 
 ## Deployment limitations
 
@@ -100,3 +100,32 @@ and archive records. The migration refuses to coerce MSc/MEng data. The
 idempotent seed path always restores the four approved programme rules and can
 link one account for every role when existing Firebase UIDs are supplied via
 `PGLMS_SEED_USERS_JSON`; credentials are never embedded in the repository.
+
+## D4–D10 implementation and local verification
+
+- Added intent-specific application, progress, ethics, readiness, examination,
+  viva, correction, completion, graduation, archive, and progress-table APIs.
+- Removed active renewal, review-panel, routine progress-Examiner, Supervisor
+  sign-off, generic status, Examiner-outcome, Boolean correction approval,
+  combined archive, legacy thesis-review, and production-test routes.
+- Removed legacy panel/progress-review/sign-off models in
+  `20260726150000_remove_retired_department_workflows`. Its checksum-pinned
+  production block requires an approved export/retention decision and rehearsal.
+- Added public Supervisor selection, Administrator reviewer assignment,
+  Supervisor/Examiner review work, HOD decision queues, and fixed progress
+  tables for Administrator/HOD/Supervisor.
+- Final ordinary suite: 83 passing files / 291 passing tests; the guarded
+  real-database test remains opt-in.
+
+| Final command | Result |
+|---|---|
+| `npm run audit:production` | Passed configured high gate; 6 moderate transitive findings |
+| `npm run audit:all` | Passed configured high gate; 9 moderate transitive findings |
+| `npm run lint` | Passed |
+| `npm run typecheck` | Passed |
+| `npm run prisma:validate` | Passed |
+| `npm run prisma:migrate:check` | Passed; four checksum-pinned production blockers |
+| `npm test -- --run` | Passed: 83 files / 291 tests; 1 guarded database test skipped |
+| `npm run build` | Passed: 79 static pages generated and active route manifest compiled |
+| `npm run test:e2e` | Passed: 2/2 public Chromium/accessibility tests |
+| `npm run test:database` | Skipped safely: opted-in `TEST_DATABASE_URL` unavailable |

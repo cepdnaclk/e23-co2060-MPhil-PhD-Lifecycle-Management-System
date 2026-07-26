@@ -1,9 +1,3 @@
-"use client";
-
-import { secureFetch } from "@/lib/security/client-request";
-
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, CheckCircle2 } from "lucide-react";
 
@@ -44,57 +37,15 @@ export function ThesisFinalizationPanel({
 }: {
   theses: ThesisFinalizationItem[];
 }) {
-  const router = useRouter();
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function runPatch(
-    path: string,
-    successMessage: string,
-    busyKey: string,
-  ) {
-    setBusyId(busyKey);
-    setMessage(null);
-    setError(null);
-
-    try {
-      const response = await secureFetch(path, {
-        method: "PATCH",
-        credentials: "include",
-      });
-      const payload = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Action failed.");
-      }
-
-      setMessage(successMessage);
-      router.refresh();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Action failed.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <div className="flex items-center justify-between space-y-2 mb-8">
         <h2 className="text-3xl font-bold tracking-tight">Finalize Theses</h2>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
-          {error}
-        </div>
-      )}
-
-      {message && (
-        <div className="rounded-md border border-green-500/50 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-          {message}
-        </div>
-      )}
+      <p className="text-sm text-muted-foreground">
+        Completion, graduation, and archival are recorded as separate controlled steps.
+      </p>
 
       <div className="space-y-6">
         {theses.length === 0 ? (
@@ -105,14 +56,6 @@ export function ThesisFinalizationPanel({
           </Card>
         ) : (
           theses.map((thesis) => {
-            const hasApprovedCorrection = thesis.corrections.some(
-              (correction) => correction.isApproved,
-            );
-            const canArchive =
-              thesis.status === "FINAL_ARCHIVE" ||
-              (thesis.status === "CORRECTIONS_REQUIRED" &&
-                hasApprovedCorrection);
-
             return (
               <Card key={thesis.id}>
                 <CardHeader>
@@ -127,20 +70,7 @@ export function ThesisFinalizationPanel({
                       </CardDescription>
                     </div>
 
-                    <Button
-                      disabled={!canArchive || busyId === `archive-${thesis.id}`}
-                      onClick={() =>
-                        void runPatch(
-                          `/api/theses/${thesis.id}/archive`,
-                          "Thesis successfully archived and student graduated.",
-                          `archive-${thesis.id}`,
-                        )
-                      }
-                    >
-                      {busyId === `archive-${thesis.id}`
-                        ? "Archiving..."
-                        : "Archive & Graduate"}
-                    </Button>
+                    <Badge variant="outline">Awaiting controlled completion workflow</Badge>
                   </div>
                 </CardHeader>
 
@@ -185,29 +115,10 @@ export function ThesisFinalizationPanel({
                               </div>
                             </div>
 
-                            <Button
-                              variant={correction.isApproved ? "secondary" : "outline"}
-                              disabled={correction.isApproved || busyId === `approve-${correction.id}`}
-                              onClick={() =>
-                                void runPatch(
-                                  `/api/theses/${thesis.id}/corrections/${correction.id}/approve`,
-                                  "Correction approved.",
-                                  `approve-${correction.id}`,
-                                )
-                              }
-                              className="w-full mt-4"
-                            >
-                              {correction.isApproved ? (
-                                <>
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Verified Approved
-                                </>
-                              ) : busyId === `approve-${correction.id}` ? (
-                                "Validating..."
-                              ) : (
-                                "Approve Correction"
-                              )}
-                            </Button>
+                            <Badge variant={correction.isApproved ? "default" : "secondary"}>
+                              {correction.isApproved && <CheckCircle2 className="mr-2 h-4 w-4" />}
+                              {correction.isApproved ? "Previously approved" : "Legacy record"}
+                            </Badge>
                           </div>
                         ))}
                       </div>

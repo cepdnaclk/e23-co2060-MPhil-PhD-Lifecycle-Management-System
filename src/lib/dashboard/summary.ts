@@ -100,7 +100,7 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           id: "sign-progress-reports",
           label: "Monitor Progress Reports",
           description: "View progress reports submitted by assigned students.",
-          href: "/dashboard/supervisor/progress-reports/sign",
+          href: "/dashboard/supervisor/progress-reports",
         },
         {
           id: "open-student-roster",

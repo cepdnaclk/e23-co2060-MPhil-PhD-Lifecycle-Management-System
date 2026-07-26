@@ -1901,3 +1901,31 @@ For each work package:
 4. **After deployment verification:** update document control, capability matrix, affected roles/permissions, workflow sequences/state tables, notification trigger matrix, dashboard/API catalogue, test/operations evidence, risk disposition, and this tracker. Only then mark `Verified`/`Mitigated`.
 5. **If behavior differs from the plan:** record an approved decision/deviation rather than silently editing history. Preserve superseded states and effective dates.
 6. **DOCX cadence:** keep this Markdown canonical and current after every accepted fix. By default regenerate and visually verify the DOCX once WP-15 and the final baseline audit are complete; create an interim DOCX only on request.
+
+## 18. Department Version 1 local implementation addendum — 26 July 2026
+
+The Department Version 1 implementation is a deliberate scope replacement,
+not closure of the broader institutional WP-05–WP-15 roadmap above. The local
+code now supports only M.Phil./Ph.D. Department workflows with full-/part-time
+fixed schedules and adds a separate HOD authority boundary.
+
+Implemented locally:
+
+- append-only lifecycle audit and transactional notification outbox;
+- application-bound proposal versions, named-Supervisor consent, exact
+  reviewer assignments, and HOD admission decisions;
+- idempotent PG Coordinator admission execution with fixed registrations and
+  milestone schedules;
+- effective-dated Supervisor assignments and primary-Supervisor-only progress;
+- Department ethics/readiness, HOD-confirmed exact thesis assignments,
+  independent reports/recommendations, HOD outcomes, ordered corrections, and
+  separate completion/graduation/archive;
+- four milestone-derived progress tables and complete scoped CSV exports;
+- removal of active renewal, panels, routine progress Examiner reviews,
+  Supervisor sign-off, generic status mutations, Examiner-owned viva outcomes,
+  and combined archive/graduation behavior.
+
+Migration `20260726150000_remove_retired_department_workflows` is destructive
+by design and production-blocked in `prisma/migration-policy.json`. No populated
+deployment, Firebase/Supabase/SMTP verification, authenticated browser suite,
+or rollback rehearsal is claimed by this addendum.

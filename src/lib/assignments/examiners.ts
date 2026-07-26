@@ -1,10 +1,13 @@
-import { DocumentType, ThesisStatus } from "@prisma/client";
+import {
+  AssignmentStatus,
+  DocumentType,
+  ReadinessDecision,
+  ThesisStatus,
+} from "@prisma/client";
 import { z } from "zod";
 
-import { notifyExaminerAssignedToThesis } from "@/lib/email";
-import { getDocumentDownloadUrl } from "@/lib/documents";
+import { appendLifecycleEvent, LIFECYCLE_EVENT } from "@/lib/audit/lifecycle";
 import { prisma } from "@/lib/prisma/client";
-import { STORAGE_URL_EXPIRATION_MS } from "@/lib/storage";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export const examinerAssignmentSchema = z.object({
@@ -79,6 +82,9 @@ type ThesisAssignmentView = {
     manifestHash: string;
     isCurrent: boolean;
   }>;
+  readinessCertification: {
+    decision: ReadinessDecision;
+  } | null;
 };
 
 async function requireAdministratorContext(
@@ -196,6 +202,9 @@ async function requireThesis(thesisId: string): Promise<ThesisAssignmentView> {
           isCurrent: true,
         },
       },
+      readinessCertification: {
+        select: { decision: true },
+      },
     },
   });
 
@@ -207,6 +216,14 @@ async function requireThesis(thesisId: string): Promise<ThesisAssignmentView> {
 }
 
 function assertValidThesisState(thesis: ThesisAssignmentView) {
+  if (
+    thesis.readinessCertification?.decision !== ReadinessDecision.CERTIFIED
+  ) {
+    throw new ExaminerAssignmentError(
+      "Primary Supervisor thesis readiness certification is required before proposing an examiner.",
+      422,
+    );
+  }
   if (
     thesis.status !== ThesisStatus.SUBMITTED &&
     thesis.status !== ThesisStatus.UNDER_EXAMINATION
@@ -303,52 +320,49 @@ export async function assignExaminerToThesis(
   assertNotAlreadyAssigned(thesis, examiner);
   assertNoSupervisorConflict(thesis, examiner);
 
-  const currentDocument = getCurrentThesisDocument(thesis);
+  getCurrentThesisDocument(thesis);
   const currentVersion = getCurrentThesisVersion(thesis);
 
-  const assignment = await prisma.thesisExaminerAssignment.create({
-    data: {
-      thesisId: thesis.id,
-      thesisVersionId: currentVersion.id,
-      studentId: thesis.studentId,
-      examinerId: examiner.id,
-      examinerUserId: examiner.userId,
-      assignedAt: new Date(),
-      assignedBy: administrator.id,
-      evidenceManifestHash: currentVersion.manifestHash,
-    },
-    select: {
-      id: true,
-      thesisId: true,
-      studentId: true,
-      examinerId: true,
-      examinerUserId: true,
-      assignedAt: true,
-      assignedBy: true,
-    },
+  const assignment = await prisma.$transaction(async (tx) => {
+    const created = await tx.thesisExaminerAssignment.create({
+      data: {
+        thesisId: thesis.id,
+        thesisVersionId: currentVersion.id,
+        studentId: thesis.studentId,
+        examinerId: examiner.id,
+        examinerUserId: examiner.userId,
+        assignedAt: new Date(),
+        assignedBy: administrator.id,
+        status: AssignmentStatus.PENDING,
+        evidenceManifestHash: currentVersion.manifestHash,
+      },
+      select: {
+        id: true,
+        thesisId: true,
+        studentId: true,
+        examinerId: true,
+        examinerUserId: true,
+        assignedAt: true,
+        assignedBy: true,
+        status: true,
+      },
+    });
+    await appendLifecycleEvent(tx as never, {
+      eventKey: `thesis-examiner-assignment:${created.id}:proposed`,
+      eventType: LIFECYCLE_EVENT.THESIS_EXAMINER_ASSIGNED,
+      aggregateType: "ThesisExaminerAssignment",
+      aggregateId: created.id,
+      actorUserId: auth.userId,
+      actorRole: auth.role,
+      newState: AssignmentStatus.PENDING,
+      metadata: {
+        thesisId: thesis.id,
+        thesisVersionId: currentVersion.id,
+        examinerId: examiner.id,
+      },
+    });
+    return created;
   });
 
-  const secureDownloadUrl = await getDocumentDownloadUrl(currentDocument.id, {
-    uid: examiner.userId,
-    userId: examiner.userId,
-    firebaseUid: examiner.userId,
-    role: "EXAMINER",
-    email: examiner.user.email,
-  });
-
-  await notifyExaminerAssignedToThesis({
-    recipientUserId: examiner.user.id,
-    to: examiner.user.email,
-    examinerName: examiner.user.displayName,
-    studentName: thesis.student.user.displayName,
-    thesisTitle: thesis.title,
-    assignedByName: administrator.user.displayName,
-    secureDownloadUrl,
-  });
-
-  return {
-    assignment,
-    secureDownloadUrl,
-    expiresInMinutes: STORAGE_URL_EXPIRATION_MS / (60 * 1000),
-  };
+  return { assignment, awaitingHodConfirmation: true };
 }

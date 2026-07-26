@@ -163,7 +163,6 @@ describe("searchDocuments", () => {
           },
         },
         { evaluationFormId: null },
-        { progressReportReviewId: null },
         { thesisExaminerAssignmentId: null },
       ],
     });
@@ -171,7 +170,6 @@ describe("searchDocuments", () => {
       AND: [
         { documentType: "REVIEW_ATTACHMENT" },
         { evaluationFormId: { not: null } },
-        { progressReportReviewId: null },
         { thesisExaminerAssignmentId: null },
         {
           evaluationForm: {
@@ -208,10 +206,10 @@ describe("searchDocuments", () => {
     expect(repositoryScope.OR[1]?.OR?.[1]).toMatchObject({
       AND: expect.arrayContaining([
         {
-          progressReportReview: {
+          thesisExaminerAssignment: {
             is: {
               releasedAt: { not: null },
-              progressReport: {
+              thesis: {
                 is: {
                   studentId: { in: ["student-2"] },
                 },
@@ -397,7 +395,6 @@ describe("getDocumentDownloadUrl", () => {
       AND: expect.arrayContaining([
         { documentType: "REVIEW_ATTACHMENT" },
         { evaluationFormId: { not: null } },
-        { progressReportReviewId: null },
         { thesisExaminerAssignmentId: null },
         {
           evaluationForm: {

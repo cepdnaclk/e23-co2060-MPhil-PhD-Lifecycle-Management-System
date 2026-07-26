@@ -25,6 +25,11 @@ export default async function ExaminerVivasPage() {
           scheduledDate: true,
           venue: true,
           outcome: true,
+          recommendations: {
+            where: { authorUserId: auth.userId },
+            take: 1,
+            select: { recommendation: true },
+          },
           thesis: {
             select: {
               id: true,
@@ -53,6 +58,7 @@ export default async function ExaminerVivasPage() {
         ...viva,
         scheduledDate: viva.scheduledDate.toISOString(),
         outcome: viva.outcome,
+        recommendation: viva.recommendations[0]?.recommendation ?? null,
         thesis: {
           ...viva.thesis,
           status: viva.thesis.status,

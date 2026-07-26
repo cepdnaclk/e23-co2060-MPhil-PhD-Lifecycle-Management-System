@@ -15,6 +15,11 @@
       "sha256": "8c60e3e6b53f9251e60e11cc04e9d65bab210d11b3605e6cd4199b5a0ec0c53c",
       "productionDeploymentBlocked": true,
       "reason": "Department V1 deliberately narrows ProgramType to MPHIL/PHD and replaces two legacy supervisor-assignment uniqueness indexes with effective-dated history. The migration fails closed when MSc/MEng rows exist and must remain blocked for populated deployment until classification, preservation, rehearsal, and rollback evidence are approved."
+    },
+    "20260726150000_remove_retired_department_workflows": {
+      "sha256": "7fe7d9a5ed33575ec923023bb149946d40a62f744c52f69cb2012e62a2329f60",
+      "productionDeploymentBlocked": true,
+      "reason": "Department V1 intentionally deletes legacy review-panel, routine examiner progress-review, and supervisor sign-off data. It must not be applied to a populated environment until an approved export, retention decision, sanitized rehearsal, and rollback or roll-forward evidence exist."
     }
   }
 }

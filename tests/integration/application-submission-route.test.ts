@@ -1,7 +1,7 @@
 import {
   ApplicationStatus,
   ProgramType,
-  UserRole,
+  StudyMode,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -49,6 +49,9 @@ vi.mock("@/lib/prisma/client", () => ({
       findUnique: vi.fn(),
       findUniqueOrThrow: vi.fn(),
     },
+    supervisor: {
+      findUnique: vi.fn(),
+    },
     uploadSession: {
       updateMany: vi.fn(),
     },
@@ -63,16 +66,10 @@ vi.mock("@/lib/prisma/client", () => ({
   },
 }));
 
-import { POST as createSession } from "@/app/api/auth/session/route";
 import { POST } from "@/app/api/applications/route";
 import { updateApplicationStatus } from "@/lib/applications/submission";
 import { notifyApplicationSubmittedToAdministrator } from "@/lib/email";
-import {
-  createFirebaseAuthUser,
-  generateFirebasePasswordSetupLink,
-  setCustomClaimsForUser,
-  verifyFirebaseToken,
-} from "@/lib/firebase/admin";
+import { generateFirebasePasswordSetupLink } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/prisma/client";
 import { requirePublicApplicationDraft } from "@/lib/uploads/capabilities";
 
@@ -104,6 +101,11 @@ describe("application submission integration", () => {
       ],
     } as never);
     vi.mocked(prisma.uploadSession.updateMany).mockResolvedValue({ count: 1 });
+    vi.mocked(prisma.supervisor.findUnique).mockResolvedValue({
+      id: "supervisor-1",
+      userId: "supervisor-user-1",
+      user: { isActive: true },
+    } as never);
     vi.mocked(prisma.stagedUploadFile.update).mockResolvedValue({} as never);
     let applicationCreate = vi.fn();
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
@@ -118,6 +120,12 @@ describe("application submission integration", () => {
         },
         uploadSession: {
           update: vi.fn().mockResolvedValue({}),
+        },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
+        outboxMessage: {
+          create: vi.fn().mockResolvedValue({ id: "outbox-1" }),
         },
       } as never);
     });
@@ -152,6 +160,11 @@ describe("application submission integration", () => {
           applicantEmail: "applicant@example.com",
           applicantPhone: "+94770000000",
           programType: ProgramType.MPHIL,
+          studyMode: StudyMode.FULL_TIME,
+          proposalTitle: "Adaptive research supervision systems",
+          proposalAbstract:
+            "A study of adaptive research supervision systems for postgraduate lifecycle support.",
+          proposedSupervisorId: "supervisor-1",
           researchArea: "Educational Data Mining",
           statementOfPurpose:
             "I plan to investigate adaptive research supervision systems for postgraduate students.",
@@ -187,102 +200,16 @@ describe("application submission integration", () => {
     );
   });
 
-  it("allows the newly admitted student to create a session immediately after admission", async () => {
-    vi.mocked(prisma.application.findUnique)
-      .mockResolvedValueOnce({
-        id: "application-login-1",
-        status: ApplicationStatus.UNDER_REVIEW,
-        applicantName: "Login Student",
-        applicantEmail: "student@login.example",
-        programType: ProgramType.MPHIL,
-        studentId: null,
-      } as never)
-      .mockResolvedValueOnce({
-        id: "application-login-1",
-        status: ApplicationStatus.ADMITTED,
-        studentId: "student-login-1",
-      } as never);
-    vi.mocked(prisma.user.findUnique)
-      .mockResolvedValueOnce(null as never)
-      .mockResolvedValueOnce({
-        id: "user-login-1",
-        isActive: true,
-        role: UserRole.STUDENT,
-        firebaseUid: "firebase-login-1",
-      } as never);
-    vi.mocked(createFirebaseAuthUser).mockResolvedValue({
-      uid: "firebase-login-1",
-    } as never);
-    vi.mocked(setCustomClaimsForUser).mockResolvedValue(undefined);
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-      const tx = {
-        user: {
-          create: vi.fn().mockResolvedValue({
-            id: "user-login-1",
-            email: "student@login.example",
-            displayName: "Login Student",
-            role: UserRole.STUDENT,
-            isActive: true,
-            firebaseUid: "firebase-login-1",
-          }),
-        },
-        student: {
-          create: vi.fn().mockResolvedValue({
-            id: "student-login-1",
-          }),
-        },
-        registration: {
-          create: vi.fn().mockResolvedValue({
-            id: "registration-login-1",
-          }),
-        },
-        application: {
-          update: vi.fn().mockResolvedValue({
-            id: "application-login-1",
-            status: ApplicationStatus.ADMITTED,
-            studentId: "student-login-1",
-          }),
-        },
-      };
-
-      return callback(tx as never);
-    });
-    vi.mocked(prisma.application.findUniqueOrThrow).mockResolvedValue({
+  it("blocks the retired generic admission transition", async () => {
+    vi.mocked(prisma.application.findUnique).mockResolvedValue({
       id: "application-login-1",
-      status: ApplicationStatus.ADMITTED,
-      studentId: "student-login-1",
+      status: ApplicationStatus.UNDER_REVIEW,
     } as never);
-    vi.mocked(prisma.user.findMany).mockResolvedValue([] as never);
-    vi.mocked(verifyFirebaseToken).mockResolvedValue({
-      uid: "firebase-login-1",
-      role: "STUDENT",
-    } as never);
-
-    await updateApplicationStatus(
-      "application-login-1",
-      ApplicationStatus.ADMITTED,
-    );
-
-    const response = await createSession(
-      new Request("http://localhost/api/auth/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          origin: "http://localhost",
-        },
-        body: JSON.stringify({
-          idToken: "student-id-token",
-        }),
-      }),
-    );
-
-    expect(
-      response.status,
-      JSON.stringify(await response.clone().json()),
-    ).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      ok: true,
-      role: UserRole.STUDENT,
-    });
+    await expect(
+      updateApplicationStatus(
+        "application-login-1",
+        ApplicationStatus.ADMITTED,
+      ),
+    ).rejects.toMatchObject({ status: 410 });
   });
 });

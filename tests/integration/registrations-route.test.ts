@@ -55,7 +55,8 @@ describe("student progress report registration access", () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({
-      error: "Your registration is lapsed. Renew it before submitting progress reports.",
+      error:
+        "Your fixed registration period has ended. Contact the PG Coordinator before submitting progress.",
     });
   });
 
