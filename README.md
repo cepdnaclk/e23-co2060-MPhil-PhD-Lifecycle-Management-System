@@ -523,6 +523,19 @@ SESSION_ACTIVITY_COOKIE_NAME=
 APP_BASE_URL=
 ```
 
+### Scheduled Maintenance And Optional Seed Users
+
+```env
+CRON_SECRET=
+PROGRESS_REPORT_OVERDUE_AFTER_DAYS=30
+PGLMS_SEED_USERS_JSON=
+```
+
+`PGLMS_SEED_USERS_JSON` is optional. It accepts a JSON array containing
+`role`, `email`, `displayName`, and an existing `firebaseUid`; role-specific
+fields such as `department`, `programType`, and `studyMode` are optional.
+Never place passwords or newly invented Firebase UIDs in this value.
+
 ### Optional Monitoring
 
 ```env
@@ -562,6 +575,8 @@ Available scripts:
 | `npm run lint` | Run ESLint |
 | `npm run prisma:generate` | Generate the Prisma client |
 | `npm run prisma:migrate` | Run development migrations |
+| `npm run database:reset` | Destructively reset a development database and run migrations |
+| `npm run database:seed` | Idempotently seed the four programme rules and optional existing Firebase-linked users |
 | `npm test` | Run Vitest |
 | `npm run test:unit` | Run unit tests only |
 | `npm run test:integration` | Run integration tests only |
