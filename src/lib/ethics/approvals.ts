@@ -51,6 +51,11 @@ const ethicsApprovalSelect = {
   studentId: true,
   title: true,
   summary: true,
+  applicability: true,
+  status: true,
+  referenceNumber: true,
+  validUntil: true,
+  notes: true,
   isArchived: true,
   createdAt: true,
   updatedAt: true,
@@ -108,6 +113,11 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
     studentId: record.studentId,
     title: record.title,
     summary: record.summary,
+    applicability: record.applicability,
+    status: record.status,
+    referenceNumber: record.referenceNumber,
+    validUntil: record.validUntil,
+    notes: record.notes,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     student: {
@@ -444,11 +454,4 @@ export async function listEthicsApprovals() {
   });
 
   return approvals.map(mapEthicsApproval);
-}
-
-export async function updateEthicsApprovalDecision(..._args: unknown[]) {
-  throw new EthicsApprovalError(
-    "Ethics is document-only. Approval or rejection decisions are not supported.",
-    410,
-  );
 }

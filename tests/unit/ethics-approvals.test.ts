@@ -31,8 +31,8 @@ vi.mock("@/lib/notifications", () => ({
 
 import {
   createEthicsApprovalUploadUrl,
+  listEthicsApprovals,
   submitEthicsApproval,
-  updateEthicsApprovalDecision,
 } from "@/lib/ethics/approvals";
 import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
@@ -47,13 +47,6 @@ const studentAuth: AuthenticatedUserContext = {
   userId: "user-student-1",
   firebaseUid: "firebase-student-1",
   role: UserRole.STUDENT,
-};
-
-const adminAuth: AuthenticatedUserContext = {
-  uid: "firebase-admin-1",
-  userId: "user-admin-1",
-  firebaseUid: "firebase-admin-1",
-  role: UserRole.ADMINISTRATOR,
 };
 
 function makeStudentContext(overrides: Record<string, unknown> = {}) {
@@ -77,6 +70,11 @@ function makeApproval() {
     studentId: "student-1",
     title: "Participant interview ethics",
     summary: "Ethics evidence summary for participant interview data collection.",
+    applicability: "REQUIRED",
+    status: "APPROVED",
+    referenceNumber: "ERC/2026/014",
+    validUntil: null,
+    notes: null,
     isArchived: false,
     createdAt: new Date("2026-07-01T08:00:00.000Z"),
     updatedAt: new Date("2026-07-01T08:00:00.000Z"),
@@ -242,17 +240,17 @@ describe("ethics approval workflow", () => {
     );
   });
 
-  it("rejects admin ethics decisions because ethics is document-only", async () => {
-    await expect(
-      updateEthicsApprovalDecision(
-        "approval-1",
-        { status: "APPROVED" },
-        adminAuth,
-      ),
-    ).rejects.toMatchObject({
-      status: 410,
-      message: "Ethics is document-only. Approval or rejection decisions are not supported.",
-    });
-    expect(prisma.ethicsApproval.update).not.toHaveBeenCalled();
+  it("exposes Department applicability and status in the admin list", async () => {
+    vi.mocked(prisma.ethicsApproval.findMany).mockResolvedValue([
+      makeApproval(),
+    ] as never);
+
+    await expect(listEthicsApprovals()).resolves.toEqual([
+      expect.objectContaining({
+        applicability: "REQUIRED",
+        status: "APPROVED",
+        referenceNumber: "ERC/2026/014",
+      }),
+    ]);
   });
 });
