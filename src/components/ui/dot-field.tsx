@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, type HTMLAttributes } from "react";
+import { memo, useEffect, useId, useRef, type HTMLAttributes } from "react";
 
 import styles from "./dot-field.module.css";
 
@@ -75,6 +75,7 @@ const DotField = memo(function DotField({
   className = "",
   ...rest
 }: DotFieldProps) {
+  const glowId = `dot-field-glow-${useId().replace(/:/g, "")}`;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glowRef = useRef<SVGCircleElement | null>(null);
   const dotsRef = useRef<Dot[]>([]);
@@ -106,8 +107,6 @@ const DotField = memo(function DotField({
     idleEngagement,
   });
   const rebuildRef = useRef<(() => void) | null>(null);
-  const glowIdRef = useRef(`dot-field-glow-${Math.random().toString(36).slice(2, 9)}`);
-
   propsRef.current = {
     dotRadius,
     dotSpacing,
@@ -391,7 +390,7 @@ const DotField = memo(function DotField({
         }}
       >
         <defs>
-          <radialGradient id={glowIdRef.current}>
+          <radialGradient id={glowId}>
             <stop offset="0%" stopColor={glowColor} />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
@@ -401,7 +400,7 @@ const DotField = memo(function DotField({
           cx="-9999"
           cy="-9999"
           r={glowRadius}
-          fill={`url(#${glowIdRef.current})`}
+          fill={`url(#${glowId})`}
           style={{ opacity: 0, willChange: "opacity" }}
         />
       </svg>
