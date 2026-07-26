@@ -33,6 +33,16 @@ vi.mock("@/lib/registrations", () => ({
   runRegistrationMaintenance: vi.fn(),
 }));
 
+vi.mock("@/lib/outbox/service", () => ({
+  processOutboxBatch: vi.fn().mockResolvedValue({
+    claimed: 0,
+    delivered: 0,
+    failed: 0,
+    deadLettered: 0,
+    recoveredStaleLeases: 0,
+  }),
+}));
+
 import * as cronRoute from "@/app/api/cron/check-registrations/route";
 import { prisma } from "@/lib/prisma/client";
 import { markOverdueProgressReports } from "@/lib/progress-reports/maintenance";
@@ -148,6 +158,13 @@ describe("POST /api/cron/check-registrations", () => {
           uploadMaintenance: {
             expiredSessionCount: 0,
             deletedObjectCount: 0,
+          },
+          outboxDelivery: {
+            claimed: 0,
+            delivered: 0,
+            failed: 0,
+            deadLettered: 0,
+            recoveredStaleLeases: 0,
           },
         },
       }),

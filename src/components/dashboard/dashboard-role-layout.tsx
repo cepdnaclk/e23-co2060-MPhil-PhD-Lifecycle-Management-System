@@ -19,7 +19,8 @@ import {
   UserCheck,
   UserSearch,
   CalendarDays,
-  ClipboardCheck
+  ClipboardCheck,
+  RotateCcw,
 } from "lucide-react";
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
@@ -173,6 +174,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/admin/theses", label: "Finalize Theses", icon: GraduationCap },
         { href: "/dashboard/admin/documents", label: "Documents", icon: FolderOpen },
         { href: "/dashboard/admin/notification-log", label: "Notification Log", icon: Bell },
+        { href: "/dashboard/admin/outbox", label: "Notification Recovery", icon: RotateCcw },
       ];
     case "examiner":
       return [

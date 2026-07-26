@@ -49,7 +49,7 @@
 | Phase | State | Exit evidence |
 |---|---|---|
 | D0 Scope and inventory | Implemented | Approved requirements, permission matrix, workflows, route catalogue, baseline evidence |
-| D1 Audit and outbox | In progress | Atomic audit/outbox and retry tests |
+| D1 Audit and outbox | Implemented | Append-only database trigger, atomic helper, idempotent queue keys, lease/retry/dead-letter worker, Administrator recovery UI, 13 focused tests |
 | D2 Core schema/reset | Planned | Prisma/migration/reset/seed and programme-rule tests |
 | D3 HOD identity | Planned | Role/layout/API denial tests |
 | D4 Application/proposal | Planned | Public proposal, assignments, revision, HOD decision |
@@ -66,3 +66,19 @@ Local completion will not make the system production-ready. The WP-04 populated
 data rehearsal, real scanner/storage/concurrency tests, Firebase invitation and
 session tests, SMTP verification, CSP enforcement approval, hosted CI/security
 settings, deployment, and recovery evidence remain external release gates.
+
+## D1 verification
+
+| Command | Result |
+|---|---|
+| `npm run lint` | Passed |
+| `npm run typecheck` | Passed |
+| `npm run prisma:validate` | Passed |
+| `npm run prisma:migrate:check` | Passed; the two pre-existing populated-production blockers remain |
+| Focused Vitest run | Passed: 3 files / 13 tests |
+
+The existing signed maintenance job now claims an outbox batch, restores stale
+leases, applies bounded exponential retry, and records every attempt. Failed or
+dead-letter messages can be requeued through the Administrator-only recovery
+page. The database prevents updates and deletes on lifecycle audit rows; any
+correction must be expressed as a later compensating event.

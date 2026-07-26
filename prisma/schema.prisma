@@ -143,6 +143,14 @@ enum NotificationDeliveryStatus {
   FAILED
 }
 
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  DEAD_LETTER
+}
+
 enum MaintenanceRunStatus {
   RUNNING
   COMPLETED
@@ -155,20 +163,22 @@ enum CorrectionType {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
+  id               String                @id @default(cuid())
+  email            String                @unique
   displayName      String
-  firebaseUid      String?           @unique
+  firebaseUid      String?               @unique
   role             UserRole
-  isActive         Boolean           @default(true)
+  isActive         Boolean               @default(true)
   student          Student?
   supervisor       Supervisor?
   examiner         Examiner?
   administrator    Administrator?
   notifications    Notification[]
   notificationLogs NotificationLog[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  lifecycleEvents  LifecycleAuditEvent[] @relation("LifecycleAuditActor")
+  outboxMessages   OutboxMessage[]       @relation("OutboxRecipient")
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@map("users")
 }
@@ -193,6 +203,7 @@ model Student {
   reviewPanelAssignment ReviewPanelStudentAssignment?
   documents             Document[]
   notifications         Notification[]
+  outboxMessages        OutboxMessage[]
   createdAt             DateTime                      @default(now())
   updatedAt             DateTime                      @updatedAt
 
@@ -734,20 +745,92 @@ model PublicRequestRateLimit {
 }
 
 model Notification {
-  id          String            @id @default(cuid())
-  recipientId String
-  studentId   String?
-  event       NotificationEvent
-  title       String
-  message     String
-  isRead      Boolean           @default(false)
-  recipient   User              @relation(fields: [recipientId], references: [id], onDelete: Cascade)
-  student     Student?          @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  recipientId     String
+  studentId       String?
+  event           NotificationEvent
+  title           String
+  message         String
+  actionUrl       String?
+  outboxMessageId String?           @unique
+  isRead          Boolean           @default(false)
+  recipient       User              @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  student         Student?          @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  outboxMessage   OutboxMessage?    @relation(fields: [outboxMessageId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([recipientId, isRead])
   @@map("notifications")
+}
+
+model LifecycleAuditEvent {
+  id            String   @id @default(cuid())
+  eventKey      String   @unique
+  eventType     String
+  aggregateType String
+  aggregateId   String
+  actorUserId   String?
+  actorRole     String?
+  actorLabel    String?
+  previousState String?
+  newState      String?
+  metadata      Json?
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  actor         User?    @relation("LifecycleAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([aggregateType, aggregateId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@map("lifecycle_audit_events")
+}
+
+model OutboxMessage {
+  id                String                  @id @default(cuid())
+  eventKey          String                  @unique
+  topic             String
+  recipientId       String?
+  studentId         String?
+  notificationEvent NotificationEvent?
+  title             String?
+  message           String?
+  actionUrl         String?
+  payload           Json
+  status            OutboxStatus            @default(PENDING)
+  attempts          Int                     @default(0)
+  maxAttempts       Int                     @default(5)
+  availableAt       DateTime                @default(now())
+  lockedAt          DateTime?
+  lockedBy          String?
+  lastError         String?
+  deliveredAt       DateTime?
+  recipient         User?                   @relation("OutboxRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  student           Student?                @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  notification      Notification?
+  deliveryAttempts  OutboxDeliveryAttempt[]
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([status, availableAt, createdAt])
+  @@index([recipientId, createdAt])
+  @@index([topic, createdAt])
+  @@map("outbox_messages")
+}
+
+model OutboxDeliveryAttempt {
+  id           String        @id @default(cuid())
+  outboxId     String
+  attempt      Int
+  succeeded    Boolean
+  errorMessage String?
+  startedAt    DateTime      @default(now())
+  completedAt  DateTime      @default(now())
+  outbox       OutboxMessage @relation(fields: [outboxId], references: [id], onDelete: Cascade)
+
+  @@unique([outboxId, attempt])
+  @@index([succeeded, completedAt])
+  @@map("outbox_delivery_attempts")
 }
 
 model NotificationLog {
