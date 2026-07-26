@@ -142,6 +142,8 @@ case was skipped in that ordinary run because it requires an explicit safe
   same data shape.
 - Obtain the named deployment approval before changing any blocker or running
   ledger reconciliation or migration deployment on the shared database.
-- Complete hosted CI/security-setting evidence and isolated external-service
-  tests for Firebase, Supabase Storage, scanning, SMTP, and authenticated
-  browser flows.
+- Add branch protection with the documented required checks and enable
+  Dependabot security updates. The exact evidence commit passed CI, CodeQL,
+  secret scanning, and Pages, but these two repository settings remain absent.
+- Complete isolated external-service tests for Firebase, Supabase Storage,
+  scanning, SMTP, and authenticated browser flows.

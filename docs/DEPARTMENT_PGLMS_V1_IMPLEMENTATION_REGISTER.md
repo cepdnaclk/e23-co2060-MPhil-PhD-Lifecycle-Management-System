@@ -226,3 +226,20 @@ are recorded in
 `docs/operations/DEPARTMENT_V1_POPULATED_REHEARSAL_20260727.md`. All
 checksum-pinned production blockers remain enabled until that evidence and the
 deployment/recovery decision receive explicit project-owner approval.
+
+## Hosted verification checkpoint — 27 July 2026
+
+The exact rehearsal-evidence commit
+`e0ba5c5f8e929c9620c0b0c05db69a4dd6d8af73` passed every configured hosted
+job: CI Quality, Database migrations, Browser smoke, Secret scan, CodeQL
+JavaScript/TypeScript analysis, and the Pages build/deployment.
+
+The repository settings audit confirmed enabled secret scanning, push
+protection, and vulnerability alerts. Weekly npm and GitHub Actions Dependabot
+updates are configured in the repository.
+
+Hosted governance is not complete: `main` is unprotected and therefore does
+not require the green checks before changes land, while Dependabot security
+updates are disabled. The active Copilot review-on-push ruleset does not enforce
+status checks or pull-request review. These settings remain project-owner
+Administrator actions; they were inspected read-only and were not changed.
