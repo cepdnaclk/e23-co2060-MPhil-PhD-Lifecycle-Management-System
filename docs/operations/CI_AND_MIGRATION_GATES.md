@@ -145,6 +145,27 @@ rehearsal is evidence for review, not authorization to migrate the shared
 database; backup, ledger reconciliation approval, production-blocker review,
 and a maintenance/rollback or roll-forward decision remain mandatory.
 
+### Final conformance rehearsal — 27 July 2026
+
+The final 17-migration repository state was rehearsed against the protected
+pre-Department-V1 populated backup in disposable local PostgreSQL 15. The
+guarded ledger reconciliation and all 14 pending migrations succeeded. Core
+record counts were preserved, every targeted final-conformance invariant
+reported zero violations, migration status was current, and schema drift was
+zero.
+
+Separate pre- and post-migration PostgreSQL 15 archives were checksum-recorded
+and restored into empty local databases. The restored pre-change database
+reproduced the legacy 25-table state, while the restored post-change database
+reproduced the 49-table Department V1 state and again passed migration status
+and drift checks. Only aggregate evidence was recorded and the shared database
+was not accessed.
+
+The full sanitized report is
+`docs/operations/DEPARTMENT_V1_POPULATED_REHEARSAL_20260727.md`. Production
+blockers remain in force until the project owner accepts the evidence, confirms
+the target-specific inventory and recovery plan, and authorizes deployment.
+
 ## 9. WP-02 exit evidence
 
 The local checkpoint on 25 July 2026 produced:
@@ -163,6 +184,7 @@ Still required for full verification:
 
 - a green first hosted run and required branch-protection checks;
 - GitHub security-setting evidence;
-- sanitized populated-database migration rehearsal and approval;
+- project-owner approval of the populated-database rehearsal and recovery
+  evidence;
 - isolated Firebase/Supabase/SMTP authenticated E2E coverage;
 - deployment and runtime smoke evidence.

@@ -145,9 +145,10 @@ D4–D10 pass:
 ## Remaining release limitations
 
 No known Department V1 completion-state delta remains in the local
-implementation. This does not remove the populated-data rehearsal, live
-Firebase/Supabase/storage/scanner/SMTP checks, hosted CI evidence, recovery
-rehearsal, or deployment approval listed above.
+implementation. The final populated-data migration and backup-recovery
+rehearsal completed locally on 27 July 2026. Live
+Firebase/Supabase/storage/scanner/SMTP checks, hosted CI evidence, acceptance
+of the rehearsal, and deployment approval remain external release gates.
 
 | Final command | Result |
 |---|---|
@@ -204,3 +205,24 @@ files/92 tests with the guarded database case skipped there, the separate
 and accessibility tests, and both high-severity dependency audit gates. The
 audits continue to report the documented 6 production and 9 all-dependency
 moderate transitive findings.
+
+## Final populated migration and recovery rehearsal — 27 July 2026
+
+The protected pre-Department-V1 populated backup restored into disposable
+local PostgreSQL 15. The checksum-guarded obsolete-ledger reconciliation passed
+its dry run and changed only the reviewed ledger row. All 14 pending migrations
+then deployed successfully.
+
+The ten tracked application-table counts were preserved, no duplicate
+registrations existed, legacy archive and ethics states translated as designed,
+all targeted conformance checks reported zero violations, migration status was
+current, and Prisma reported no schema drift. Independent restoration of
+checksum-recorded pre- and post-migration archives reproduced both database
+states and their aggregate counts. The shared database was not accessed or
+modified.
+
+Detailed aggregate evidence and the remaining target-specific approval gates
+are recorded in
+`docs/operations/DEPARTMENT_V1_POPULATED_REHEARSAL_20260727.md`. All
+checksum-pinned production blockers remain enabled until that evidence and the
+deployment/recovery decision receive explicit project-owner approval.
