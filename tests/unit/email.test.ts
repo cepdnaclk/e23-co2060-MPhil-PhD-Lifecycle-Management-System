@@ -79,11 +79,11 @@ describe("sendEmail", () => {
 
     const result = await sendEmail({
       to: "student@example.com",
-      subject: "Registration expiry reminder",
+      subject: "Historical system notice",
       html: "<p>Hello</p>",
       text: "Hello",
       recipientUserId: "user-2",
-      event: "REGISTRATION_EXPIRY_APPROACHING",
+      event: "SYSTEM_NOTICE",
     });
 
     expect(prisma.notificationLog.create).toHaveBeenCalledWith(
@@ -105,11 +105,11 @@ describe("sendEmail", () => {
 
     const result = await sendEmail({
       to: "student@example.com",
-      subject: "Registration expiry reminder",
+      subject: "Historical system notice",
       html: "<p>Hello</p>",
       text: "Hello",
       recipientUserId: "user-2",
-      event: "REGISTRATION_EXPIRY_APPROACHING",
+      event: "SYSTEM_NOTICE",
     });
 
     expect(prisma.notificationLog.create).toHaveBeenCalledWith(

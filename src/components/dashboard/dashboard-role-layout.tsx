@@ -56,8 +56,7 @@ export function DashboardRoleLayout({
 }: DashboardRoleLayoutProps) {
   const pathname = usePathname();
   const meta = buildDashboardPageMeta(role);
-  const isAdmin = role === "admin";
-  const heading = isAdmin ? "Administrator" : meta.eyebrow;
+  const heading = meta.eyebrow;
 
   function isActive(href: string) {
     return pathname === href || (href !== `/dashboard/${role}` && pathname.startsWith(`${href}/`));
@@ -129,10 +128,10 @@ export function DashboardRoleLayout({
             <Separator orientation='vertical' className='h-6 ml-2 mr-2' />
           </div>
           <div className="flex-1">
-            <h1 className="text-sm font-medium">{heading} Dashboard</h1>
+            <h1 className="text-sm font-medium">{heading}</h1>
           </div>
           <div className="ml-auto flex items-center space-x-4">
-            <ProfileDropdown />
+            <ProfileDropdown role={role} />
           </div>
         </Header>
         <Main>

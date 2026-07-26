@@ -24,9 +24,9 @@ test.describe("authenticated supervisor dashboard", { tag: "@external" }, () => 
               },
               currentRegistration: {
                 id: "registration-1",
-                status: "LAPSED",
+                status: "ACTIVE",
                 startDate: "2025-01-01T00:00:00.000Z",
-                expirationDate: "2026-01-01T00:00:00.000Z",
+                expectedCompletionDate: "2026-01-01T00:00:00.000Z",
               },
               latestProposal: {
                 id: "proposal-1",

@@ -215,28 +215,6 @@ export function sendEmailInBackground(input: SendEmailInput): Promise<void> {
   });
 }
 
-export function buildRegistrationExpiryTemplate(input: {
-  studentName: string;
-  expirationDateLabel: string;
-  daysRemaining?: number;
-}): EmailTemplate {
-  const daysRemaining = input.daysRemaining ?? 14;
-  const subject = `Registration expiry reminder: ${daysRemaining} days remaining`;
-  const text = [
-    `Dear ${input.studentName},`,
-    "",
-    `Your registration will expire on ${input.expirationDateLabel}.`,
-    `Your fixed registration period ends in ${daysRemaining} days. Contact the PG Coordinator if action is required.`,
-  ].join("\n");
-  const html = emailHtml`
-    <p>Dear ${input.studentName},</p>
-    <p>Your registration will expire on <strong>${input.expirationDateLabel}</strong>.</p>
-    <p>Your fixed registration period ends in <strong>${daysRemaining} days</strong>. Contact the PG Coordinator if action is required.</p>
-  `;
-
-  return { subject, html, text };
-}
-
 export function buildProposalStatusChangeTemplate(input: {
   studentName: string;
   proposalTitle: string;
@@ -484,23 +462,6 @@ export function buildCorrectionSubmittedTemplate(input: {
 
   return { subject, html, text };
 }
-export async function notifyRegistrationExpiry(input: {
-  recipientUserId: string;
-  to: string;
-  studentName: string;
-  expirationDateLabel: string;
-  daysRemaining?: number;
-}) {
-  const template = buildRegistrationExpiryTemplate(input);
-
-  return sendEmail({
-    to: input.to,
-    recipientUserId: input.recipientUserId,
-    event: NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
-    ...template,
-  });
-}
-
 export async function notifyProposalStatusChange(input: {
   recipientUserId: string;
   to: string;

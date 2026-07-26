@@ -304,7 +304,7 @@ function isThesisDocumentApproved(document: StudentDocumentRecord) {
     document.documentType === DocumentType.THESIS &&
     document.isCurrentVersion &&
     (document.thesis?.status === ThesisStatus.COMPLETED ||
-      document.thesis?.status === ThesisStatus.FINAL_ARCHIVE ||
+      document.thesis?.status === ThesisStatus.ARCHIVED ||
       document.thesis?.status === ThesisStatus.CLOSED)
   );
 }
@@ -407,7 +407,7 @@ export function calculateStageCompletionPercentages(input: {
 
   if (
     input.thesisStatus === ThesisStatus.COMPLETED ||
-    input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
+    input.thesisStatus === ThesisStatus.ARCHIVED ||
     input.thesisStatus === ThesisStatus.CLOSED
   ) {
     thesisCompletion = 100;
@@ -459,7 +459,7 @@ export function determineCurrentMilestone(input: {
 }) {
   if (
     input.thesisStatus === ThesisStatus.COMPLETED ||
-    input.thesisStatus === ThesisStatus.FINAL_ARCHIVE ||
+    input.thesisStatus === ThesisStatus.ARCHIVED ||
     input.thesisStatus === ThesisStatus.CLOSED
   ) {
     return "examiner-feedback" as ProgressMilestoneId;
@@ -627,7 +627,7 @@ export async function getStudentProgressById(
   const latestEthicsApproval = student.ethicsApprovals?.[0] ?? null;
   const examinerFeedbackReleased = latestThesis
     ? latestThesis.status === ThesisStatus.COMPLETED ||
-      latestThesis.status === ThesisStatus.FINAL_ARCHIVE ||
+      latestThesis.status === ThesisStatus.ARCHIVED ||
       latestThesis.status === ThesisStatus.CLOSED ||
       latestThesis.status === ThesisStatus.CORRECTIONS_APPROVED ||
       latestThesis.correctionOrders?.some(

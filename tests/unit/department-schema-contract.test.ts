@@ -47,7 +47,7 @@ describe("Department V1 schema contract", () => {
       /enum RegistrationStatus \{[\s\S]*?COMPLETED[\s\S]*?ARCHIVED[\s\S]*?\}/,
     );
     expect(schema).toMatch(
-      /enum ThesisStatus \{[\s\S]*?CORRECTIONS_APPROVED[\s\S]*?COMPLETED[\s\S]*?FINAL_ARCHIVE[\s\S]*?\}/,
+      /enum ThesisStatus \{[\s\S]*?CORRECTIONS_APPROVED[\s\S]*?COMPLETED[\s\S]*?ARCHIVED[\s\S]*?\}/,
     );
   });
 });

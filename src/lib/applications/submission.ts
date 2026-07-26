@@ -728,11 +728,8 @@ export async function executeApprovedAdmission(
         data: {
           studentId: student.id,
           startDate: registrationStartDate,
-          expirationDate: schedule.registrationEndDate,
+          expectedCompletionDate: schedule.registrationEndDate,
           status: RegistrationStatus.ACTIVE,
-          studyMode: application.studyMode,
-          durationMonths: schedule.rule.durationMonths,
-          isFixedTerm: true,
         },
       });
 

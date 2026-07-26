@@ -1,0 +1,30 @@
+[
+  {
+    "programType": "MPHIL",
+    "studyMode": "FULL_TIME",
+    "durationMonths": 24,
+    "milestoneIntervalMonths": 6,
+    "milestoneCount": 4
+  },
+  {
+    "programType": "MPHIL",
+    "studyMode": "PART_TIME",
+    "durationMonths": 36,
+    "milestoneIntervalMonths": 6,
+    "milestoneCount": 6
+  },
+  {
+    "programType": "PHD",
+    "studyMode": "FULL_TIME",
+    "durationMonths": 36,
+    "milestoneIntervalMonths": 6,
+    "milestoneCount": 6
+  },
+  {
+    "programType": "PHD",
+    "studyMode": "PART_TIME",
+    "durationMonths": 54,
+    "milestoneIntervalMonths": 6,
+    "milestoneCount": 9
+  }
+]

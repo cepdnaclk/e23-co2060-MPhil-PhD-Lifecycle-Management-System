@@ -8,8 +8,8 @@ const THESIS_STATUS_TRANSITIONS: Record<ThesisStatus, ThesisStatus[]> = {
   ],
   [ThesisStatus.CORRECTIONS_REQUIRED]: [ThesisStatus.CORRECTIONS_APPROVED],
   [ThesisStatus.CORRECTIONS_APPROVED]: [ThesisStatus.COMPLETED],
-  [ThesisStatus.COMPLETED]: [ThesisStatus.FINAL_ARCHIVE],
-  [ThesisStatus.FINAL_ARCHIVE]: [ThesisStatus.CLOSED],
+  [ThesisStatus.COMPLETED]: [ThesisStatus.ARCHIVED],
+  [ThesisStatus.ARCHIVED]: [ThesisStatus.CLOSED],
   [ThesisStatus.CLOSED]: [],
 };
 

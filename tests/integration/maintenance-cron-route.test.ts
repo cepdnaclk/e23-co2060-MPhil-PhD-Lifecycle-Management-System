@@ -29,10 +29,6 @@ vi.mock("@/lib/uploads/sessions", () => ({
   }),
 }));
 
-vi.mock("@/lib/registrations", () => ({
-  runRegistrationMaintenance: vi.fn(),
-}));
-
 vi.mock("@/lib/outbox/service", () => ({
   processOutboxBatch: vi.fn().mockResolvedValue({
     claimed: 0,
@@ -43,13 +39,12 @@ vi.mock("@/lib/outbox/service", () => ({
   }),
 }));
 
-import * as cronRoute from "@/app/api/cron/check-registrations/route";
+import * as cronRoute from "@/app/api/cron/maintenance/route";
 import { prisma } from "@/lib/prisma/client";
 import { markOverdueProgressMilestones } from "@/lib/progress-reports/maintenance";
-import { runRegistrationMaintenance } from "@/lib/registrations";
 
 const CRON_SECRET = "s".repeat(48);
-const ROUTE_URL = "http://localhost/api/cron/check-registrations";
+const ROUTE_URL = "http://localhost/api/cron/maintenance";
 
 function makeSignedRequest(input?: {
   secret?: string;
@@ -65,7 +60,7 @@ function makeSignedRequest(input?: {
     input?.signature ??
     createHmac("sha256", input?.secret ?? CRON_SECRET)
       .update(
-        `${timestamp}\n${runKey}\nPOST\n/api/cron/check-registrations`,
+        `${timestamp}\n${runKey}\nPOST\n/api/cron/maintenance`,
         "utf8",
       )
       .digest("hex");
@@ -80,7 +75,7 @@ function makeSignedRequest(input?: {
   });
 }
 
-describe("POST /api/cron/check-registrations", () => {
+describe("POST /api/cron/maintenance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("CRON_SECRET", CRON_SECRET);
@@ -88,10 +83,6 @@ describe("POST /api/cron/check-registrations", () => {
       id: "maintenance-run-1",
     } as never);
     vi.mocked(prisma.maintenanceRun.update).mockResolvedValue({} as never);
-    vi.mocked(runRegistrationMaintenance).mockResolvedValue({
-      lapsedCount: 2,
-      reminderCount: 3,
-    });
     vi.mocked(markOverdueProgressMilestones).mockResolvedValue(4);
   });
 
@@ -106,7 +97,6 @@ describe("POST /api/cron/check-registrations", () => {
 
     expect(response.status).toBe(503);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
-    expect(runRegistrationMaintenance).not.toHaveBeenCalled();
     expect(markOverdueProgressMilestones).not.toHaveBeenCalled();
   });
 
@@ -117,7 +107,6 @@ describe("POST /api/cron/check-registrations", () => {
 
     expect(response.status).toBe(401);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
-    expect(runRegistrationMaintenance).not.toHaveBeenCalled();
   });
 
   it("rejects expired credentials before claiming or running work", async () => {
@@ -129,7 +118,6 @@ describe("POST /api/cron/check-registrations", () => {
 
     expect(response.status).toBe(401);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
-    expect(runRegistrationMaintenance).not.toHaveBeenCalled();
   });
 
   it("runs maintenance once for a valid signed request", async () => {
@@ -139,21 +127,18 @@ describe("POST /api/cron/check-registrations", () => {
     expect(response.status).toBe(200);
     expect(prisma.maintenanceRun.create).toHaveBeenCalledWith({
       data: {
-        jobName: "registration-and-progress-maintenance",
+        jobName: "department-maintenance",
         runKey: expectedRunKey,
         status: MaintenanceRunStatus.RUNNING,
       },
       select: { id: true },
     });
-    expect(runRegistrationMaintenance).toHaveBeenCalledTimes(1);
     expect(markOverdueProgressMilestones).toHaveBeenCalledTimes(1);
     expect(prisma.maintenanceRun.update).toHaveBeenCalledWith({
       where: { id: "maintenance-run-1" },
       data: expect.objectContaining({
         status: MaintenanceRunStatus.COMPLETED,
         result: {
-          lapsedCount: 2,
-          reminderCount: 3,
           overdueProgressMilestones: 4,
           uploadMaintenance: {
             expiredSessionCount: 0,
@@ -172,8 +157,6 @@ describe("POST /api/cron/check-registrations", () => {
     await expect(response.json()).resolves.toMatchObject({
       ok: true,
       runKey: expectedRunKey,
-      lapsedCount: 2,
-      reminderCount: 3,
       overdueProgressMilestones: 4,
       uploadMaintenance: {
         expiredSessionCount: 0,
@@ -190,7 +173,6 @@ describe("POST /api/cron/check-registrations", () => {
     const response = await cronRoute.POST(makeSignedRequest());
 
     expect(response.status).toBe(409);
-    expect(runRegistrationMaintenance).not.toHaveBeenCalled();
     expect(markOverdueProgressMilestones).not.toHaveBeenCalled();
   });
 
@@ -201,6 +183,5 @@ describe("POST /api/cron/check-registrations", () => {
 
     expect(response.status).toBe(401);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
-    expect(runRegistrationMaintenance).not.toHaveBeenCalled();
   });
 });

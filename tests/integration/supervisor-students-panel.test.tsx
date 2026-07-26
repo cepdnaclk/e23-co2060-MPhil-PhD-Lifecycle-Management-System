@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { SupervisorStudentsPanel } from "@/components/supervisor/supervisor-students-panel";
 
 describe("supervisor students panel", () => {
-  it("shows the LAPSED badge for students with expired registrations", () => {
+  it("shows the expected completion date for an active registration", () => {
     render(
       <SupervisorStudentsPanel
         initialStudents={[
@@ -29,9 +29,9 @@ describe("supervisor students panel", () => {
             },
             currentRegistration: {
               id: "registration-1",
-              status: "LAPSED",
+              status: "ACTIVE",
               startDate: "2025-01-01T00:00:00.000Z",
-              expirationDate: "2026-01-01T00:00:00.000Z",
+              expectedCompletionDate: "2026-01-01T00:00:00.000Z",
             },
             latestProposal: {
               id: "proposal-1",
@@ -46,7 +46,7 @@ describe("supervisor students panel", () => {
 
     expect(screen.getAllByText("Student One")).toHaveLength(2);
     expect(screen.getByTestId("registration-badge-student-1")).toHaveTextContent(
-      "LAPSED",
+      "ACTIVE · Expected completion",
     );
   });
 });

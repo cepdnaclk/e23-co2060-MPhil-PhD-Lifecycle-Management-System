@@ -13,7 +13,6 @@ vi.mock("@/lib/email", () => ({
   }),
   notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
   notifyProgressReportSubmitted: vi.fn().mockResolvedValue({ success: true }),
-  notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
   notifyVivaScheduled: vi.fn().mockResolvedValue({ success: true }),
   notifyCorrectionSubmittedToAdministrator: vi.fn().mockResolvedValue({
@@ -40,7 +39,6 @@ import {
   notifyProposalEvaluationSubmittedToAdministrator,
   notifyProposalStatusChange,
   notifyEthicsApprovalSubmittedToAdministrator,
-  notifyRegistrationExpiry,
   notifyThesisArchived,
   notifyVivaScheduled,
   notifyCorrectionSubmittedToAdministrator,
@@ -167,21 +165,6 @@ describe("NotificationService — event-to-template mapping", () => {
           event: NotificationEvent.EXAMINER_REVIEW_SUBMITTED,
         }),
       }),
-    );
-  });
-
-  it("dispatches REGISTRATION_EXPIRY_APPROACHING with 14-day default (REQ-FN-018)", async () => {
-    await notify({
-      event: "REGISTRATION_EXPIRY_APPROACHING",
-      recipientUserId: "user-1",
-      to: "student@example.com",
-      studentName: "Alice",
-      expirationDateLabel: "1 June 2026",
-    });
-
-    expect(notifyRegistrationExpiry).toHaveBeenCalledOnce();
-    expect(notifyRegistrationExpiry).toHaveBeenCalledWith(
-      expect.objectContaining({ daysRemaining: 14 }),
     );
   });
 

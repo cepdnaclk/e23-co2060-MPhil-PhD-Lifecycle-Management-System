@@ -42,7 +42,6 @@ async function assertReadinessPreconditions(
       registrations: {
         where: {
           status: RegistrationStatus.ACTIVE,
-          expirationDate: { gte: new Date() },
         },
         take: 1,
         select: { id: true },
@@ -65,7 +64,7 @@ async function assertReadinessPreconditions(
         select: { supervisorUserId: true },
       },
       theses: {
-        where: { status: { in: ["FINAL_ARCHIVE", "CLOSED"] } },
+        where: { status: { in: ["ARCHIVED", "CLOSED"] } },
         take: 1,
         select: { id: true },
       },

@@ -98,7 +98,7 @@ describe("student progress utilities", () => {
   it("moves past thesis submission once the thesis is finalized", () => {
     const milestone = determineCurrentMilestone({
       proposalStatus: ProposalStatus.APPROVED,
-      thesisStatus: ThesisStatus.FINAL_ARCHIVE,
+      thesisStatus: ThesisStatus.ARCHIVED,
       documents: [],
     });
 

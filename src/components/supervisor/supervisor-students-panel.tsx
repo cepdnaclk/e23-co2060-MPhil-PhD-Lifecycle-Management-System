@@ -42,7 +42,7 @@ type SupervisorStudentListItem = {
     id: string;
     status: RegistrationStatus;
     startDate: string | Date;
-    expirationDate: string | Date;
+    expectedCompletionDate: string | Date;
   } | null;
   latestProposal: {
     id: string;
@@ -82,7 +82,7 @@ export function SupervisorStudentsPanel({
     "ALL",
   );
   const [registrationFilter, setRegistrationFilter] = useState<
-    "ALL" | "ACTIVE" | "LAPSED"
+    "ALL" | "ACTIVE" | "COMPLETED" | "ARCHIVED"
   >("ALL");
   const [isLoading, setIsLoading] = useState(initialStudents.length === 0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -199,7 +199,8 @@ export function SupervisorStudentsPanel({
             <SelectContent>
               <SelectItem value="ALL">All registrations</SelectItem>
               <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="LAPSED">Lapsed</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="ARCHIVED">Archived</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -275,7 +276,7 @@ export function SupervisorStudentsPanel({
                               className="text-sm font-medium"
                               data-testid={`registration-badge-${entry.student.id}`}
                             >
-                              {registrationLabel} · Expires {formatDateLabel(entry.currentRegistration?.expirationDate)}
+                              {registrationLabel} · Expected completion {formatDateLabel(entry.currentRegistration?.expectedCompletionDate)}
                             </span>
                           </div>
                           <div className="flex flex-col">

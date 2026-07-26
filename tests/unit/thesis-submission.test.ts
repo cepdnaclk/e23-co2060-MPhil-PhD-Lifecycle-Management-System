@@ -39,9 +39,9 @@ describe("thesis submission contracts", () => {
     expect(() =>
       assertValidThesisStatusTransition(
         ThesisStatus.SUBMITTED,
-        ThesisStatus.FINAL_ARCHIVE,
+        ThesisStatus.ARCHIVED,
       ),
-    ).toThrow("Invalid thesis status transition: SUBMITTED -> FINAL_ARCHIVE");
+    ).toThrow("Invalid thesis status transition: SUBMITTED -> ARCHIVED");
   });
 
   it("prevents ordinary thesis resubmission from bypassing corrections", () => {

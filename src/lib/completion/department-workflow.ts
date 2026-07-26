@@ -364,7 +364,6 @@ export async function recordProgrammeCompletion(
       !student.registrations.some(
         (registration) =>
           registration.status === RegistrationStatus.ACTIVE ||
-          registration.status === RegistrationStatus.LAPSED ||
           registration.status === RegistrationStatus.COMPLETED,
       )
     ) {
@@ -396,7 +395,7 @@ export async function recordProgrammeCompletion(
       where: {
         studentId,
         status: {
-          in: [RegistrationStatus.ACTIVE, RegistrationStatus.LAPSED],
+          in: [RegistrationStatus.ACTIVE],
         },
       },
       data: {
@@ -651,7 +650,7 @@ export async function archiveStudentRecord(
     await tx.thesis.update({
       where: { id: student.programmeCompletion.thesisId },
       data: {
-        status: ThesisStatus.FINAL_ARCHIVE,
+        status: ThesisStatus.ARCHIVED,
         isArchived: true,
       },
     });

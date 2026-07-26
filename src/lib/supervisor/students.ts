@@ -53,7 +53,7 @@ type SupervisorStudentAssignmentRecord = {
       id: string;
       status: RegistrationStatus;
       startDate: Date;
-      expirationDate: Date;
+      expectedCompletionDate: Date;
     }>;
     researchProposals: Array<{
       id: string;
@@ -126,7 +126,7 @@ function mapSupervisorStudentRecord(record: SupervisorStudentAssignmentRecord) {
           id: latestRegistration.id,
           status: latestRegistration.status,
           startDate: latestRegistration.startDate,
-          expirationDate: latestRegistration.expirationDate,
+          expectedCompletionDate: latestRegistration.expectedCompletionDate,
         }
       : null,
     latestProposal: latestProposal
@@ -177,14 +177,14 @@ export async function getSupervisorAssignedStudents(
           },
           registrations: {
             orderBy: {
-              expirationDate: "desc",
+              expectedCompletionDate: "desc",
             },
             take: 1,
             select: {
               id: true,
               status: true,
               startDate: true,
-              expirationDate: true,
+              expectedCompletionDate: true,
             },
           },
           researchProposals: {

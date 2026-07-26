@@ -122,7 +122,7 @@ describe("examiner assignment rules", () => {
     vi.mocked(prisma.thesis.findUnique).mockResolvedValue({
       id: "thesis-1",
       title: "Archived Thesis",
-      status: ThesisStatus.FINAL_ARCHIVE,
+      status: ThesisStatus.ARCHIVED,
       studentId: "student-1",
       student: {
         id: "student-1",

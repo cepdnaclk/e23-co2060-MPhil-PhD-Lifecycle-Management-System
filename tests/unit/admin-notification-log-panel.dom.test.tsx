@@ -29,8 +29,8 @@ const logPage = {
       recipientId: "user-student-1",
       recipientEmail: "student@example.com",
       recipientName: "Alice",
-      event: "REGISTRATION_EXPIRY_APPROACHING",
-      subject: "Registration expiry reminder: 14 days remaining",
+      event: "SYSTEM_NOTICE",
+      subject: "Historical system notice",
       deliveryStatus: "FAILED",
       failureReason: "ECONNREFUSED",
       createdAt: "2026-05-01T09:00:00.000Z",
@@ -65,7 +65,7 @@ describe("NotificationLogPanel", () => {
     expect(
       await screen.findByText("Progress report submitted for Q1 2026"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Registration expiry reminder: 14 days remaining")).toBeInTheDocument();
+    expect(screen.getByText("Historical system notice")).toBeInTheDocument();
     expect(screen.getAllByText("Failed").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();

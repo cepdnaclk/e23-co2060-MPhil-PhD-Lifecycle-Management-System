@@ -44,7 +44,7 @@ describe("supervisor student data access", () => {
               id: "registration-1",
               status: RegistrationStatus.ACTIVE,
               startDate: new Date("2026-01-01T00:00:00.000Z"),
-              expirationDate: new Date("2026-12-31T00:00:00.000Z"),
+              expectedCompletionDate: new Date("2026-12-31T00:00:00.000Z"),
             },
           ],
           researchProposals: [

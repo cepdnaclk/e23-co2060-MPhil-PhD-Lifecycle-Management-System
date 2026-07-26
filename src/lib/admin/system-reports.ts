@@ -291,7 +291,7 @@ function mapGraduationRow(student: Prisma.StudentGetPayload<{
     updatedAt: true;
     user: { select: { displayName: true; email: true } };
     theses: {
-      where: { status: "FINAL_ARCHIVE" };
+      where: { status: "ARCHIVED" };
       orderBy: { updatedAt: "desc" };
       take: 1;
       select: { title: true; updatedAt: true };
@@ -574,7 +574,7 @@ export async function listGraduationsReport(filters: AdminReportFilters) {
         },
         theses: {
           where: {
-            status: ThesisStatus.FINAL_ARCHIVE,
+            status: ThesisStatus.ARCHIVED,
           },
           orderBy: {
             updatedAt: "desc",

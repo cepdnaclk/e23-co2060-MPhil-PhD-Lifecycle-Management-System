@@ -617,7 +617,7 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
         where: {
           OR: [
             { isArchived: true },
-            { status: ThesisStatus.FINAL_ARCHIVE },
+            { status: ThesisStatus.ARCHIVED },
             { status: ThesisStatus.CLOSED },
           ],
         },

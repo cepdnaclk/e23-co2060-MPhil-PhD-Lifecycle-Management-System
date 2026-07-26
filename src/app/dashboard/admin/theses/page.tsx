@@ -13,7 +13,7 @@ export default async function AdminThesesPage() {
         in: [
           ThesisStatus.CORRECTIONS_REQUIRED,
           ThesisStatus.CORRECTIONS_APPROVED,
-          ThesisStatus.FINAL_ARCHIVE,
+          ThesisStatus.ARCHIVED,
         ],
       },
     },

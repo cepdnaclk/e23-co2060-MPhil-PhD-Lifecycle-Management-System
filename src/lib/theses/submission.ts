@@ -139,9 +139,6 @@ async function findThesisStudentContext(
       registrations: {
         where: {
           status: RegistrationStatus.ACTIVE,
-          expirationDate: {
-            gte: new Date(),
-          },
         },
         select: {
           id: true,

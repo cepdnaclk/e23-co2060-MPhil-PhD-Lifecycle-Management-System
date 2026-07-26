@@ -50,6 +50,11 @@
       "sha256": "2ac6a4d6845b437fb614d9414920f443ad703dccaf62e0b9801c14bd4b6aacd4",
       "productionDeploymentBlocked": true,
       "reason": "This migration maps preserved legacy ethics-review state into the staged Department workflow and then removes the temporary reconciliation table. It must remain blocked until a populated rehearsal verifies record counts, status mapping, reviewer identity translation, and that legacy approvals or rejections are not treated as final HOD decisions."
+    },
+    "20260727090000_finalize_department_v1_conformance": {
+      "sha256": "ecc15efb40be8028790596a1529f62b7c3a50a24709c3740a6a439c7d79cb6ed",
+      "productionDeploymentBlocked": true,
+      "reason": "This final Department V1 conformance migration removes fixed-term registration fields and retired enum values, makes registration unique per Student, and renames the archived thesis state. It must remain blocked for populated deployment until duplicate registrations are reconciled, retired notification events are reviewed, and the migration is rehearsed on a sanitized populated copy with approved rollback or roll-forward evidence."
     }
   }
 }

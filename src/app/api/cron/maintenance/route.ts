@@ -8,12 +8,11 @@ import { prisma } from "@/lib/prisma/client";
 import { markOverdueProgressMilestones } from "@/lib/progress-reports/maintenance";
 import { processOutboxBatch } from "@/lib/outbox/service";
 import { cleanupExpiredUploadSessions } from "@/lib/uploads/sessions";
-import { runRegistrationMaintenance } from "@/lib/registrations";
 
 export const runtime = "nodejs";
 
-const JOB_NAME = "registration-and-progress-maintenance";
-const ROUTE_PATH = "/api/cron/check-registrations";
+const JOB_NAME = "department-maintenance";
+const ROUTE_PATH = "/api/cron/maintenance";
 const MAX_SIGNATURE_AGE_SECONDS = 5 * 60;
 const MINIMUM_CRON_SECRET_BYTES = 32;
 const RUN_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -26,12 +25,7 @@ type CronAuthorizationResult =
 function jsonError(message: string, status: 401 | 409 | 503) {
   return NextResponse.json(
     { error: message },
-    {
-      status,
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    },
+    { status, headers: { "Cache-Control": "no-store" } },
   );
 }
 
@@ -41,7 +35,6 @@ function buildSignaturePayload(timestamp: string, runKey: string) {
 
 function authorizeCronRequest(request: Request): CronAuthorizationResult {
   const secret = process.env.CRON_SECRET?.trim();
-
   if (!secret || Buffer.byteLength(secret, "utf8") < MINIMUM_CRON_SECRET_BYTES) {
     return {
       authorized: false,
@@ -54,55 +47,39 @@ function authorizeCronRequest(request: Request): CronAuthorizationResult {
   const runKey = request.headers.get("x-cron-run-key")?.trim() ?? "";
   const signature = request.headers.get("x-cron-signature")?.trim() ?? "";
   const signatureMatch = SIGNATURE_PATTERN.exec(signature);
-
-  if (!/^\d{10}$/.test(timestamp) || !RUN_KEY_PATTERN.test(runKey) || !signatureMatch) {
-    return {
-      authorized: false,
-      message: "Invalid cron credentials.",
-      status: 401,
-    };
+  if (
+    !/^\d{10}$/.test(timestamp) ||
+    !RUN_KEY_PATTERN.test(runKey) ||
+    !signatureMatch
+  ) {
+    return { authorized: false, message: "Invalid cron credentials.", status: 401 };
   }
 
   const requestTimeSeconds = Number(timestamp);
   const currentTimeSeconds = Math.floor(Date.now() / 1000);
-
   if (
     !Number.isSafeInteger(requestTimeSeconds) ||
     Math.abs(currentTimeSeconds - requestTimeSeconds) > MAX_SIGNATURE_AGE_SECONDS
   ) {
-    return {
-      authorized: false,
-      message: "Expired cron credentials.",
-      status: 401,
-    };
+    return { authorized: false, message: "Expired cron credentials.", status: 401 };
   }
 
   const expectedRunKey = new Date(requestTimeSeconds * 1000)
     .toISOString()
     .slice(0, 10);
-
   if (runKey !== expectedRunKey) {
-    return {
-      authorized: false,
-      message: "Invalid cron run key.",
-      status: 401,
-    };
+    return { authorized: false, message: "Invalid cron run key.", status: 401 };
   }
 
   const expectedSignature = createHmac("sha256", secret)
     .update(buildSignaturePayload(timestamp, runKey), "utf8")
     .digest();
   const providedSignature = Buffer.from(signatureMatch[1], "hex");
-
   if (
     providedSignature.length !== expectedSignature.length ||
     !timingSafeEqual(providedSignature, expectedSignature)
   ) {
-    return {
-      authorized: false,
-      message: "Invalid cron credentials.",
-      status: 401,
-    };
+    return { authorized: false, message: "Invalid cron credentials.", status: 401 };
   }
 
   return { authorized: true, runKey };
@@ -119,13 +96,11 @@ function isUniqueConstraintViolation(error: unknown) {
 
 export async function POST(request: Request) {
   const authorization = authorizeCronRequest(request);
-
   if (!authorization.authorized) {
     return jsonError(authorization.message, authorization.status);
   }
 
   let run: { id: string };
-
   try {
     run = await prisma.maintenanceRun.create({
       data: {
@@ -133,15 +108,12 @@ export async function POST(request: Request) {
         runKey: authorization.runKey,
         status: MaintenanceRunStatus.RUNNING,
       },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
   } catch (error) {
     if (isUniqueConstraintViolation(error)) {
       return jsonError("This maintenance run has already been claimed.", 409);
     }
-
     return createServerErrorResponse({
       error,
       message: "Unable to claim the maintenance run.",
@@ -151,19 +123,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [
-      registrationMaintenance,
-      overdueProgressMilestones,
-      uploadMaintenance,
-      outboxDelivery,
-    ] = await Promise.all([
-      runRegistrationMaintenance(),
-      markOverdueProgressMilestones(),
-      cleanupExpiredUploadSessions(),
-      processOutboxBatch({ workerId: `maintenance:${run.id}` }),
-    ]);
+    const [overdueProgressMilestones, uploadMaintenance, outboxDelivery] =
+      await Promise.all([
+        markOverdueProgressMilestones(),
+        cleanupExpiredUploadSessions(),
+        processOutboxBatch({ workerId: `maintenance:${run.id}` }),
+      ]);
     const result = {
-      ...registrationMaintenance,
       overdueProgressMilestones,
       uploadMaintenance,
       outboxDelivery,
@@ -179,16 +145,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      {
-        ok: true,
-        runKey: authorization.runKey,
-        ...result,
-      },
-      {
-        headers: {
-          "Cache-Control": "no-store",
-        },
-      },
+      { ok: true, runKey: authorization.runKey, ...result },
+      { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
     try {

@@ -22,8 +22,8 @@ const { mockLogs } = vi.hoisted(() => ({
     {
       id: "log-2",
       recipientId: "user-2",
-      event: "REGISTRATION_EXPIRY_APPROACHING",
-      subject: "Registration expiry reminder: 14 days remaining",
+      event: "SYSTEM_NOTICE",
+      subject: "Historical system notice",
       deliveryStatus: "FAILED",
       failureReason: "ECONNREFUSED",
       metadata: { to: "student@example.com" },

@@ -93,7 +93,6 @@ export async function submitMilestoneProgress(
             registrations: {
               where: {
                 status: RegistrationStatus.ACTIVE,
-                expirationDate: { gte: new Date() },
               },
               take: 1,
               select: { id: true },
@@ -331,7 +330,6 @@ export async function listStudentMilestones(auth: AuthenticatedUserContext) {
       registrations: {
         where: {
           status: RegistrationStatus.ACTIVE,
-          expirationDate: { gte: new Date() },
         },
         take: 1,
         select: { id: true },

@@ -1,4 +1,5 @@
 import { ProgramType, StudyMode } from "@prisma/client";
+import programmeRuleData from "./programme-rules.json";
 
 export type ProgrammeRule = {
   programType: ProgramType;
@@ -8,40 +9,23 @@ export type ProgrammeRule = {
   milestoneCount: number;
 };
 
-const RULES: Record<ProgramType, Record<StudyMode, ProgrammeRule>> = {
-  MPHIL: {
-    FULL_TIME: {
-      programType: ProgramType.MPHIL,
-      studyMode: StudyMode.FULL_TIME,
-      durationMonths: 24,
+const RULES = programmeRuleData.reduce(
+  (rules, item) => {
+    const programType = ProgramType[item.programType as keyof typeof ProgramType];
+    const studyMode = StudyMode[item.studyMode as keyof typeof StudyMode];
+    rules[programType][studyMode] = {
+      ...item,
+      programType,
+      studyMode,
       milestoneIntervalMonths: 6,
-      milestoneCount: 4,
-    },
-    PART_TIME: {
-      programType: ProgramType.MPHIL,
-      studyMode: StudyMode.PART_TIME,
-      durationMonths: 36,
-      milestoneIntervalMonths: 6,
-      milestoneCount: 6,
-    },
+    };
+    return rules;
   },
-  PHD: {
-    FULL_TIME: {
-      programType: ProgramType.PHD,
-      studyMode: StudyMode.FULL_TIME,
-      durationMonths: 36,
-      milestoneIntervalMonths: 6,
-      milestoneCount: 6,
-    },
-    PART_TIME: {
-      programType: ProgramType.PHD,
-      studyMode: StudyMode.PART_TIME,
-      durationMonths: 54,
-      milestoneIntervalMonths: 6,
-      milestoneCount: 9,
-    },
+  {
+    [ProgramType.MPHIL]: {} as Record<StudyMode, ProgrammeRule>,
+    [ProgramType.PHD]: {} as Record<StudyMode, ProgrammeRule>,
   },
-};
+);
 
 export function getProgrammeRule(
   programType: ProgramType,

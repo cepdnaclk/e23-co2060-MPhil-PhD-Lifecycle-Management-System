@@ -351,7 +351,7 @@ describe("Department completion workflow", () => {
     expect(tx.thesis.update).toHaveBeenCalledWith({
       where: { id: "thesis-1" },
       data: {
-        status: ThesisStatus.FINAL_ARCHIVE,
+        status: ThesisStatus.ARCHIVED,
         isArchived: true,
       },
     });

@@ -15,7 +15,6 @@
  *  ETHICS_APPROVAL_SUBMITTED
  *  PROGRESS_REPORT_SUBMITTED   ← SLA: supervisor notified within 1 h (REQ-FN-019)
  *  EXAMINER_REVIEW_SUBMITTED
- *  REGISTRATION_EXPIRY_APPROACHING ← 14-day advance (REQ-FN-018)
  *  VIVA_SCHEDULED
  *  CORRECTIONS_REQUIRED
  *  THESIS_ARCHIVED
@@ -30,7 +29,6 @@ import {
   notifyProgressReportSubmitted,
   notifyProposalEvaluationSubmittedToAdministrator,
   notifyProposalStatusChange,
-  notifyRegistrationExpiry,
   notifyThesisArchived,
   notifyVivaScheduled,
 } from "@/lib/email";
@@ -79,15 +77,6 @@ export type ProgressReportSubmittedPayload = {
   periodLabel: string;
 };
 
-export type RegistrationExpiryPayload = {
-  event: "REGISTRATION_EXPIRY_APPROACHING";
-  recipientUserId: string;
-  to: string;
-  studentName: string;
-  expirationDateLabel: string;
-  daysRemaining?: number;
-};
-
 export type ThesisArchivedPayload = {
   event: "THESIS_ARCHIVED";
   recipientUserId: string;
@@ -134,7 +123,6 @@ export type NotificationPayload =
   | ProposalStatusChangedPayload
   | EthicsApprovalSubmittedPayload
   | ProgressReportSubmittedPayload
-  | RegistrationExpiryPayload
   | ThesisArchivedPayload
   | VivaScheduledPayload
   | CorrectionsRequiredPayload
@@ -246,25 +234,6 @@ export async function notify(payload: NotificationPayload): Promise<void> {
         NotificationEvent.PROGRESS_REPORT_SUBMITTED,
         `Progress report submitted: ${payload.periodLabel}`,
         `${payload.studentName} has submitted a progress report for ${payload.periodLabel}. You can view and monitor it.`,
-      );
-      break;
-    }
-
-    case "REGISTRATION_EXPIRY_APPROACHING": {
-      await notifyRegistrationExpiry({
-        recipientUserId: payload.recipientUserId,
-        to: payload.to,
-        studentName: payload.studentName,
-        expirationDateLabel: payload.expirationDateLabel,
-        daysRemaining: payload.daysRemaining ?? 14,
-      });
-
-      await writeInAppNotification(
-        payload.recipientUserId,
-        null,
-        NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
-        `Registration expiry reminder`,
-        `Your fixed registration period ends on ${payload.expirationDateLabel}. Contact the PG Coordinator if action is required.`,
       );
       break;
     }

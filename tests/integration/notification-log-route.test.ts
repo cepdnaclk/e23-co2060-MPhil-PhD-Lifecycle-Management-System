@@ -36,8 +36,8 @@ vi.mock("@/lib/prisma/client", () => ({
         {
           id: "log-2",
           recipientId: "user-student-1",
-          event: NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
-          subject: "Registration expiry reminder: 14 days remaining",
+          event: NotificationEvent.SYSTEM_NOTICE,
+          subject: "Historical system notice",
           deliveryStatus: NotificationDeliveryStatus.FAILED,
           failureReason: "ECONNREFUSED",
           metadata: { to: "student@example.com" },
@@ -144,8 +144,8 @@ describe("GET /api/admin/notification-log — paginated results sorted by timest
       {
         id: "log-2",
         recipientId: "user-student-1",
-        event: NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
-        subject: "Registration expiry reminder: 14 days remaining",
+        event: NotificationEvent.SYSTEM_NOTICE,
+        subject: "Historical system notice",
         deliveryStatus: NotificationDeliveryStatus.FAILED,
         failureReason: "ECONNREFUSED",
         metadata: {},
@@ -224,8 +224,8 @@ describe("GET /api/admin/notification-log — filter by recipientId (student ID)
       {
         id: "log-2",
         recipientId: "user-student-1",
-        event: NotificationEvent.REGISTRATION_EXPIRY_APPROACHING,
-        subject: "Registration expiry reminder: 14 days remaining",
+        event: NotificationEvent.SYSTEM_NOTICE,
+        subject: "Historical system notice",
         deliveryStatus: NotificationDeliveryStatus.SENT,
         failureReason: null,
         metadata: {},

@@ -37,7 +37,7 @@ const fallbackSummary: DashboardSummary = {
       id: "submit-progress-report",
       label: "Submit Progress Report",
       description: "Open progress reporting.",
-      href: "/dashboard/student/progress-reports/submit",
+      href: "/dashboard/student/progress-reports",
     },
   ],
   lastUpdatedIso: new Date().toISOString(),

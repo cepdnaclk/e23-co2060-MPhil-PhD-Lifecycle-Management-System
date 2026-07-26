@@ -179,7 +179,7 @@ export function SupervisorStudentProfile({
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="#">View Proposal History</Link>
+              <Link href="/dashboard/supervisor/applications">View Proposal Work</Link>
             </Button>
           </CardContent>
         </Card>
@@ -196,7 +196,7 @@ export function SupervisorStudentProfile({
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="#">Open Progress Reports</Link>
+              <Link href="/dashboard/supervisor/progress-reports">Open Progress Reports</Link>
             </Button>
           </CardContent>
         </Card>

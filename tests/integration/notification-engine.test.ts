@@ -16,10 +16,6 @@ vi.mock("@/lib/firebase/auth", () => ({
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
-    registration: {
-      findMany: vi.fn().mockResolvedValue([]),
-      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-    },
     supervisor: {
       findFirst: vi.fn(),
     },
@@ -54,7 +50,6 @@ vi.mock("@/lib/email", () => ({
     success: true,
   }),
   notifyProposalEvaluationSubmittedToAdministrator: vi.fn().mockResolvedValue({ success: true }),
-  notifyRegistrationExpiry: vi.fn().mockResolvedValue({ success: true }),
   notifyThesisArchived: vi.fn().mockResolvedValue({ success: true }),
   notifyVivaScheduled: vi.fn().mockResolvedValue({ success: true }),
   notifyCorrectionSubmittedToAdministrator: vi.fn().mockResolvedValue({
@@ -68,7 +63,6 @@ import { notifyProgressReportSubmitted } from "@/lib/email";
 import { authenticateBearerRequest } from "@/lib/firebase/auth";
 import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
-import { runRegistrationMaintenance } from "@/lib/registrations";
 
 function makeRequest(method = "GET", url = "http://localhost/api/notifications") {
   return new NextRequest(url, {
@@ -183,39 +177,9 @@ describe("Integration: progress report submission triggers supervisor notificati
   });
 });
 
-describe("Integration: 14-day registration expiry maintenance", () => {
+describe("Integration: notification delivery failure handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("identifies registrations expiring in 14 days and dispatches reminders", async () => {
-    vi.mocked(prisma.registration.findMany).mockResolvedValueOnce([
-      {
-        id: "reg-1",
-        expirationDate: new Date("2026-05-15T00:00:00.000Z"),
-        student: {
-          user: {
-            id: "user-student-1",
-            email: "student@example.com",
-            displayName: "Alice",
-          },
-        },
-      },
-    ] as never);
-
-    const result = await runRegistrationMaintenance(
-      new Date("2026-05-01T00:00:00.000Z"),
-    );
-
-    expect(result.reminderCount).toBe(1);
-    expect(prisma.notification.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          recipientId: "user-student-1",
-          event: "REGISTRATION_EXPIRY_APPROACHING",
-        }),
-      }),
-    );
   });
 
   it("does not throw when SMTP delivery fails and still records the in-app notification", async () => {

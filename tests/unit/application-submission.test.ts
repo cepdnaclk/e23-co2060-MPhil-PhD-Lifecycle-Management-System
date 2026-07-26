@@ -55,6 +55,7 @@ import {
 } from "@/lib/applications/submission";
 import {
   createFirebaseAuthUser,
+  deleteFirebaseAuthUser,
   generateFirebasePasswordSetupLink,
   setCustomClaimsForUser,
 } from "@/lib/firebase/admin";
@@ -66,6 +67,7 @@ describe("application submission utilities", () => {
     vi.mocked(generateFirebasePasswordSetupLink).mockResolvedValue(
       "https://identity.example/setup-account",
     );
+    vi.mocked(deleteFirebaseAuthUser).mockResolvedValue(undefined);
   });
 
   it("rejects a non-PDF-or-ZIP supporting file", () => {
@@ -189,7 +191,7 @@ describe("application submission utilities", () => {
     expect(createFirebaseAuthUser).not.toHaveBeenCalled();
   });
 
-  it("executes HOD-approved admission with fixed registration and milestones", async () => {
+  it("executes HOD-approved admission with one registration and milestones", async () => {
     vi.mocked(prisma.application.findUnique)
       .mockResolvedValueOnce({
         id: "application-admit-2",
@@ -283,9 +285,7 @@ describe("application submission utilities", () => {
           data: expect.objectContaining({
             studentId: "student-2",
             status: RegistrationStatus.ACTIVE,
-            studyMode: StudyMode.PART_TIME,
-            durationMonths: 54,
-            isFixedTerm: true,
+            expectedCompletionDate: expect.any(Date),
           }),
         }),
       );

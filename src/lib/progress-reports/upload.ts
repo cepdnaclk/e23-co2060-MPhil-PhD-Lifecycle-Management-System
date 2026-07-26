@@ -51,7 +51,6 @@ export async function createProgressReportUploadUrl(
       registrations: {
         where: {
           status: RegistrationStatus.ACTIVE,
-          expirationDate: { gte: new Date() },
         },
         take: 1,
         select: { id: true },
