@@ -86,7 +86,7 @@ The platform supports the complete postgraduate lifecycle, including:
 
 - public programme applications
 - admissions and onboarding
-- fixed-term registration and milestone tracking
+- one current registration, expected completion, and milestone tracking
 - application-bound proposal review and HOD decision
 - milestone progress submission and primary-Supervisor decision
 - thesis submission and versioning
@@ -101,7 +101,7 @@ A typical lifecycle flow is:
    the exact application proposal version.
 3. The HOD makes the Department admission decision; the PG Coordinator
    executes an approved admission.
-4. Admission creates one fixed registration and M1–M4, M1–M6, or M1–M9
+4. Admission creates one registration and M1–M4, M1–M6, or M1–M9
    six-month milestones according to programme and study mode.
 5. The Student submits milestone versions and the active primary Supervisor
    returns or approves them.
@@ -145,7 +145,7 @@ A typical lifecycle flow is:
 
 - Assigned student roster and profile access
 - Proposal evaluation workflows
-- Progress report review and sign-off
+- Milestone progress return and approval
 - Supervision visibility across assigned postgraduate students
 
 ### For Examiners
@@ -399,7 +399,6 @@ Main API domains include:
 - `progress-reports`
 - `proposals`
 - `registrations`
-- `review-panels`
 - `students`
 - `supervisor`
 - `theses`
@@ -413,11 +412,11 @@ Representative endpoints:
 | `POST` | `/api/applications` | Submit a public postgraduate application |
 | `GET` | `/api/admin/users` | List and filter platform users |
 | `POST` | `/api/proposals` | Submit a student proposal |
-| `POST` | `/api/proposals/:id/evaluations` | Submit a proposal evaluation |
-| `POST` | `/api/student/progress-reports` | Submit a progress report |
+| `POST` | `/api/proposal-reviewer-assignments/:id/review` | Submit an exact-version proposal review |
+| `POST` | `/api/progress/milestones/:id/submit` | Submit or resubmit a milestone progress version |
 | `POST` | `/api/theses` | Submit a thesis record |
 | `POST` | `/api/vivas` | Schedule a viva |
-| `POST` | `/api/vivas/:id/outcome` | Record a viva outcome |
+| `POST` | `/api/hod/vivas/:id/outcome` | Record the final HOD viva outcome |
 
 > This is a representative overview only. Additional role-specific routes live under `src/app/api`.
 
@@ -457,7 +456,7 @@ The codebase is centered around a lifecycle-oriented model that includes:
 - heads of department
 - applications
 - application proposal versions and exact reviewer assignments
-- fixed registrations and programme rules
+- registrations, expected completion dates, and programme rules
 - student milestones and versioned progress reports
 - ethics and thesis-readiness records
 - theses
@@ -578,12 +577,18 @@ Available scripts:
 | `npm run lint` | Run ESLint |
 | `npm run prisma:generate` | Generate the Prisma client |
 | `npm run prisma:migrate` | Run development migrations |
-| `npm run database:reset` | Destructively reset a development database and run migrations |
-| `npm run database:seed` | Idempotently seed the four programme rules and optional existing Firebase-linked users |
+| `npm run db:reset:sample` | Guarded reset and realistic seed for an explicitly opted-in local sample database |
+| `npm run database:reset` | Alias of the same guarded local sample reset |
+| `npm run database:seed` | Seed programme rules; seed synthetic lifecycle data only when `PGLMS_SEED_SAMPLE_DATA=true` |
 | `npm run database:reconcile-migration-ledger` | Dry-run the guarded obsolete-baseline ledger check; see the operations runbook before any `--apply` use |
 | `npm test` | Run Vitest |
 | `npm run test:unit` | Run unit tests only |
 | `npm run test:integration` | Run integration tests only |
+
+The sample reset requires `NODE_ENV` to be non-production,
+`ALLOW_SAMPLE_DATA_RESET=true`, a local PostgreSQL host, and a database name
+containing `dev`, `development`, `local`, `sample`, or `test`. It never resets
+storage and never prints database credentials.
 
 Testing coverage is prepared around major project areas, including:
 

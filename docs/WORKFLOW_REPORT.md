@@ -24,7 +24,7 @@ progress-Examiner, Supervisor sign-off, and Examiner-outcome workflow report.
 3. Reviewers submit independent decisions. The HOD approves, rejects, or
    requires revision.
 4. The PG Coordinator executes only an approved admission. The transaction
-   creates the Student, fixed registration, expected completion date, exact
+   creates the Student, one registration, expected completion date, exact
    six-calendar-month milestones, audit event, and durable welcome intent.
 5. The Student submits a milestone-bound progress version. Only the active
    primary Supervisor may return or approve it; approval completes the
@@ -45,18 +45,18 @@ progress-Examiner, Supervisor sign-off, and Examiner-outcome workflow report.
     Externally confirmed graduation and later non-destructive archive remain
     separate commands and records.
 
-## Fixed programme rules
+## Programme rules
 
-| Programme/mode | Registration | Milestones |
+| Programme/mode | Expected completion | Milestones |
 |---|---:|---:|
 | M.Phil. full-time | 24 months | M1–M4 |
 | M.Phil. part-time | 36 months | M1–M6 |
 | Ph.D. full-time | 36 months | M1–M6 |
 | Ph.D. part-time | 54 months | M1–M9 |
 
-Registration is not renewable in Version 1. Expiry maintenance may mark the
-fixed record lapsed and issue an informational reminder; it does not create a
-new term.
+Registration is not renewable, expiring, or lapsed in Version 1. Each Student
+has one current registration; the expected completion date is informational
+and does not disable submissions.
 
 ## Integrity and delivery
 
@@ -83,7 +83,7 @@ production test route.
 
 ## Operations
 
-The signed maintenance job still runs fixed-registration expiry checks,
-milestone/progress overdue maintenance, and the transactional outbox worker.
+The signed maintenance job runs milestone overdue maintenance, expired staged
+upload cleanup, and the transactional outbox worker.
 Production deployment remains blocked until the populated-data migrations,
 external identity/storage/email paths, and recovery evidence are rehearsed.

@@ -20,11 +20,11 @@ The **Postgraduate Lifecycle Management System (PGLMS)** replaces fragmented pap
 ## 🚀 Key Features & Core Capabilities
 
 - **End-to-End Candidate Lifecycle Tracking**: Full digital auditing from application to graduation and record archiving.
-- **Role-Based Access & Security**: Custom dashboards tailored specifically for Students, Supervisors, Examiners, and Administrators.
+- **Role-Based Access & Security**: Custom dashboards for Students, Supervisors, Examiners, the PG Coordinator, and the HOD.
 - **Public Admissions Portal**: Online application submission with encrypted upload handling for academic transcripts and identity documentation.
-- **Automated Registration Management**: Expiry tracking, active status verification, and automated renewal reminder notifications.
+- **Registration & Programme Scheduling**: One current registration, an expected completion date, and deterministic six-month milestones.
 - **Milestone & Progress Monitoring**: Standardized submission workflows for progress reports, research proposals, ethics approvals, and thesis drafts.
-- **Examination & Viva Orchestration**: Panel formation, examiner assignment, viva Voce scheduling, and defense outcome recording.
+- **Examination & Viva Orchestration**: HOD-confirmed exact-version examiner assignments, viva scheduling, independent recommendations, and final HOD outcome.
 - **Secure Private Document Repository**: Time-limited signed URL downloads via Supabase Storage for sensitive candidate files.
 - **Omnichannel Communication**: In-app real-time notification drawer coupled with automated SMTP email delivery via Nodemailer.
 

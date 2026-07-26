@@ -86,7 +86,7 @@ HOD outcome MINOR/MAJOR
    → Student AcademicStatus GRADUATED
 → PG Coordinator archives the later lifecycle record
    → Student/Registration ARCHIVED
-   → Thesis FINAL_ARCHIVE
+   → Thesis ARCHIVED
 ```
 
 Correction type derives from the HOD outcome. Ordinary thesis resubmission

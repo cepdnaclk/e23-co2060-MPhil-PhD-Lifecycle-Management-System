@@ -161,3 +161,46 @@ rehearsal, or deployment approval listed above.
 | `npm run build` | Passed: 89 static pages generated and active route manifest compiled |
 | `npm run test:e2e` | Passed: 2/2 public Chromium/accessibility tests |
 | `npm run test:database` | Passed: 1/1 against a disposable PostgreSQL database after all 14 migrations |
+
+## Final repository-wide conformance checkpoint — 27 July 2026
+
+The final audit found that the earlier D10 statement overstated completion:
+registration expiry/lapse remained active, the seed contained only programme
+rules, and several retired pages and scripts still compiled or remained in the
+tree. This checkpoint corrects that record.
+
+- `Registration` is now unique per Student and contains an informational
+  `expectedCompletionDate`; renewal, lapse, expiry gates, reminders, filters,
+  and maintenance are removed.
+- Thesis archive state is `ARCHIVED`; retired sign-off and expiry notification
+  events are migrated to the neutral historical `SYSTEM_NOTICE` category.
+- `npm run db:reset:sample` and `npm run database:reset` use the same guarded
+  wrapper. It refuses production mode, non-local hosts, ambiguous database
+  names, absent explicit opt-in, and all storage cleanup.
+- The synthetic seed contains one HOD, one PG Coordinator, four Supervisors,
+  four Examiners, four application-queue stages, two active Students for each
+  programme/mode combination, and additional completed and graduated/archive
+  records with milestones, ethics, readiness, examination, viva, correction,
+  notification, and lifecycle-audit examples. It contains no passwords or
+  real student data.
+- The duplicate `/student/progress` route, generic `/dashboard/[role]` page,
+  retired sign-off component, unsafe ad-hoc storage/database scripts,
+  placeholder links, hard-coded profile identity, and dead Settings links are
+  removed. `/api/cron/maintenance` now performs only overdue milestone, staged
+  upload, and outbox work.
+- Migration `20260727090000_finalize_department_v1_conformance` is
+  checksum-pinned and blocked for populated deployment pending a sanitized
+  rehearsal and registration duplicate review.
+
+An isolated PostgreSQL 15 verification applied all 17 migrations, produced no
+schema drift, seeded 20 synthetic users and 10 Students (8 active), and passed
+the guarded real-database integration test. The shared database was not
+modified.
+
+Final verification passed: lint, type checking, schema validation, the
+11-entry migration policy, 61 unit files/233 tests, 29 ordinary integration
+files/92 tests with the guarded database case skipped there, the separate
+1/1 real-database test, the 87-unit production route build, 2/2 public browser
+and accessibility tests, and both high-severity dependency audit gates. The
+audits continue to report the documented 6 production and 9 all-dependency
+moderate transitive findings.

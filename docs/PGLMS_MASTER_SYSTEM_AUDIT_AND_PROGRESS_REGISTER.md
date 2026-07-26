@@ -1941,3 +1941,25 @@ Migration `20260726150000_remove_retired_department_workflows` is destructive
 by design and production-blocked in `prisma/migration-policy.json`. No populated
 deployment, Firebase/Supabase/SMTP verification, authenticated browser suite,
 or rollback rehearsal is claimed by this addendum.
+
+## 19. Department Version 1 final conformance addendum — 27 July 2026
+
+A repository-wide audit found and removed the remaining active contradictions
+to the Department V1 scope:
+
+- fixed-term registration expiry/lapse fields, gates, reminders, filters, and
+  cron behavior are replaced by one registration per Student with an
+  informational expected completion date;
+- the guarded local-only sample reset now applies all migrations and seeds a
+  synthetic cross-role lifecycle dataset without passwords or private data;
+- duplicate/generic pages, retired sign-off UI, placeholder navigation, and
+  ad-hoc database/storage test scripts are removed;
+- dashboard profile identity now comes from the authenticated persisted user,
+  including HOD, and duplicate `Dashboard Dashboard` headings are corrected;
+- thesis archive state is normalized to `ARCHIVED`, and historical retired
+  notification categories are preserved as `SYSTEM_NOTICE`.
+
+Migration `20260727090000_finalize_department_v1_conformance` remains
+production-blocked. It passed an empty-chain and seeded disposable PostgreSQL
+15 rehearsal with zero Prisma drift; no shared or production database was
+changed during this audit.

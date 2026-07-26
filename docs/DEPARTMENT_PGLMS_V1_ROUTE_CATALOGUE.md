@@ -71,7 +71,7 @@ on `/dashboard/student/progress`.
 |---|---|---|
 | `GET /api/admin/outbox` | PG Coordinator | Delivery queue |
 | `POST /api/admin/outbox/:id/retry` | PG Coordinator | Recover failed/dead-letter intent |
-| `POST /api/cron/check-registrations` | Signed maintenance job | Fixed-term expiry, overdue, and outbox work |
+| `POST /api/cron/maintenance` | Signed maintenance job | Milestone overdue, staged-upload cleanup, and outbox work |
 
 ## Retired surfaces
 
@@ -92,9 +92,10 @@ Legacy proposal/thesis upload and version-download APIs retained from WP-04 are
 document-integrity compatibility surfaces; they are not academic decision
 routes.
 
-The free-text progress submission service and thesis-bound Supervisor-only
-readiness route are removed. The old Student progress URLs redirect to the
-canonical fixed-milestone pages.
+The free-text progress submission service, thesis-bound Supervisor-only
+readiness route, duplicate `/student/progress` route, and generic
+`/dashboard/[role]` landing are removed. The canonical Student milestone page
+is `/dashboard/student/progress`.
 
 The active route surface now includes the role-separated ethics and correction
 decision commands. Completion-state enum alignment remains recorded in the

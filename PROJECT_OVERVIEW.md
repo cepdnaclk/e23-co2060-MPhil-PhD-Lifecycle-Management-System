@@ -8,15 +8,15 @@ It brings together the major academic and administrative workflows involved in p
 
 - public programme applications
 - admissions and student onboarding
-- registration and renewal tracking
+- one current registration, expected completion, and milestone tracking
 - proposal submission and review
-- progress report submission and supervisor sign-off
+- milestone progress submission and primary-Supervisor return/approval
 - thesis submission and versioning
 - viva scheduling and outcome recording
 - correction upload and approval
 - final archival and administrative oversight
 
-In practice, this is not just a student portal. It is a **multi-role academic workflow platform** used by students, supervisors, examiners, and administrators across the entire research lifecycle.
+In practice, this is not just a student portal. It is a **multi-role academic workflow platform** used by Students, Supervisors, Examiners, the PG Coordinator, and the HOD across the research lifecycle.
 
 ---
 
@@ -226,7 +226,7 @@ There are also role-specific subpages such as:
 - student proposals
 - student progress reports
 - student thesis submission and corrections
-- supervisor student roster and sign-off pages
+- supervisor student roster and milestone decision pages
 - examiner viva workspace
 - admin applications, assignments, scheduling, and finalization pages
 
@@ -325,7 +325,7 @@ This area handles:
 
 - student report submission
 - reporting cycles
-- supervisor sign-off
+- primary-Supervisor return or approval
 - milestone visibility
 
 ### Theses
@@ -384,15 +384,21 @@ The schema models the application around a central academic lifecycle.
 - `Application`
 - `Registration`
 - `ResearchProposal`
-- `EvaluationForm`
+- `ApplicationProposalVersion`
+- `ProposalReviewerAssignment`
+- `ProposalReview`
 - `ProgressReport`
-- `ReviewPanel`
-- `PanelMembership`
-- `PanelEvaluation`
+- `StudentMilestone`
+- `ProgressReportVersion`
+- `ThesisReadinessCertification`
 - `Thesis`
 - `ThesisExaminerAssignment`
 - `Viva`
 - `CorrectionDocument`
+- `CorrectionOrder`
+- `ProgrammeCompletion`
+- `GraduationRecord`
+- `StudentArchiveRecord`
 - `Document`
 - `Notification`
 - `NotificationLog`
@@ -402,9 +408,9 @@ The schema models the application around a central academic lifecycle.
 At a high level:
 
 - a `User` may be linked to one role-specific record
-- a `Student` may have an `Application`, multiple `Registrations`, multiple `ResearchProposals`, multiple `ProgressReports`, and multiple `Theses`
-- a `ResearchProposal` can receive multiple `EvaluationForm` records
-- a `Thesis` can have examiner assignments, viva data, correction documents, and versioned file records
+- a `Student` may have an `Application`, one current `Registration`, milestone-bound `ProgressReport` versions, ethics/readiness records, and versioned theses
+- an application proposal version can receive exact `ProposalReviewerAssignment` and `ProposalReview` records
+- a `Thesis` can have HOD-confirmed Examiner assignments, viva recommendations, correction orders, and versioned file records
 
 ### Important Enums
 
@@ -422,7 +428,8 @@ The schema relies heavily on enums to keep workflows consistent, including:
 - `NotificationEvent`
 - `NotificationDeliveryStatus`
 - `CorrectionType`
-- `PanelEvaluationOutcome`
+- `ReadinessDecision`
+- `CorrectionOrderStatus`
 
 This makes lifecycle rules explicit both in the UI and in backend logic.
 
