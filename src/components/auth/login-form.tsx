@@ -22,6 +22,7 @@ const roleRedirectMap: Record<AppUserRole, string> = {
   SUPERVISOR: "/dashboard/supervisor",
   EXAMINER: "/dashboard/examiner",
   ADMINISTRATOR: "/dashboard/admin",
+  HOD: "/dashboard/hod",
 };
 
 function mapFirebaseErrorMessage(error: unknown): string {

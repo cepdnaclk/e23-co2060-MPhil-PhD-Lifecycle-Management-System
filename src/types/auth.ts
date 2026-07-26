@@ -3,6 +3,7 @@ export const APP_USER_ROLES = [
   "SUPERVISOR",
   "EXAMINER",
   "ADMINISTRATOR",
+  "HOD",
 ] as const;
 
 export type AppUserRole = (typeof APP_USER_ROLES)[number];

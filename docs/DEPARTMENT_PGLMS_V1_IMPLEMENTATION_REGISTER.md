@@ -50,8 +50,8 @@
 |---|---|---|
 | D0 Scope and inventory | Implemented | Approved requirements, permission matrix, workflows, route catalogue, baseline evidence |
 | D1 Audit and outbox | Implemented | Append-only database trigger, atomic helper, idempotent queue keys, lease/retry/dead-letter worker, Administrator recovery UI, 13 focused tests |
-| D2 Core schema/reset | Planned | Prisma/migration/reset/seed and programme-rule tests |
-| D3 HOD identity | Planned | Role/layout/API denial tests |
+| D2 Core schema/reset | Implemented | Reviewed fail-closed migration, reset/seed commands, four exact programme rules, milestone calendar tests |
+| D3 HOD identity | Implemented | HOD role/profile/claim, isolated route shell and navigation, HOD creation and redirect tests |
 | D4 Application/proposal | Planned | Public proposal, assignments, revision, HOD decision |
 | D5 Admission/milestones | Planned | Idempotent admission and four schedules |
 | D6 Progress/tables/CSV | Planned | Return/resubmit/approve, fixed tables, complete safe export |
@@ -82,3 +82,21 @@ leases, applies bounded exponential retry, and records every attempt. Failed or
 dead-letter messages can be requeued through the Administrator-only recovery
 page. The database prevents updates and deletes on lifecycle audit rows; any
 correction must be expressed as a later compensating event.
+
+## D2–D3 verification
+
+| Command | Result |
+|---|---|
+| `npm run lint` | Passed |
+| `npm run typecheck` | Passed |
+| `npm run prisma:validate` | Passed |
+| `npm run prisma:migrate:check` | Passed; Department V1 core migration recorded as a third populated-production blocker |
+| Focused Vitest run | Passed: 5 files / 22 tests before the dedicated HOD profile case was added |
+
+The core schema now separates admission execution, milestone-bound versioned
+progress, ethics state, thesis readiness, exact examiner reports, independent
+viva recommendations, ordered corrections, programme completion, graduation,
+and archive records. The migration refuses to coerce MSc/MEng data. The
+idempotent seed path always restores the four approved programme rules and can
+link one account for every role when existing Firebase UIDs are supplied via
+`PGLMS_SEED_USERS_JSON`; credentials are never embedded in the repository.

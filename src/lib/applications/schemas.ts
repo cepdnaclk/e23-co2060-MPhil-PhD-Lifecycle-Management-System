@@ -16,8 +16,6 @@ export const APPLICATION_ATTACHMENT_MAX_SIZE_BYTES =
 export const applicationProgramTypes = [
   ProgramType.MPHIL,
   ProgramType.PHD,
-  ProgramType.MSC,
-  ProgramType.MENG,
 ] as const;
 
 const uploadedApplicationDocumentSchema = z.object({
@@ -47,8 +45,6 @@ export const applicationSubmissionSchema = z.object({
   programType: z.enum([
     ProgramType.MPHIL,
     ProgramType.PHD,
-    ProgramType.MSC,
-    ProgramType.MENG,
   ]),
   supervisor: sanitizedString.max(200).optional().nullable(),
   researchArea: sanitizedString.min(2, "Research area must be at least 2 characters long."),

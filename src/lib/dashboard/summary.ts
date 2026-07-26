@@ -181,6 +181,27 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/admin",
         },
       ];
+    case "hod":
+      return [
+        {
+          id: "admission-decisions",
+          label: "Admission Decisions",
+          description: "Review complete applications and proposal reviews.",
+          href: "/dashboard/hod/applications",
+        },
+        {
+          id: "examination-decisions",
+          label: "Examination Decisions",
+          description: "Confirm examiners and record viva outcomes.",
+          href: "/dashboard/hod/examinations",
+        },
+        {
+          id: "completion-decisions",
+          label: "Completion Decisions",
+          description: "Approve corrections and programme completion.",
+          href: "/dashboard/hod/completions",
+        },
+      ];
   }
 }
 
@@ -673,6 +694,87 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
   };
 }
 
+async function buildHodSummary(): Promise<DashboardSummary> {
+  const [
+    pendingAdmissionDecisions,
+    pendingReadiness,
+    pendingExaminerConfirmations,
+    orderedCorrections,
+    pendingCompletions,
+  ] = await Promise.all([
+    prisma.application.count({
+      where: {
+        isArchived: false,
+        departmentDecision: "PENDING",
+      },
+    }),
+    prisma.thesisReadinessCertification.count({
+      where: { decision: "PENDING" },
+    }),
+    prisma.thesisExaminerAssignment.count({
+      where: { status: "PENDING", confirmedAt: null },
+    }),
+    prisma.correctionOrder.count({
+      where: { status: { in: ["ORDERED", "SUBMITTED", "RETURNED"] } },
+    }),
+    prisma.programmeCompletion.count({
+      where: { status: "PENDING" },
+    }),
+  ]);
+
+  return {
+    role: "hod",
+    roleLabel: "Head of Department",
+    title: "Department Decisions",
+    subtitle:
+      "Review the decision gates reserved for the Head of Department.",
+    cards: [
+      buildCard(
+        "hod-admissions",
+        "Admission Decisions",
+        pendingAdmissionDecisions,
+        "Applications awaiting a Department decision.",
+        pendingAdmissionDecisions ? "Decision required" : "Clear",
+        pendingAdmissionDecisions ? "warning" : "success",
+      ),
+      buildCard(
+        "hod-readiness",
+        "Readiness Reviews",
+        pendingReadiness,
+        "Thesis readiness records awaiting certification.",
+        pendingReadiness ? "Review required" : "Clear",
+        pendingReadiness ? "warning" : "success",
+      ),
+      buildCard(
+        "hod-examiners",
+        "Examiner Confirmations",
+        pendingExaminerConfirmations,
+        "Exact thesis examiner assignments awaiting confirmation.",
+        pendingExaminerConfirmations ? "Confirm assignments" : "Clear",
+        pendingExaminerConfirmations ? "warning" : "success",
+      ),
+      buildCard(
+        "hod-corrections",
+        "Correction Orders",
+        orderedCorrections,
+        "Ordered corrections still in progress.",
+        orderedCorrections ? "In progress" : "None",
+        orderedCorrections ? "info" : "neutral",
+      ),
+      buildCard(
+        "hod-completions",
+        "Completion Approvals",
+        pendingCompletions,
+        "Programme completions awaiting HOD approval.",
+        pendingCompletions ? "Approval required" : "Clear",
+        pendingCompletions ? "warning" : "success",
+      ),
+    ],
+    quickActions: getQuickActions("hod"),
+    lastUpdatedIso: new Date().toISOString(),
+  };
+}
+
 export async function getDashboardSummaryForUser(
   auth: AuthenticatedUserContext,
   requestedRole: DashboardRole,
@@ -688,6 +790,8 @@ export async function getDashboardSummaryForUser(
       return buildExaminerSummary(auth);
     case "admin":
       return buildAdminSummary();
+    case "hod":
+      return buildHodSummary();
   }
 }
 

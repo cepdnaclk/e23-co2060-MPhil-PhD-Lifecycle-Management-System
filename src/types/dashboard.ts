@@ -5,6 +5,7 @@ export const DASHBOARD_ROLES = [
   "supervisor",
   "examiner",
   "admin",
+  "hod",
 ] as const;
 
 export type DashboardRole = (typeof DASHBOARD_ROLES)[number];
@@ -56,5 +57,7 @@ export function mapAppRoleToDashboardRole(role: AppUserRole): DashboardRole {
       return "examiner";
     case "ADMINISTRATOR":
       return "admin";
+    case "HOD":
+      return "hod";
   }
 }

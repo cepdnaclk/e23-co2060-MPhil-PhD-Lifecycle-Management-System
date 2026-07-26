@@ -39,6 +39,7 @@ const adminManagedRoles = [
   "SUPERVISOR",
   "EXAMINER",
   "ADMINISTRATOR",
+  "HOD",
 ] as const;
 
 type AdminManagedRole = (typeof adminManagedRoles)[number];
@@ -209,6 +210,7 @@ export function UserManagementPanel() {
     SUPERVISOR: "Supervisors",
     EXAMINER: "Examiners",
     ADMINISTRATOR: "Administrators",
+    HOD: "Heads of Department",
   };
 
   const createRoleLabels: Record<string, string> = {
@@ -216,14 +218,13 @@ export function UserManagementPanel() {
     SUPERVISOR: "Supervisor",
     EXAMINER: "Examiner",
     ADMINISTRATOR: "Administrator",
+    HOD: "Head of Department",
   };
 
-  const programOptions = ["MPHIL", "PHD", "MSC", "MENG"] as const;
+  const programOptions = ["MPHIL", "PHD"] as const;
   const programLabels: Record<string, string> = {
     MPHIL: "MPhil",
     PHD: "PhD",
-    MSC: "MSc",
-    MENG: "MEng",
   };
 
   return (

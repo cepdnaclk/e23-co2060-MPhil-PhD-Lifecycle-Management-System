@@ -17,6 +17,7 @@ const ADMIN_MANAGED_ROLES = [
   UserRole.SUPERVISOR,
   UserRole.EXAMINER,
   UserRole.ADMINISTRATOR,
+  UserRole.HOD,
 ] as const;
 
 export type AdminManagedRole = (typeof ADMIN_MANAGED_ROLES)[number];
@@ -44,6 +45,7 @@ export type AdminUserListItem = {
   studentId?: string | null;
   supervisorId?: string | null;
   examinerId?: string | null;
+  hodId?: string | null;
 };
 
 export class AdminUserManagementError extends Error {
@@ -59,7 +61,7 @@ export class AdminUserManagementError extends Error {
 function assertAdminManagedRole(role: string): asserts role is AdminManagedRole {
   if (!ADMIN_MANAGED_ROLES.includes(role as AdminManagedRole)) {
     throw new AdminUserManagementError(
-      "Only STUDENT, SUPERVISOR, EXAMINER, and ADMINISTRATOR accounts can be created here.",
+      "Only Department PGLMS roles can be created here.",
       400,
     );
   }
@@ -77,7 +79,10 @@ function buildLoginUrl() {
 }
 
 async function createRoleProfile(
-  tx: Pick<typeof prisma, "student" | "supervisor" | "examiner" | "administrator">,
+  tx: Pick<
+    typeof prisma,
+    "student" | "supervisor" | "examiner" | "administrator" | "hod"
+  >,
   userId: string,
   role: AdminManagedRole,
   department: string | null,
@@ -120,7 +125,17 @@ async function createRoleProfile(
     return;
   }
 
-  await tx.administrator.create({
+  if (role === UserRole.ADMINISTRATOR) {
+    await tx.administrator.create({
+      data: {
+        userId,
+        department,
+      },
+    });
+    return;
+  }
+
+  await tx.hod.create({
     data: {
       userId,
       department,
@@ -158,6 +173,12 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
           department: true,
         },
       },
+      hod: {
+        select: {
+          id: true,
+          department: true,
+        },
+      },
       student: {
         select: {
           id: true,
@@ -182,6 +203,7 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
       user.supervisor?.department ??
       user.examiner?.department ??
       user.administrator?.department ??
+      user.hod?.department ??
       null,
     specialization:
       user.supervisor?.specialization ?? user.examiner?.specialization ?? null,
@@ -189,6 +211,7 @@ export async function listAdminManagedUsers(role?: string): Promise<AdminUserLis
     studentId: user.student?.id ?? null,
     supervisorId: user.supervisor?.id ?? null,
     examinerId: user.examiner?.id ?? null,
+    hodId: user.hod?.id ?? null,
   }));
 }
 
@@ -320,7 +343,8 @@ export async function deactivateAdminManagedUser(userId: string): Promise<User> 
     existingUser.role !== UserRole.STUDENT &&
     existingUser.role !== UserRole.SUPERVISOR &&
     existingUser.role !== UserRole.EXAMINER &&
-    existingUser.role !== UserRole.ADMINISTRATOR
+    existingUser.role !== UserRole.ADMINISTRATOR &&
+    existingUser.role !== UserRole.HOD
   ) {
     throw new AdminUserManagementError(
       "Only administrator-managed users can be deactivated here.",

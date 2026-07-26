@@ -12,13 +12,109 @@ enum UserRole {
   SUPERVISOR
   EXAMINER
   ADMINISTRATOR
+  HOD
 }
 
 enum ProgramType {
   MPHIL
   PHD
-  MSC
-  MENG
+}
+
+enum StudyMode {
+  FULL_TIME
+  PART_TIME
+}
+
+enum SupervisorConsentStatus {
+  PENDING
+  CONSENTED
+  DECLINED
+  WITHDRAWN
+}
+
+enum DepartmentDecision {
+  PENDING
+  APPROVED
+  REVISION_REQUIRED
+  REJECTED
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  SCHEDULED
+  DUE
+  SUBMITTED
+  RETURNED
+  APPROVED
+  OVERDUE
+  WAIVED
+}
+
+enum ProgressSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  RETURNED
+  APPROVED
+}
+
+enum EthicsApplicability {
+  UNDETERMINED
+  REQUIRED
+  NOT_REQUIRED
+}
+
+enum EthicsRecordStatus {
+  NOT_RECORDED
+  PENDING
+  APPROVED
+  EXEMPT
+  REJECTED
+  EXPIRED
+}
+
+enum ReadinessDecision {
+  PENDING
+  CERTIFIED
+  RETURNED
+  REVOKED
+}
+
+enum ExaminerRecommendation {
+  PASS
+  MINOR_CORRECTIONS
+  MAJOR_CORRECTIONS
+  RESUBMIT
+  FAIL
+}
+
+enum CorrectionOrderStatus {
+  ORDERED
+  SUBMITTED
+  RETURNED
+  COMPLETION_APPROVED
+}
+
+enum CompletionStatus {
+  PENDING
+  HOD_APPROVED
+  ADMIN_RECORDED
+}
+
+enum GraduationStatus {
+  NOT_RECORDED
+  GRADUATED
+}
+
+enum ArchiveStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 enum RegistrationStatus {
@@ -163,64 +259,89 @@ enum CorrectionType {
 }
 
 model User {
-  id               String                @id @default(cuid())
-  email            String                @unique
-  displayName      String
-  firebaseUid      String?               @unique
-  role             UserRole
-  isActive         Boolean               @default(true)
-  student          Student?
-  supervisor       Supervisor?
-  examiner         Examiner?
-  administrator    Administrator?
-  notifications    Notification[]
-  notificationLogs NotificationLog[]
-  lifecycleEvents  LifecycleAuditEvent[] @relation("LifecycleAuditActor")
-  outboxMessages   OutboxMessage[]       @relation("OutboxRecipient")
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  id                              String                         @id @default(cuid())
+  email                           String                         @unique
+  displayName                     String
+  firebaseUid                     String?                        @unique
+  role                            UserRole
+  isActive                        Boolean                        @default(true)
+  student                         Student?
+  supervisor                      Supervisor?
+  examiner                        Examiner?
+  administrator                   Administrator?
+  hod                             Hod?
+  proposedApplications            Application[]                  @relation("ProposedSupervisorUser")
+  hodDecidedApplications          Application[]                  @relation("ApplicationHodDecision")
+  proposalReviewerAssignments     ProposalReviewerAssignment[]   @relation("ProposalReviewerUser")
+  readinessCertifications         ThesisReadinessCertification[] @relation("ReadinessCertifier")
+  hodConfirmedExaminerAssignments ThesisExaminerAssignment[]     @relation("ExaminerAssignmentHod")
+  examinerReports                 ThesisExaminerReport[]         @relation("ExaminerReportAuthor")
+  vivaRecommendations             VivaRecommendation[]           @relation("VivaRecommendationAuthor")
+  hodDecidedVivas                 Viva[]                         @relation("VivaHodDecision")
+  correctionOrders                CorrectionOrder[]              @relation("CorrectionOrderHod")
+  correctionApprovals             CorrectionOrder[]              @relation("CorrectionApprovalHod")
+  completionApprovals             ProgrammeCompletion[]          @relation("CompletionHod")
+  completionRecordings            ProgrammeCompletion[]          @relation("CompletionAdministrator")
+  graduationRecords               GraduationRecord[]             @relation("GraduationRecorder")
+  archiveRecords                  StudentArchiveRecord[]         @relation("ArchiveRecorder")
+  admissionExecutions             AdmissionExecution[]           @relation("AdmissionExecutor")
+  notifications                   Notification[]
+  notificationLogs                NotificationLog[]
+  lifecycleEvents                 LifecycleAuditEvent[]          @relation("LifecycleAuditActor")
+  outboxMessages                  OutboxMessage[]                @relation("OutboxRecipient")
+  createdAt                       DateTime                       @default(now())
+  updatedAt                       DateTime                       @updatedAt
 
   @@map("users")
 }
 
 model Student {
-  id                    String                        @id @default(cuid())
-  userId                String                        @unique
-  programType           ProgramType
-  academicStatus        AcademicStatus                @default(ACTIVE)
-  enrollmentDate        DateTime
-  updatedBy             String?
-  isArchived            Boolean                       @default(false)
-  user                  User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  application           Application?
-  registrations         Registration[]
-  researchProposals     ResearchProposal[]
-  ethicsApprovals       EthicsApproval[]
-  progressReports       ProgressReport[]
-  theses                Thesis[]
-  supervisorAssignments SupervisorAssignment[]
-  examinerAssignments   ThesisExaminerAssignment[]
-  reviewPanelAssignment ReviewPanelStudentAssignment?
-  documents             Document[]
-  notifications         Notification[]
-  outboxMessages        OutboxMessage[]
-  createdAt             DateTime                      @default(now())
-  updatedAt             DateTime                      @updatedAt
+  id                      String                         @id @default(cuid())
+  userId                  String                         @unique
+  programType             ProgramType
+  studyMode               StudyMode                      @default(FULL_TIME)
+  academicStatus          AcademicStatus                 @default(ACTIVE)
+  enrollmentDate          DateTime
+  expectedCompletionDate  DateTime?
+  updatedBy               String?
+  isArchived              Boolean                        @default(false)
+  user                    User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  application             Application?
+  registrations           Registration[]
+  researchProposals       ResearchProposal[]
+  ethicsApprovals         EthicsApproval[]
+  progressReports         ProgressReport[]
+  theses                  Thesis[]
+  supervisorAssignments   SupervisorAssignment[]
+  examinerAssignments     ThesisExaminerAssignment[]
+  reviewPanelAssignment   ReviewPanelStudentAssignment?
+  documents               Document[]
+  notifications           Notification[]
+  milestones              StudentMilestone[]
+  readinessCertifications ThesisReadinessCertification[]
+  programmeCompletion     ProgrammeCompletion?
+  graduationRecord        GraduationRecord?
+  archiveRecord           StudentArchiveRecord?
+  admissionExecution      AdmissionExecution?
+  outboxMessages          OutboxMessage[]
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
 
   @@index([academicStatus])
   @@map("students")
 }
 
 model Supervisor {
-  id               String                 @id @default(cuid())
-  userId           String                 @unique
-  department       String?
-  specialization   String?
-  user             User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  assignments      SupervisorAssignment[]
-  panelMemberships PanelMembership[]
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  id                   String                 @id @default(cuid())
+  userId               String                 @unique
+  department           String?
+  specialization       String?
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  assignments          SupervisorAssignment[]
+  panelMemberships     PanelMembership[]
+  proposedApplications Application[]          @relation("ProposedSupervisorProfile")
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
 
   @@map("supervisors")
 }
@@ -256,41 +377,182 @@ model Administrator {
   @@map("administrators")
 }
 
+model Hod {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  department String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("hods")
+}
+
 model Application {
-  id                 String            @id @default(cuid())
-  applicantName      String
-  applicantEmail     String
-  applicantPhone     String?
-  supervisor         String?
-  researchArea       String?
-  statementOfPurpose String?
-  status             ApplicationStatus @default(SUBMITTED)
-  programType        ProgramType
-  studentId          String?           @unique
-  isArchived         Boolean           @default(false)
-  student            Student?          @relation(fields: [studentId], references: [id], onDelete: SetNull)
-  researchProposal   ResearchProposal?
-  documents          Document[]
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  id                          String                       @id @default(cuid())
+  applicantName               String
+  applicantEmail              String
+  applicantPhone              String?
+  supervisor                  String?
+  researchArea                String?
+  statementOfPurpose          String?
+  status                      ApplicationStatus            @default(SUBMITTED)
+  programType                 ProgramType
+  studyMode                   StudyMode                    @default(FULL_TIME)
+  proposalTitle               String?
+  proposalAbstract            String?
+  proposedSupervisorId        String?
+  proposedSupervisorUserId    String?
+  supervisorConsentStatus     SupervisorConsentStatus      @default(PENDING)
+  supervisorConsentRecordedAt DateTime?
+  departmentDecision          DepartmentDecision           @default(PENDING)
+  hodDecisionByUserId         String?
+  hodDecisionAt               DateTime?
+  hodDecisionReason           String?
+  studentId                   String?                      @unique
+  isArchived                  Boolean                      @default(false)
+  student                     Student?                     @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  researchProposal            ResearchProposal?
+  proposalVersions            ApplicationProposalVersion[]
+  proposalReviewerAssignments ProposalReviewerAssignment[]
+  admissionExecution          AdmissionExecution?
+  proposedSupervisor          Supervisor?                  @relation("ProposedSupervisorProfile", fields: [proposedSupervisorId], references: [id], onDelete: SetNull)
+  proposedSupervisorUser      User?                        @relation("ProposedSupervisorUser", fields: [proposedSupervisorUserId], references: [id], onDelete: SetNull)
+  hodDecisionBy               User?                        @relation("ApplicationHodDecision", fields: [hodDecisionByUserId], references: [id], onDelete: SetNull)
+  documents                   Document[]
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
 
   @@index([applicantEmail])
   @@index([status])
+  @@index([departmentDecision, createdAt])
+  @@index([proposedSupervisorUserId, supervisorConsentStatus])
   @@map("applications")
 }
 
+model ApplicationProposalVersion {
+  id                  String                       @id @default(cuid())
+  applicationId       String
+  versionNumber       Int
+  title               String
+  abstract            String
+  changeSummary       String?
+  isCurrent           Boolean                      @default(false)
+  submittedAt         DateTime                     @default(now())
+  application         Application                  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewerAssignments ProposalReviewerAssignment[]
+  reviews             ProposalReview[]
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  @@unique([applicationId, versionNumber])
+  @@index([applicationId, isCurrent])
+  @@map("application_proposal_versions")
+}
+
+model ProposalReviewerAssignment {
+  id                String                     @id @default(cuid())
+  applicationId     String
+  proposalVersionId String
+  reviewerUserId    String
+  assignedByUserId  String
+  status            AssignmentStatus           @default(PENDING)
+  assignedAt        DateTime                   @default(now())
+  respondedAt       DateTime?
+  completedAt       DateTime?
+  application       Application                @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  proposalVersion   ApplicationProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  reviewer          User                       @relation("ProposalReviewerUser", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  review            ProposalReview?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([proposalVersionId, reviewerUserId])
+  @@index([reviewerUserId, status, assignedAt])
+  @@index([applicationId, status])
+  @@map("proposal_reviewer_assignments")
+}
+
+model ProposalReview {
+  id                String                     @id @default(cuid())
+  assignmentId      String                     @unique
+  proposalVersionId String
+  decision          DepartmentDecision
+  comments          String
+  submittedAt       DateTime                   @default(now())
+  assignment        ProposalReviewerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  proposalVersion   ApplicationProposalVersion @relation(fields: [proposalVersionId], references: [id], onDelete: Restrict)
+  createdAt         DateTime                   @default(now())
+
+  @@index([proposalVersionId, submittedAt])
+  @@map("proposal_reviews")
+}
+
+model AdmissionExecution {
+  id               String       @id @default(cuid())
+  applicationId    String       @unique
+  executedByUserId String
+  studentId        String       @unique
+  registrationId   String       @unique
+  executedAt       DateTime     @default(now())
+  application      Application  @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  executedBy       User         @relation("AdmissionExecutor", fields: [executedByUserId], references: [id], onDelete: Restrict)
+  student          Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  registration     Registration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+
+  @@index([executedByUserId, executedAt])
+  @@map("admission_executions")
+}
+
+model ProgrammeRule {
+  id                      String      @id @default(cuid())
+  programType             ProgramType
+  studyMode               StudyMode
+  durationMonths          Int
+  milestoneIntervalMonths Int         @default(6)
+  milestoneCount          Int
+  isActive                Boolean     @default(true)
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  @@unique([programType, studyMode])
+  @@map("programme_rules")
+}
+
 model Registration {
-  id             String             @id @default(cuid())
-  studentId      String
-  startDate      DateTime
-  expirationDate DateTime
-  status         RegistrationStatus @default(ACTIVE)
-  student        Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                 String              @id @default(cuid())
+  studentId          String
+  startDate          DateTime
+  expirationDate     DateTime
+  studyMode          StudyMode           @default(FULL_TIME)
+  durationMonths     Int                 @default(24)
+  isFixedTerm        Boolean             @default(true)
+  status             RegistrationStatus  @default(ACTIVE)
+  student            Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  admissionExecution AdmissionExecution?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([studentId, status])
   @@map("registrations")
+}
+
+model StudentMilestone {
+  id             String          @id @default(cuid())
+  studentId      String
+  sequenceNumber Int
+  dueDate        DateTime
+  status         MilestoneStatus @default(SCHEDULED)
+  openedAt       DateTime?
+  completedAt    DateTime?
+  student        Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  progressReport ProgressReport?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([studentId, sequenceNumber])
+  @@index([status, dueDate])
+  @@map("student_milestones")
 }
 
 model ResearchProposal {
@@ -354,17 +616,27 @@ model EvaluationForm {
 }
 
 model EthicsApproval {
-  id         String     @id @default(cuid())
-  studentId  String
-  title      String
-  summary    String
-  isArchived Boolean    @default(false)
-  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  documents  Document[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id                      String              @id @default(cuid())
+  studentId               String
+  title                   String
+  summary                 String
+  applicability           EthicsApplicability @default(UNDETERMINED)
+  status                  EthicsRecordStatus  @default(NOT_RECORDED)
+  applicabilityRecordedBy String?
+  applicabilityRecordedAt DateTime?
+  statusRecordedBy        String?
+  statusRecordedAt        DateTime?
+  referenceNumber         String?
+  validUntil              DateTime?
+  notes                   String?
+  isArchived              Boolean             @default(false)
+  student                 Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  documents               Document[]
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
 
   @@index([studentId, createdAt])
+  @@index([applicability, status])
   @@map("ethics_approvals")
 }
 
@@ -375,6 +647,9 @@ model SupervisorAssignment {
   supervisorUserId String
   isPrimary        Boolean       @default(false)
   assignedAt       DateTime      @default(now())
+  effectiveFrom    DateTime      @default(now())
+  effectiveTo      DateTime?
+  endReason        String?
   assignedBy       String
   student          Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   supervisor       Supervisor    @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
@@ -382,33 +657,59 @@ model SupervisorAssignment {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  @@unique([studentId, supervisorId])
-  @@unique([studentId, supervisorUserId])
+  @@index([studentId, effectiveFrom, effectiveTo])
   @@index([supervisorId])
   @@index([assignedBy])
   @@map("supervisor_assignments")
 }
 
 model ProgressReport {
-  id                      String                 @id @default(cuid())
+  id                      String                   @id @default(cuid())
   studentId               String
+  milestoneId             String?                  @unique
   periodLabel             String
   narrative               String
-  isSupervisorSignedOff   Boolean                @default(false)
+  status                  ProgressSubmissionStatus @default(DRAFT)
+  currentVersion          Int                      @default(1)
+  submittedAt             DateTime?
+  returnedAt              DateTime?
+  returnedByUserId        String?
+  returnReason            String?
+  approvedAt              DateTime?
+  approvedByUserId        String?
+  isSupervisorSignedOff   Boolean                  @default(false)
   supervisorSignedOffAt   DateTime?
   supervisorSignedOffById String?
-  isOverdue               Boolean                @default(false)
-  isArchived              Boolean                @default(false)
-  student                 Student                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  isOverdue               Boolean                  @default(false)
+  isArchived              Boolean                  @default(false)
+  student                 Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  milestone               StudentMilestone?        @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
+  versions                ProgressReportVersion[]
   panelEvaluations        PanelEvaluation[]
   examinerReviews         ProgressReportReview[]
   documents               Document[]
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@unique([studentId, periodLabel])
   @@index([studentId, isOverdue])
   @@map("progress_reports")
+}
+
+model ProgressReportVersion {
+  id                String         @id @default(cuid())
+  progressReportId  String
+  versionNumber     Int
+  narrative         String
+  changeSummary     String?
+  submittedByUserId String
+  submittedAt       DateTime       @default(now())
+  progressReport    ProgressReport @relation(fields: [progressReportId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
+
+  @@unique([progressReportId, versionNumber])
+  @@index([submittedByUserId, submittedAt])
+  @@map("progress_report_versions")
 }
 
 model ReviewPanel {
@@ -497,23 +798,46 @@ model ReviewPanelStudentAssignment {
 }
 
 model Thesis {
-  id                  String                     @id @default(cuid())
-  studentId           String
-  title               String
-  abstract            String
-  status              ThesisStatus               @default(SUBMITTED)
-  isArchived          Boolean                    @default(false)
-  student             Student                    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examinerAssignments ThesisExaminerAssignment[]
-  versions            ThesisVersion[]
-  viva                Viva?
-  corrections         CorrectionDocument[]
-  documents           Document[]
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
+  id                     String                        @id @default(cuid())
+  studentId              String
+  title                  String
+  abstract               String
+  status                 ThesisStatus                  @default(SUBMITTED)
+  isArchived             Boolean                       @default(false)
+  student                Student                       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  readinessCertification ThesisReadinessCertification?
+  examinerAssignments    ThesisExaminerAssignment[]
+  versions               ThesisVersion[]
+  viva                   Viva?
+  corrections            CorrectionDocument[]
+  documents              Document[]
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  CorrectionOrder        CorrectionOrder[]
+  ProgrammeCompletion    ProgrammeCompletion?
 
   @@index([studentId, status])
   @@map("theses")
+}
+
+model ThesisReadinessCertification {
+  id                String            @id @default(cuid())
+  thesisId          String            @unique
+  studentId         String
+  certifiedByUserId String
+  decision          ReadinessDecision @default(PENDING)
+  checklist         Json
+  comments          String?
+  decidedAt         DateTime?
+  thesis            Thesis            @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  student           Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  certifiedBy       User              @relation("ReadinessCertifier", fields: [certifiedByUserId], references: [id], onDelete: Restrict)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([studentId, decision])
+  @@index([certifiedByUserId, createdAt])
+  @@map("thesis_readiness_certifications")
 }
 
 model ThesisVersion {
@@ -536,47 +860,141 @@ model ThesisVersion {
 }
 
 model ThesisExaminerAssignment {
-  id                   String         @id @default(cuid())
+  id                   String                @id @default(cuid())
   thesisId             String
   thesisVersionId      String?
   studentId            String
   examinerId           String
   examinerUserId       String
-  assignedAt           DateTime       @default(now())
+  assignedAt           DateTime              @default(now())
   assignedBy           String
+  status               AssignmentStatus      @default(PENDING)
+  confirmedByHodUserId String?
+  confirmedAt          DateTime?
+  endedAt              DateTime?
   reviewText           String?
   submittedAt          DateTime?
   adminComments        String?
   releasedAt           DateTime?
   evidenceManifestHash String?
-  thesis               Thesis         @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  thesisVersion        ThesisVersion? @relation(fields: [thesisVersionId], references: [id], onDelete: Restrict)
-  student              Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examiner             Examiner       @relation(fields: [examinerId], references: [id], onDelete: Cascade)
-  administrator        Administrator  @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  thesis               Thesis                @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  thesisVersion        ThesisVersion?        @relation(fields: [thesisVersionId], references: [id], onDelete: Restrict)
+  student              Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examiner             Examiner              @relation(fields: [examinerId], references: [id], onDelete: Cascade)
+  administrator        Administrator         @relation("ThesisExaminerAssignmentsAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict)
+  confirmedByHod       User?                 @relation("ExaminerAssignmentHod", fields: [confirmedByHodUserId], references: [id], onDelete: SetNull)
+  report               ThesisExaminerReport?
+  vivaRecommendation   VivaRecommendation?
   documents            Document[]
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@unique([thesisId, examinerId])
   @@unique([studentId, examinerUserId])
   @@index([studentId, examinerId])
   @@index([thesisVersionId])
   @@index([assignedBy])
+  @@index([status, confirmedAt])
   @@map("thesis_examiner_assignments")
 }
 
+model ThesisExaminerReport {
+  id             String                   @id @default(cuid())
+  assignmentId   String                   @unique
+  authorUserId   String
+  recommendation ExaminerRecommendation
+  reportText     String
+  submittedAt    DateTime                 @default(now())
+  assignment     ThesisExaminerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  author         User                     @relation("ExaminerReportAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([authorUserId, submittedAt])
+  @@map("thesis_examiner_reports")
+}
+
 model Viva {
-  id            String       @id @default(cuid())
-  thesisId      String       @unique
-  scheduledDate DateTime
-  venue         String
-  outcome       VivaOutcome?
-  thesis        Thesis       @relation(fields: [thesisId], references: [id], onDelete: Cascade)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                    String                  @id @default(cuid())
+  thesisId              String                  @unique
+  scheduledDate         DateTime
+  venue                 String
+  outcome               VivaOutcome?
+  hodOutcome            ExaminerRecommendation?
+  hodDecisionByUserId   String?
+  hodDecisionAt         DateTime?
+  hodDecisionReason     String?
+  thesis                Thesis                  @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  hodDecisionBy         User?                   @relation("VivaHodDecision", fields: [hodDecisionByUserId], references: [id], onDelete: SetNull)
+  recommendations       VivaRecommendation[]
+  correctionOrders      CorrectionOrder[]
+  programmeCompletion   ProgrammeCompletion?    @relation(fields: [programmeCompletionId], references: [id])
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  programmeCompletionId String?
 
   @@map("vivas")
+}
+
+model VivaRecommendation {
+  id             String                   @id @default(cuid())
+  vivaId         String
+  assignmentId   String                   @unique
+  authorUserId   String
+  recommendation ExaminerRecommendation
+  rationale      String
+  submittedAt    DateTime                 @default(now())
+  viva           Viva                     @relation(fields: [vivaId], references: [id], onDelete: Cascade)
+  assignment     ThesisExaminerAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  author         User                     @relation("VivaRecommendationAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  createdAt      DateTime                 @default(now())
+
+  @@index([vivaId, submittedAt])
+  @@index([authorUserId, submittedAt])
+  @@map("viva_recommendations")
+}
+
+model CorrectionOrder {
+  id                      String                 @id @default(cuid())
+  vivaId                  String
+  thesisId                String
+  orderedByHodUserId      String
+  requirementType         CorrectionType
+  requirements            String
+  dueDate                 DateTime?
+  status                  CorrectionOrderStatus  @default(ORDERED)
+  completionApprovedBy    String?
+  completionApprovedAt    DateTime?
+  completionNotes         String?
+  viva                    Viva                   @relation(fields: [vivaId], references: [id], onDelete: Restrict)
+  thesis                  Thesis                 @relation(fields: [thesisId], references: [id], onDelete: Restrict)
+  orderedByHod            User                   @relation("CorrectionOrderHod", fields: [orderedByHodUserId], references: [id], onDelete: Restrict)
+  completionApprovedByHod User?                  @relation("CorrectionApprovalHod", fields: [completionApprovedBy], references: [id], onDelete: SetNull)
+  submissions             CorrectionSubmission[]
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  @@index([thesisId, status])
+  @@index([orderedByHodUserId, createdAt])
+  @@map("correction_orders")
+}
+
+model CorrectionSubmission {
+  id                String          @id @default(cuid())
+  correctionOrderId String
+  versionNumber     Int
+  responseSummary   String
+  submittedByUserId String
+  submittedAt       DateTime        @default(now())
+  returnedAt        DateTime?
+  returnReason      String?
+  correctionOrder   CorrectionOrder @relation(fields: [correctionOrderId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([correctionOrderId, versionNumber])
+  @@index([submittedByUserId, submittedAt])
+  @@map("correction_submissions")
 }
 
 model CorrectionDocument {
@@ -595,6 +1013,60 @@ model CorrectionDocument {
 
   @@index([thesisId, isApproved])
   @@map("correction_documents")
+}
+
+model ProgrammeCompletion {
+  id                    String           @id @default(cuid())
+  studentId             String           @unique
+  thesisId              String           @unique
+  status                CompletionStatus @default(PENDING)
+  approvedByHodUserId   String?
+  hodApprovedAt         DateTime?
+  hodComments           String?
+  recordedByAdminUserId String?
+  adminRecordedAt       DateTime?
+  student               Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  thesis                Thesis           @relation(fields: [thesisId], references: [id], onDelete: Restrict)
+  approvedByHod         User?            @relation("CompletionHod", fields: [approvedByHodUserId], references: [id], onDelete: SetNull)
+  recordedByAdmin       User?            @relation("CompletionAdministrator", fields: [recordedByAdminUserId], references: [id], onDelete: SetNull)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  Viva                  Viva[]
+
+  @@index([status, createdAt])
+  @@map("programme_completions")
+}
+
+model GraduationRecord {
+  id               String           @id @default(cuid())
+  studentId        String           @unique
+  status           GraduationStatus @default(NOT_RECORDED)
+  graduationDate   DateTime?
+  recordedByUserId String
+  notes            String?
+  student          Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  recordedBy       User             @relation("GraduationRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status, graduationDate])
+  @@map("graduation_records")
+}
+
+model StudentArchiveRecord {
+  id               String        @id @default(cuid())
+  studentId        String        @unique
+  status           ArchiveStatus @default(ACTIVE)
+  archivedAt       DateTime?
+  archivedByUserId String
+  reason           String?
+  student          Student       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  archivedBy       User          @relation("ArchiveRecorder", fields: [archivedByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, archivedAt])
+  @@map("student_archive_records")
 }
 
 model Document {

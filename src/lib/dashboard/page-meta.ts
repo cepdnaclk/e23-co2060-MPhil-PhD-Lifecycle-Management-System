@@ -10,6 +10,8 @@ function formatRoleLabel(role: DashboardRole) {
       return "Examiner";
     case "admin":
       return "Administrator";
+    case "hod":
+      return "Head of Department";
   }
 }
 
@@ -26,6 +28,8 @@ export function buildDashboardPageMeta(role: DashboardRole) {
           ? "A live view of supervision workload, pending approvals, and student progress."
           : role === "examiner"
             ? "A concise home for thesis examination tasks, vivas, and correction follow-up."
-            : "Centralized management for system users, applications, and operational health.",
+            : role === "admin"
+              ? "Centralized management for system users, applications, and operational health."
+              : "Department decisions for admission, examination, corrections, and completion.",
   };
 }

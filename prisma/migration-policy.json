@@ -10,6 +10,11 @@
       "sha256": "4d43e9ef0c5a1925308d85904cf0fd045afac17075bd81faec52a41c964e9ed8",
       "productionDeploymentBlocked": true,
       "reason": "WP-04 expands and backfills logical proposal/thesis versions, updates legacy relationships, and replaces the proposal evaluation uniqueness index. It must not be applied to populated production data until a sanitized rehearsal confirms the backfill, ambiguous records are reviewed, and rollback/roll-forward evidence is approved."
+    },
+    "20260726140000_add_department_v1_core_domain": {
+      "sha256": "8c60e3e6b53f9251e60e11cc04e9d65bab210d11b3605e6cd4199b5a0ec0c53c",
+      "productionDeploymentBlocked": true,
+      "reason": "Department V1 deliberately narrows ProgramType to MPHIL/PHD and replaces two legacy supervisor-assignment uniqueness indexes with effective-dated history. The migration fails closed when MSc/MEng rows exist and must remain blocked for populated deployment until classification, preservation, rehearsal, and rollback evidence are approved."
     }
   }
 }

@@ -32,6 +32,9 @@ vi.mock("@/lib/prisma/client", () => ({
     administrator: {
       create: vi.fn(),
     },
+    hod: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -151,6 +154,52 @@ describe("admin user management", () => {
     ).rejects.toThrow("DB insert failed");
 
     expect(deleteFirebaseAuthUser).toHaveBeenCalledWith("firebase-examiner-1");
+  });
+
+  it("creates a dedicated HOD profile and matching Firebase role claim", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+    vi.mocked(createFirebaseAuthUser).mockResolvedValue({
+      uid: "firebase-hod-1",
+    } as never);
+    const hodCreate = vi.fn().mockResolvedValue({ id: "hod-1" });
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        user: {
+          create: vi.fn().mockResolvedValue({
+            id: "user-hod-1",
+            email: "hod@example.com",
+            displayName: "Head of Department",
+            role: UserRole.HOD,
+            isActive: true,
+            firebaseUid: "firebase-hod-1",
+          }),
+        },
+        student: { create: vi.fn() },
+        supervisor: { create: vi.fn() },
+        examiner: { create: vi.fn() },
+        administrator: { create: vi.fn() },
+        hod: { create: hodCreate },
+      } as never),
+    );
+
+    const result = await createAdminManagedUser({
+      email: "hod@example.com",
+      displayName: "Head of Department",
+      role: UserRole.HOD,
+      department: "Computer Engineering",
+    });
+
+    expect(result.user.role).toBe(UserRole.HOD);
+    expect(hodCreate).toHaveBeenCalledWith({
+      data: {
+        userId: "user-hod-1",
+        department: "Computer Engineering",
+      },
+    });
+    expect(setCustomClaimsForUser).toHaveBeenCalledWith(
+      "firebase-hod-1",
+      "HOD",
+    );
   });
 
   it("removes the created database user if claim assignment fails", async () => {

@@ -70,6 +70,34 @@ describe("LoginForm", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it("routes a Head of Department claim only to the HOD workspace", async () => {
+    const user = userEvent.setup();
+    const mockFirebaseUser = {
+      getIdToken: vi.fn().mockResolvedValue("id-token-hod"),
+    };
+
+    vi.mocked(signInWithEmailPassword).mockResolvedValue({
+      user: mockFirebaseUser,
+    } as never);
+    vi.mocked(getUserIdTokenResult).mockResolvedValue({
+      claims: { role: "HOD" },
+    } as never);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ ok: true, role: "HOD" }),
+    } as never);
+
+    render(<LoginForm />);
+
+    await user.type(screen.getByTestId("login-email"), "hod@example.com");
+    await user.type(screen.getByTestId("login-password"), "password123");
+    await user.click(screen.getByTestId("login-submit"));
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith("/dashboard/hod");
+    });
+  });
+
   it("shows a user-not-found message from Firebase", async () => {
     const user = userEvent.setup();
 

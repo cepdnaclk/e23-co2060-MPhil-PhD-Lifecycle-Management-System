@@ -17,10 +17,11 @@ const createAdminUserSchema = z.object({
     UserRole.SUPERVISOR,
     UserRole.EXAMINER,
     UserRole.ADMINISTRATOR,
+    UserRole.HOD,
   ]),
   department: z.string().optional().nullable(),
   specialization: z.string().optional().nullable(),
-  programType: z.enum(["MPHIL", "PHD", "MSC", "MENG"]).optional().nullable(),
+  programType: z.enum(["MPHIL", "PHD"]).optional().nullable(),
 });
 
 export const GET = withAuth(async (request: NextRequest) => {

@@ -181,6 +181,12 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/examiner/vivas", label: "Assigned Vivas", icon: CalendarDays },
         { href: "/dashboard/examiner/documents", label: "Documents", icon: FolderOpen },
       ];
+    case "hod":
+      return [
+        { href: "/dashboard/hod/applications", label: "Admission Decisions", icon: Inbox },
+        { href: "/dashboard/hod/examinations", label: "Examination Decisions", icon: GraduationCap },
+        { href: "/dashboard/hod/completions", label: "Completion Decisions", icon: ClipboardCheck },
+      ];
     default:
       return [];
   }
