@@ -53,7 +53,8 @@ Configure branch protection for `main` so changes cannot merge until these exact
 
 Also enable GitHub secret scanning, push protection, Dependabot alerts, and Dependabot security updates in repository settings. The checked-in Dependabot configuration opens weekly npm and GitHub Actions updates. Workflow actions are pinned to immutable commit SHAs.
 
-Repository settings are not represented by source files. WP-02 therefore remains locally implemented, not fully verified, until the project owner records branch-protection and first hosted-run evidence.
+Repository settings are not represented by source files. Their verified
+27 July 2026 state is recorded in the hosted-verification checkpoint below.
 
 ## 4. Dependency security policy
 
@@ -168,26 +169,24 @@ the target-specific inventory and recovery plan, and authorizes deployment.
 
 ### Hosted verification — 27 July 2026
 
-Commit `e0ba5c5f8e929c9620c0b0c05db69a4dd6d8af73` completed the configured
+Commit `3bf9a88369d7d2fa341652690c343bf270700808` completed the configured
 hosted gates successfully:
 
-- [CI run 30217851857](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30217851857):
+- [CI run 30218078340](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30218078340):
   Quality, Database migrations, Browser smoke, and Secret scan passed;
-- [CodeQL run 30217851866](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30217851866):
+- [CodeQL run 30218078312](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30218078312):
   JavaScript and TypeScript analysis passed;
-- [Pages run 30217851715](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30217851715):
+- [Pages run 30218078156](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/actions/runs/30218078156):
   build and deployment passed.
 
 The hosted-settings audit confirmed that secret scanning, push protection, and
-vulnerability alerts are enabled. The checked-in weekly Dependabot schedule is
-active repository configuration.
+vulnerability alerts are enabled. Dependabot security updates are enabled, and
+the checked-in weekly Dependabot schedule is active repository configuration.
 
-Two required governance controls remain absent: `main` has no branch
-protection or required status checks, and Dependabot security updates are
-disabled. The active default-branch Copilot review ruleset does not replace
-branch protection because it requires no status checks or pull-request review.
-Enabling these settings is an Administrator remote action and requires explicit
-project-owner approval.
+`main` is protected with strict, Administrator-enforced requirements for the
+five checks listed in section 3. Force-pushes and branch deletion are disabled.
+The active default-branch Copilot review ruleset remains an additional review
+control; it is not counted as one of the required status checks.
 
 ## 9. WP-02 exit evidence
 
@@ -205,8 +204,6 @@ The local checkpoint on 25 July 2026 produced:
 
 Still required for full verification:
 
-- branch protection with the documented required checks;
-- Dependabot security updates;
 - project-owner approval of the populated-database rehearsal and recovery
   evidence;
 - isolated Firebase/Supabase/SMTP authenticated E2E coverage;
