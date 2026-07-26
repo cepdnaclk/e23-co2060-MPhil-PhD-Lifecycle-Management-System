@@ -1,4 +1,8 @@
-import { DocumentType, UserRole } from "@prisma/client";
+import {
+  DocumentType,
+  EthicsWorkflowStage,
+  UserRole,
+} from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/prisma/client", () => ({
@@ -24,17 +28,11 @@ vi.mock("@/lib/uploads/sessions", () => ({
   },
 }));
 
-vi.mock("@/lib/notifications", () => ({
-  notify: vi.fn().mockResolvedValue(undefined),
-  notifyInBackground: vi.fn(),
-}));
-
 import {
   createEthicsApprovalUploadUrl,
   listEthicsApprovals,
   submitEthicsApproval,
 } from "@/lib/ethics/approvals";
-import { notify } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma/client";
 import {
   createStagedUploadSession,
@@ -60,6 +58,11 @@ function makeStudentContext(overrides: Record<string, unknown> = {}) {
     registrations: [{ id: "registration-1" }],
     researchProposals: [{ id: "proposal-1" }],
     ethicsApprovals: [],
+    supervisorAssignments: [
+      {
+        supervisorUserId: "user-supervisor-1",
+      },
+    ],
     ...overrides,
   };
 }
@@ -75,6 +78,13 @@ function makeApproval() {
     referenceNumber: "ERC/2026/014",
     validUntil: null,
     notes: null,
+    workflowStage: EthicsWorkflowStage.COMPLETED,
+    revisionNumber: 1,
+    coordinatorProposedStatus: "APPROVED",
+    studentDeclaredAt: new Date("2026-07-01T08:00:00.000Z"),
+    supervisorRecommendedAt: new Date("2026-07-02T08:00:00.000Z"),
+    coordinatorRecordedAt: new Date("2026-07-03T08:00:00.000Z"),
+    hodConfirmedAt: new Date("2026-07-04T08:00:00.000Z"),
     isArchived: false,
     createdAt: new Date("2026-07-01T08:00:00.000Z"),
     updatedAt: new Date("2026-07-01T08:00:00.000Z"),
@@ -99,6 +109,7 @@ function makeApproval() {
         email: "student@example.com",
       },
     },
+    decisionHistory: [],
   };
 }
 
@@ -166,7 +177,7 @@ describe("ethics approval workflow", () => {
     });
   });
 
-  it("finalizes verified bytes and then notifies administrators", async () => {
+  it("finalizes verified bytes and enqueues the Supervisor review", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue(
       makeStudentContext() as never,
     );
@@ -190,24 +201,26 @@ describe("ethics approval workflow", () => {
       },
     } as never);
     const ethicsApprovalCreate = vi.fn().mockResolvedValue({ id: "approval-1" });
+    const documentCreate = vi.fn().mockResolvedValue({ id: "document-1" });
+    const outboxCreate = vi.fn().mockResolvedValue({ id: "outbox-1" });
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
       callback({
         ethicsApproval: { create: ethicsApprovalCreate },
+        document: { create: documentCreate },
         stagedUploadFile: { update: vi.fn().mockResolvedValue({}) },
         uploadSession: { update: vi.fn().mockResolvedValue({}) },
+        ethicsWorkflowDecision: {
+          create: vi.fn().mockResolvedValue({ id: "decision-1" }),
+        },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
+        outboxMessage: { create: outboxCreate },
       } as never),
     );
     vi.mocked(prisma.ethicsApproval.findUnique).mockResolvedValue(
       makeApproval() as never,
     );
-    vi.mocked(prisma.user.findMany).mockResolvedValue([
-      {
-        id: "user-admin-1",
-        displayName: "Admin One",
-        email: "admin@example.com",
-      },
-    ] as never);
-
     const approval = await submitEthicsApproval(
       {
         title: "Participant interview ethics",
@@ -220,22 +233,25 @@ describe("ethics approval workflow", () => {
     expect(ethicsApprovalCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          documents: {
-            create: [
-              expect.objectContaining({
-                documentType: DocumentType.ETHICS_APPROVAL,
-                verificationStatus: "VERIFIED",
-              }),
-            ],
-          },
+          workflowStage: EthicsWorkflowStage.SUPERVISOR_RECOMMENDATION,
+        }),
+      }),
+    );
+    expect(documentCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          documentType: DocumentType.ETHICS_APPROVAL,
+          verificationStatus: "VERIFIED",
         }),
       }),
     );
     expect(approval.documents).toHaveLength(1);
-    expect(notify).toHaveBeenCalledWith(
+    expect(outboxCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: "ETHICS_APPROVAL_SUBMITTED",
-        recipientUserId: "user-admin-1",
+        data: expect.objectContaining({
+          recipientId: "user-supervisor-1",
+          notificationEvent: "ETHICS_APPROVAL_SUBMITTED",
+        }),
       }),
     );
   });
@@ -245,7 +261,14 @@ describe("ethics approval workflow", () => {
       makeApproval(),
     ] as never);
 
-    await expect(listEthicsApprovals()).resolves.toEqual([
+    await expect(
+      listEthicsApprovals({
+        uid: "firebase-admin-1",
+        userId: "user-admin-1",
+        firebaseUid: "firebase-admin-1",
+        role: UserRole.ADMINISTRATOR,
+      }),
+    ).resolves.toEqual([
       expect.objectContaining({
         applicability: "REQUIRED",
         status: "APPROVED",

@@ -10,19 +10,21 @@ import { withAuth } from "@/lib/firebase/with-auth";
 export const GET = withAuth(
   async (_request: NextRequest, context) => {
     try {
-      const approvals = await listEthicsApprovals(context.auth);
-
-      return NextResponse.json({ approvals });
+      return NextResponse.json({
+        approvals: await listEthicsApprovals(context.auth),
+      });
     } catch (error) {
       if (error instanceof EthicsApprovalError) {
-        return NextResponse.json({ error: error.message }, { status: error.status });
+        return NextResponse.json(
+          { error: error.message },
+          { status: error.status },
+        );
       }
-
       return NextResponse.json(
-        { error: "Unable to load ethics approval records." },
+        { error: "Unable to load the HOD ethics queue." },
         { status: 500 },
       );
     }
   },
-  [UserRole.ADMINISTRATOR],
+  [UserRole.HOD],
 );

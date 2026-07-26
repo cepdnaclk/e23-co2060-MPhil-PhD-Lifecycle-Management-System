@@ -1,6 +1,7 @@
 import {
   EthicsApplicability,
   EthicsRecordStatus,
+  EthicsWorkflowStage,
   ProgressSubmissionStatus,
   UserRole,
 } from "@prisma/client";
@@ -31,6 +32,7 @@ describe("Department lifecycle gates", () => {
       id: "ethics-1",
       applicability: EthicsApplicability.NOT_REQUIRED,
       status: EthicsRecordStatus.EXEMPT,
+      workflowStage: EthicsWorkflowStage.COMPLETED,
       validUntil: null,
     };
     const findFirst = vi.fn().mockResolvedValue(record);

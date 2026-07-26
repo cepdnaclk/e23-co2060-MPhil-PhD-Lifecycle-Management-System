@@ -160,6 +160,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/supervisor/students", label: "Student Roster", icon: Users },
         { href: "/dashboard/supervisor/applications", label: "Application Work", icon: Inbox },
         { href: "/dashboard/supervisor/proposals/evaluate", label: "Monitor Proposals", icon: ClipboardCheck },
+        { href: "/dashboard/supervisor/ethics", label: "Ethics Recommendations", icon: ClipboardCheck },
         { href: "/dashboard/supervisor/progress-reports", label: "Monitor Reports", icon: TrendingUp },
         { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];
@@ -187,6 +188,7 @@ function getNavItems(role: DashboardRole) {
       return [
         { href: "/dashboard/hod/applications", label: "Admission Decisions", icon: Inbox },
         { href: "/dashboard/hod/progress", label: "Department Progress", icon: TrendingUp },
+        { href: "/dashboard/hod/ethics", label: "Ethics Confirmations", icon: ClipboardCheck },
         { href: "/dashboard/hod/examinations", label: "Examination Decisions", icon: GraduationCap },
         { href: "/dashboard/hod/completions", label: "Completion Decisions", icon: ClipboardCheck },
       ];

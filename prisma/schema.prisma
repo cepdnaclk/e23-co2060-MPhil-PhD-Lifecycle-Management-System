@@ -79,6 +79,27 @@ enum EthicsRecordStatus {
   EXPIRED
 }
 
+enum EthicsWorkflowStage {
+  STUDENT_DECLARATION
+  SUPERVISOR_RECOMMENDATION
+  COORDINATOR_RECORD
+  HOD_CONFIRMATION
+  COMPLETED
+}
+
+enum EthicsWorkflowAction {
+  STUDENT_DECLARED_REQUIRED
+  STUDENT_DECLARED_NOT_REQUIRED
+  STUDENT_RESUBMITTED
+  SUPERVISOR_RECOMMENDED
+  SUPERVISOR_RETURNED
+  COORDINATOR_RECORDED
+  COORDINATOR_RETURNED
+  HOD_CONFIRMED
+  HOD_RETURNED
+  HOD_REJECTED
+}
+
 enum ReadinessDecision {
   PENDING
   REQUESTED
@@ -288,6 +309,7 @@ model User {
   completionRecordings            ProgrammeCompletion[]          @relation("CompletionAdministrator")
   graduationRecords               GraduationRecord[]             @relation("GraduationRecorder")
   archiveRecords                  StudentArchiveRecord[]         @relation("ArchiveRecorder")
+  ethicsWorkflowDecisions         EthicsWorkflowDecision[]       @relation("EthicsDecisionActor")
   admissionExecutions             AdmissionExecution[]           @relation("AdmissionExecutor")
   notifications                   Notification[]
   notificationLogs                NotificationLog[]
@@ -618,28 +640,53 @@ model EvaluationForm {
 }
 
 model EthicsApproval {
-  id                      String              @id @default(cuid())
-  studentId               String
-  title                   String
-  summary                 String
-  applicability           EthicsApplicability @default(UNDETERMINED)
-  status                  EthicsRecordStatus  @default(NOT_RECORDED)
-  applicabilityRecordedBy String?
-  applicabilityRecordedAt DateTime?
-  statusRecordedBy        String?
-  statusRecordedAt        DateTime?
-  referenceNumber         String?
-  validUntil              DateTime?
-  notes                   String?
-  isArchived              Boolean             @default(false)
-  student                 Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  documents               Document[]
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
+  id                        String                   @id @default(cuid())
+  studentId                 String
+  title                     String
+  summary                   String
+  applicability             EthicsApplicability      @default(UNDETERMINED)
+  status                    EthicsRecordStatus       @default(NOT_RECORDED)
+  workflowStage             EthicsWorkflowStage      @default(STUDENT_DECLARATION)
+  revisionNumber            Int                      @default(1)
+  coordinatorProposedStatus EthicsRecordStatus?
+  applicabilityRecordedBy   String?
+  applicabilityRecordedAt   DateTime?
+  studentDeclaredAt         DateTime?
+  supervisorRecommendedAt   DateTime?
+  coordinatorRecordedAt     DateTime?
+  hodConfirmedAt            DateTime?
+  statusRecordedBy          String?
+  statusRecordedAt          DateTime?
+  referenceNumber           String?
+  validUntil                DateTime?
+  notes                     String?
+  isArchived                Boolean                  @default(false)
+  student                   Student                  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  documents                 Document[]
+  decisionHistory           EthicsWorkflowDecision[]
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
 
   @@index([studentId, createdAt])
   @@index([applicability, status])
   @@map("ethics_approvals")
+}
+
+model EthicsWorkflowDecision {
+  id               String               @id @default(cuid())
+  ethicsApprovalId String
+  stage            EthicsWorkflowStage
+  action           EthicsWorkflowAction
+  actorUserId      String
+  notes            String?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  ethicsApproval   EthicsApproval       @relation(fields: [ethicsApprovalId], references: [id], onDelete: Cascade)
+  actor            User                 @relation("EthicsDecisionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([ethicsApprovalId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("ethics_workflow_decisions")
 }
 
 model SupervisorAssignment {

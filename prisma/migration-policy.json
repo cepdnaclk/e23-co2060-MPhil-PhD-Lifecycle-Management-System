@@ -25,6 +25,11 @@
       "sha256": "d7b90121a5cbcca4697d1994f874fd6fb45aec079e8abcd9fe333e36b802918c",
       "productionDeploymentBlocked": true,
       "reason": "This migration exact-version-binds legacy application/progress evidence and makes thesis readiness unique per Student while replacing the legacy comments column. It must be rehearsed on a sanitized populated copy, duplicate readiness rows must be reconciled, and backfill/rollback evidence must be approved before production."
+    },
+    "20260726211000_complete_department_ethics_workflow": {
+      "sha256": "0f85981a92a4a8c97c406e09d235a5778e12a38757827076c1d85245d8091dcc",
+      "productionDeploymentBlocked": true,
+      "reason": "This migration updates legacy ethics records into the staged Department workflow and adds a partial uniqueness constraint for one active record per Student. It must remain blocked for populated deployment until duplicate active records are reconciled and the legacy-record transition to HOD confirmation is rehearsed with rollback or roll-forward evidence."
     }
   }
 }

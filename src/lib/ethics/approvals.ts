@@ -1,6 +1,10 @@
 import {
   DocumentVerificationStatus,
   DocumentType,
+  EthicsApplicability,
+  EthicsRecordStatus,
+  EthicsWorkflowAction,
+  EthicsWorkflowStage,
   ProposalStatus,
   RegistrationStatus,
   UploadPurpose,
@@ -10,7 +14,10 @@ import {
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 
-import { notify } from "@/lib/notifications";
+import {
+  appendLifecycleEventAndEnqueue,
+  LIFECYCLE_EVENT,
+} from "@/lib/audit/lifecycle";
 import { prisma } from "@/lib/prisma/client";
 import { withSerializableRetry } from "@/lib/prisma/transactions";
 import {
@@ -56,6 +63,13 @@ const ethicsApprovalSelect = {
   referenceNumber: true,
   validUntil: true,
   notes: true,
+  workflowStage: true,
+  revisionNumber: true,
+  coordinatorProposedStatus: true,
+  studentDeclaredAt: true,
+  supervisorRecommendedAt: true,
+  coordinatorRecordedAt: true,
+  hodConfirmedAt: true,
   isArchived: true,
   createdAt: true,
   updatedAt: true,
@@ -89,6 +103,23 @@ const ethicsApprovalSelect = {
       programType: true,
     },
   },
+  decisionHistory: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      stage: true,
+      action: true,
+      notes: true,
+      createdAt: true,
+      actor: {
+        select: {
+          id: true,
+          displayName: true,
+          role: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.EthicsApprovalSelect;
 
 type EthicsApprovalRecord = Prisma.EthicsApprovalGetPayload<{
@@ -105,6 +136,7 @@ type StudentEthicsContext = {
   hasActiveRegistration: boolean;
   hasApprovedProposal: boolean;
   approvals: EthicsApprovalRecord[];
+  primarySupervisorUserId: string | null;
 };
 
 function mapEthicsApproval(record: EthicsApprovalRecord) {
@@ -118,6 +150,13 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
     referenceNumber: record.referenceNumber,
     validUntil: record.validUntil,
     notes: record.notes,
+    workflowStage: record.workflowStage,
+    revisionNumber: record.revisionNumber,
+    coordinatorProposedStatus: record.coordinatorProposedStatus,
+    studentDeclaredAt: record.studentDeclaredAt,
+    supervisorRecommendedAt: record.supervisorRecommendedAt,
+    coordinatorRecordedAt: record.coordinatorRecordedAt,
+    hodConfirmedAt: record.hodConfirmedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     student: {
@@ -134,6 +173,14 @@ function mapEthicsApproval(record: EthicsApprovalRecord) {
       version: document.version,
       isCurrentVersion: document.isCurrentVersion,
       createdAt: document.createdAt,
+    })),
+    decisionHistory: record.decisionHistory.map((decision) => ({
+      id: decision.id,
+      stage: decision.stage,
+      action: decision.action,
+      notes: decision.notes,
+      createdAt: decision.createdAt,
+      actor: decision.actor,
     })),
   };
 }
@@ -185,6 +232,16 @@ async function findStudentEthicsContext(
         },
         select: ethicsApprovalSelect,
       },
+      supervisorAssignments: {
+        where: {
+          effectiveTo: null,
+          isPrimary: true,
+        },
+        select: {
+          supervisorUserId: true,
+        },
+        take: 1,
+      },
     },
   }).then((student) => {
     if (!student) {
@@ -197,6 +254,8 @@ async function findStudentEthicsContext(
       hasActiveRegistration: student.registrations.length > 0,
       hasApprovedProposal: student.researchProposals.length > 0,
       approvals: student.ethicsApprovals,
+      primarySupervisorUserId:
+        student.supervisorAssignments[0]?.supervisorUserId ?? null,
     };
   });
 }
@@ -210,7 +269,11 @@ function getEthicsSubmissionBlockedReason(student: StudentEthicsContext) {
     return "Your proposal must be approved before submitting ethics documents.";
   }
 
-  if (student.approvals.length > 0) {
+  if (
+    student.approvals.length > 0 &&
+    student.approvals[0]?.workflowStage !==
+      EthicsWorkflowStage.STUDENT_DECLARATION
+  ) {
     return "Ethics documents have already been submitted for this student.";
   }
 
@@ -229,40 +292,6 @@ async function requireStudentEthicsContext(auth: AuthenticatedUserContext) {
   }
 
   return student;
-}
-
-async function notifyAdministratorsOfEthicsSubmission(input: {
-  studentId: string;
-  studentName: string;
-  documentTitle: string;
-}) {
-  const administrators = await prisma.user.findMany({
-    where: {
-      role: UserRole.ADMINISTRATOR,
-      isActive: true,
-    },
-    select: {
-      id: true,
-      displayName: true,
-      email: true,
-    },
-  });
-
-  await Promise.all(
-    administrators
-      .filter((administrator) => administrator.email)
-      .map((administrator) =>
-        notify({
-          event: "ETHICS_APPROVAL_SUBMITTED",
-          recipientUserId: administrator.id,
-          to: administrator.email,
-          administratorName: administrator.displayName,
-          studentName: input.studentName,
-          studentId: input.studentId,
-          applicationTitle: input.documentTitle,
-        }),
-      ),
-  );
 }
 
 export async function createEthicsApprovalUploadUrl(
@@ -355,34 +384,79 @@ export async function submitEthicsApproval(
   }
 
   const verifiedSession = verification.session;
-  const approvalId = randomUUID();
+  const existingRecord = student.approvals[0] ?? null;
+  const approvalId = existingRecord?.id ?? randomUUID();
+  const revisionNumber = existingRecord
+    ? existingRecord.revisionNumber + 1
+    : 1;
   const documentIds = verifiedSession.files.map(() => randomUUID());
   try {
     await withSerializableRetry(async (tx) => {
-      await tx.ethicsApproval.create({
-        data: {
-          id: approvalId,
-          studentId: student.id,
-          title: parsed.data.title,
-          summary: parsed.data.summary,
-          documents: {
-            create: verifiedSession.files.map((document, index) => ({
-              id: documentIds[index],
-              documentType: DocumentType.ETHICS_APPROVAL,
-              studentId: student.id,
-              fileName: document.fileName,
-              storagePath: document.storagePath,
-              mimeType: document.mimeType,
-              sizeBytes: document.sizeBytes,
-              checksumSha256: document.checksumSha256,
-              verificationStatus: DocumentVerificationStatus.VERIFIED,
-              verifiedAt: new Date(),
-              version: 1,
-              isCurrentVersion: true,
-            })),
+      const now = new Date();
+      if (existingRecord) {
+        await tx.ethicsApproval.update({
+          where: { id: approvalId },
+          data: {
+            title: parsed.data.title,
+            summary: parsed.data.summary,
+            applicability: EthicsApplicability.REQUIRED,
+            status: EthicsRecordStatus.PENDING,
+            workflowStage: EthicsWorkflowStage.SUPERVISOR_RECOMMENDATION,
+            revisionNumber,
+            coordinatorProposedStatus: null,
+            applicabilityRecordedBy: auth.userId,
+            applicabilityRecordedAt: now,
+            studentDeclaredAt: now,
+            supervisorRecommendedAt: null,
+            coordinatorRecordedAt: null,
+            hodConfirmedAt: null,
+            referenceNumber: null,
+            validUntil: null,
           },
-        },
-      });
+        });
+        await tx.document.updateMany({
+          where: {
+            ethicsApprovalId: approvalId,
+            isCurrentVersion: true,
+          },
+          data: { isCurrentVersion: false },
+        });
+      } else {
+        await tx.ethicsApproval.create({
+          data: {
+            id: approvalId,
+            studentId: student.id,
+            title: parsed.data.title,
+            summary: parsed.data.summary,
+            applicability: EthicsApplicability.REQUIRED,
+            status: EthicsRecordStatus.PENDING,
+            workflowStage: EthicsWorkflowStage.SUPERVISOR_RECOMMENDATION,
+            applicabilityRecordedBy: auth.userId,
+            applicabilityRecordedAt: now,
+            studentDeclaredAt: now,
+          },
+        });
+      }
+
+      for (const [index, document] of verifiedSession.files.entries()) {
+        await tx.document.create({
+          data: {
+            id: documentIds[index],
+            documentType: DocumentType.ETHICS_APPROVAL,
+            studentId: student.id,
+            ethicsApprovalId: approvalId,
+            fileName: document.fileName,
+            storagePath: document.storagePath,
+            mimeType: document.mimeType,
+            sizeBytes: document.sizeBytes,
+            checksumSha256: document.checksumSha256,
+            verificationStatus: DocumentVerificationStatus.VERIFIED,
+            verifiedAt: now,
+            version: revisionNumber,
+            isCurrentVersion: true,
+          },
+        });
+      }
       for (const [index, file] of verifiedSession.files.entries()) {
         await tx.stagedUploadFile.update({
           where: { id: file.id },
@@ -398,6 +472,55 @@ export async function submitEthicsApproval(
           result: { documentCount: verifiedSession.files.length },
         },
       });
+      await tx.ethicsWorkflowDecision.create({
+        data: {
+          ethicsApprovalId: approvalId,
+          stage: EthicsWorkflowStage.STUDENT_DECLARATION,
+          action: existingRecord
+            ? EthicsWorkflowAction.STUDENT_RESUBMITTED
+            : EthicsWorkflowAction.STUDENT_DECLARED_REQUIRED,
+          actorUserId: auth.userId,
+          metadata: {
+            applicability: EthicsApplicability.REQUIRED,
+            revisionNumber,
+            documentCount: verifiedSession.files.length,
+          },
+        },
+      });
+      await appendLifecycleEventAndEnqueue(
+        tx,
+        {
+          eventKey: `ethics:${approvalId}:student-declaration:${revisionNumber}`,
+          eventType: LIFECYCLE_EVENT.ETHICS_STUDENT_DECLARED,
+          aggregateType: "EthicsApproval",
+          aggregateId: approvalId,
+          actorUserId: auth.userId,
+          actorRole: auth.role,
+          previousState:
+            existingRecord?.workflowStage ??
+            EthicsWorkflowStage.STUDENT_DECLARATION,
+          newState: EthicsWorkflowStage.SUPERVISOR_RECOMMENDATION,
+          metadata: {
+            applicability: EthicsApplicability.REQUIRED,
+            revisionNumber,
+            documentCount: verifiedSession.files.length,
+          },
+        },
+        student.primarySupervisorUserId
+          ? [
+              {
+                eventKey: `ethics:${approvalId}:student-declaration:${revisionNumber}:supervisor`,
+                recipientId: student.primarySupervisorUserId,
+                studentId: student.id,
+                notificationEvent: "ETHICS_APPROVAL_SUBMITTED",
+                title: "Ethics evidence awaiting recommendation",
+                message:
+                  "A Student submitted verified ethics evidence for Supervisor review.",
+                actionUrl: "/dashboard/supervisor/ethics",
+              },
+            ]
+          : [],
+      );
     });
   } catch (error) {
     await reopenUploadSessionAfterFinalizeFailure(
@@ -414,12 +537,6 @@ export async function submitEthicsApproval(
   if (!approval) {
     throw new EthicsApprovalError("Submitted ethics record could not be loaded.", 500);
   }
-
-  await notifyAdministratorsOfEthicsSubmission({
-    studentId: student.id,
-    studentName: student.user.displayName,
-    documentTitle: approval.title,
-  });
 
   return mapEthicsApproval(approval);
 }
@@ -442,10 +559,33 @@ export async function getStudentEthicsApprovalOverview(
   };
 }
 
-export async function listEthicsApprovals() {
+export async function listEthicsApprovals(auth: AuthenticatedUserContext) {
+  if (
+    auth.role !== UserRole.ADMINISTRATOR &&
+    auth.role !== UserRole.HOD &&
+    auth.role !== UserRole.SUPERVISOR
+  ) {
+    throw new EthicsApprovalError(
+      "You cannot access the Department ethics queue.",
+      403,
+    );
+  }
+
   const approvals = await prisma.ethicsApproval.findMany({
     where: {
       isArchived: false,
+      ...(auth.role === UserRole.SUPERVISOR
+        ? {
+            student: {
+              supervisorAssignments: {
+                some: {
+                  supervisorUserId: auth.userId,
+                  effectiveTo: null,
+                },
+              },
+            },
+          }
+        : {}),
     },
     orderBy: {
       createdAt: "desc",

@@ -37,6 +37,21 @@ type EthicsApproval = {
   id: string;
   title: string;
   summary: string;
+  applicability: "UNDETERMINED" | "REQUIRED" | "NOT_REQUIRED";
+  status:
+    | "NOT_RECORDED"
+    | "PENDING"
+    | "APPROVED"
+    | "EXEMPT"
+    | "REJECTED"
+    | "EXPIRED";
+  workflowStage:
+    | "STUDENT_DECLARATION"
+    | "SUPERVISOR_RECOMMENDATION"
+    | "COORDINATOR_RECORD"
+    | "HOD_CONFIRMATION"
+    | "COMPLETED";
+  revisionNumber: number;
   createdAt: string;
   updatedAt: string;
   documents: EthicsDocument[];
@@ -89,6 +104,9 @@ export function EthicsApprovalPanel() {
   const [overview, setOverview] = useState<EthicsOverview | null>(null);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
+  const [applicability, setApplicability] = useState<
+    "REQUIRED" | "NOT_REQUIRED"
+  >("REQUIRED");
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedEthicsDocument[]>([]);
   const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -206,36 +224,51 @@ export function EthicsApprovalPanel() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (uploadedDocuments.length === 0 || !uploadSessionId) {
+    if (
+      applicability === "REQUIRED" &&
+      (uploadedDocuments.length === 0 || !uploadSessionId)
+    ) {
       setErrorMessage("Upload at least one PDF or ZIP ethics document before submitting.");
-      return;
-    }
-
-    const parsedSubmission = ethicsApprovalSubmissionSchema.safeParse({
-      title,
-      summary,
-      uploadSessionId,
-    });
-
-    if (!parsedSubmission.success) {
-      setErrorMessage(
-        parsedSubmission.error.issues[0]?.message ??
-          "Invalid ethics approval submission.",
-      );
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const response = await secureFetch("/api/ethics", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const parsedSubmission =
+        applicability === "REQUIRED"
+          ? ethicsApprovalSubmissionSchema.safeParse({
+              title,
+              summary,
+              uploadSessionId,
+            })
+          : {
+              success: true as const,
+              data: {
+                applicability: "NOT_REQUIRED" as const,
+                title,
+                summary,
+              },
+            };
+      if (!parsedSubmission.success) {
+        throw new Error(
+          parsedSubmission.error.issues[0]?.message ??
+            "Invalid ethics declaration.",
+        );
+      }
+      const response = await secureFetch(
+        applicability === "REQUIRED"
+          ? "/api/ethics"
+          : "/api/student/ethics/declaration",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(parsedSubmission.data),
         },
-        credentials: "include",
-        body: JSON.stringify(parsedSubmission.data),
-      });
+      );
       const payload = (await response.json()) as {
         error?: string;
         approval?: EthicsApproval;
@@ -245,9 +278,10 @@ export function EthicsApprovalPanel() {
         throw new Error(payload.error ?? "Ethics approval submission failed.");
       }
 
-      setSuccessMessage("Ethics documents submitted.");
+      setSuccessMessage("Ethics declaration submitted.");
       setTitle("");
       setSummary("");
+      setApplicability("REQUIRED");
       setUploadedDocuments([]);
       setUploadSessionId(null);
       await refreshOverview();
@@ -270,7 +304,8 @@ export function EthicsApprovalPanel() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Ethics Approval</h2>
           <p className="text-muted-foreground mt-2">
-            Submit ethics clearance evidence after proposal approval.
+            Declare applicability and submit evidence when formal ethics
+            approval is required.
           </p>
         </div>
         {latestApproval && (
@@ -278,7 +313,7 @@ export function EthicsApprovalPanel() {
             variant="secondary"
             className="uppercase"
           >
-            Submitted
+            {latestApproval.workflowStage.replaceAll("_", " ")}
           </Badge>
         )}
       </div>
@@ -298,9 +333,10 @@ export function EthicsApprovalPanel() {
       <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>New Ethics Submission</CardTitle>
+            <CardTitle>Ethics Declaration</CardTitle>
             <CardDescription>
-              Upload the ethics clearance or committee application package as PDF/ZIP documents.
+              Declare whether formal approval is required. Required cases must
+              include verified supporting evidence.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -311,6 +347,28 @@ export function EthicsApprovalPanel() {
                 </div>
               ) : (
                 <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="ethics-applicability">
+                      Ethics applicability
+                    </Label>
+                    <select
+                      id="ethics-applicability"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      value={applicability}
+                      onChange={(event) =>
+                        setApplicability(
+                          event.target.value as "REQUIRED" | "NOT_REQUIRED",
+                        )
+                      }
+                      disabled={isLoading || isSubmitting}
+                    >
+                      <option value="REQUIRED">Ethics approval required</option>
+                      <option value="NOT_REQUIRED">
+                        Ethics approval not required
+                      </option>
+                    </select>
+                  </div>
+
                   <div className="space-y-2">
                     <Label>Application title</Label>
                     <Input
@@ -332,6 +390,7 @@ export function EthicsApprovalPanel() {
                     />
                   </div>
 
+                  {applicability === "REQUIRED" && (
                   <div className="rounded-md border p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <FileUp className="h-4 w-4 text-muted-foreground" />
@@ -364,13 +423,18 @@ export function EthicsApprovalPanel() {
                       </p>
                     )}
                   </div>
+                  )}
 
                   <Button
                     type="submit"
                     disabled={isLoading || isSubmitting || isUploading}
                     className="w-full"
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Documents"}
+                    {isSubmitting
+                      ? "Submitting..."
+                      : applicability === "REQUIRED"
+                        ? "Submit Declaration and Evidence"
+                        : "Submit Declaration"}
                   </Button>
                 </div>
               )}
@@ -415,9 +479,16 @@ export function EthicsApprovalPanel() {
                         </p>
                         <h4 className="mt-1 font-semibold">{approval.title}</h4>
                       </div>
-                      <Badge variant="secondary" className="shrink-0">Submitted</Badge>
+                      <Badge variant="secondary" className="shrink-0">
+                        {approval.workflowStage.replaceAll("_", " ")}
+                      </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">{approval.summary}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {approval.applicability.replaceAll("_", " ")} ·{" "}
+                      {approval.status.replaceAll("_", " ")} · revision{" "}
+                      {approval.revisionNumber}
+                    </p>
                     <div className="space-y-2">
                       {approval.documents.map((document) => (
                         <div
