@@ -41,6 +41,23 @@ describe("LoginForm", () => {
     global.fetch = fetchMock;
   });
 
+  it("keeps credentials out of native form serialization", async () => {
+    render(<LoginForm />);
+
+    const form = screen.getByTestId("login-form");
+    const emailField = screen.getByTestId("login-email");
+    const passwordField = screen.getByTestId("login-password");
+
+    expect(form).toHaveAttribute("method", "post");
+    expect(emailField).not.toHaveAttribute("name");
+    expect(passwordField).not.toHaveAttribute("name");
+
+    await waitFor(() => {
+      expect(form).toHaveAttribute("data-hydrated", "true");
+      expect(screen.getByTestId("login-submit")).toBeEnabled();
+    });
+  });
+
   it("redirects to the matching dashboard after a successful login", async () => {
     const user = userEvent.setup();
     const mockFirebaseUser = {

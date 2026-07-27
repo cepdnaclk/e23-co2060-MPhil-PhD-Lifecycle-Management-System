@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -63,6 +63,11 @@ export function LoginForm() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const timeoutMessage = useMemo(() => {
     return searchParams.get("reason") === "timeout"
@@ -183,7 +188,14 @@ export function LoginForm() {
             Use your assigned institutional account to sign in.
           </p>
         </div>
-        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        <form
+          className="space-y-5"
+          method="post"
+          onSubmit={handleSubmit}
+          noValidate
+          data-testid="login-form"
+          data-hydrated={isHydrated ? "true" : "false"}
+        >
           {timeoutMessage && (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
               {timeoutMessage}
@@ -203,7 +215,6 @@ export function LoginForm() {
             <Label htmlFor="email" className="text-xl">Email</Label>
             <Input
               id="email"
-              name="email"
               type="email"
               autoComplete="email"
               value={email}
@@ -219,7 +230,6 @@ export function LoginForm() {
             <div className="flex items-center gap-2 rounded-md border border-zinc-400 bg-transparent px-3 py-2 focus-within:ring-1 focus-within:ring-zinc-900 transition-shadow">
               <input
                 id="password"
-                name="password"
                 type={isPasswordVisible ? "text" : "password"}
                 autoComplete="current-password"
                 value={password}
@@ -253,7 +263,7 @@ export function LoginForm() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isHydrated}
               data-testid="login-submit"
               className="h-12 text-lg px-10"
             >

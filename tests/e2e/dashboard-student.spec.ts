@@ -1,22 +1,38 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  loadExternalTestAccounts,
+  signInAs,
+} from "./support/external-test-accounts";
+
+const externalAccounts = loadExternalTestAccounts();
+
+test.use({
+  screenshot: "off",
+  trace: "off",
+  video: "off",
+});
+
 test.describe("authenticated student dashboard", { tag: "@external" }, () => {
-  test("student can reach Submit Progress Report in three clicks or less", async ({
+  test.skip(
+    !externalAccounts,
+    "Set PGLMS_E2E_CREDENTIALS_FILE before running external browser tests.",
+  );
+
+  test("student can reach fixed progress milestones in three clicks or less", async ({
     page,
   }) => {
-    await page.goto("/dashboard/student");
+    await signInAs(page, externalAccounts!, "STUDENT");
 
     await expect(
-      page.getByRole("link", { name: "Submit Progress Report" }).first(),
+      page.getByRole("link", { name: "Open Progress Milestones" }).first(),
     ).toBeVisible();
 
     await page
-      .getByRole("link", { name: "Submit Progress Report" })
+      .getByRole("link", { name: "Open Progress Milestones" })
       .first()
       .click();
 
-    await expect(page).toHaveURL(
-      /\/dashboard\/student\/progress-reports\/submit$/,
-    );
+    await expect(page).toHaveURL(/\/dashboard\/student\/progress-reports$/);
   });
 });

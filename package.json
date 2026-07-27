@@ -24,7 +24,7 @@
     "test:integration": "vitest run tests/integration",
     "test:database": "vitest run tests/integration/student-user-link.test.ts",
     "test:e2e": "playwright test --grep-invert @external",
-    "test:e2e:external": "playwright test --grep @external",
+    "test:e2e:external": "node scripts/run-external-e2e.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high",
     "audit:all": "npm audit --audit-level=high"
   },

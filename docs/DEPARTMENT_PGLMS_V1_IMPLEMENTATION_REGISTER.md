@@ -146,9 +146,10 @@ D4–D10 pass:
 
 No known Department V1 completion-state delta remains in the local
 implementation. The final populated-data migration and backup-recovery
-rehearsal completed locally on 27 July 2026. Live
-Firebase/Supabase/storage/scanner/SMTP checks, hosted CI evidence, acceptance
-of the rehearsal, and deployment approval remain external release gates.
+rehearsal completed locally on 27 July 2026. Live test-environment Firebase
+authentication and Supabase-backed role-dashboard checks completed on 27 July
+2026. Storage/scanner/SMTP checks, acceptance of the rehearsal, and deployment
+approval remain external release gates.
 
 | Final command | Result |
 |---|---|
@@ -242,3 +243,30 @@ and GitHub Actions Dependabot updates are configured in the repository.
 Secret scan, and CodeQL JavaScript/TypeScript analysis. Protection is enforced
 for Administrators; force-pushes and branch deletion are disabled. The active
 Copilot review-on-push ruleset remains an additional review control.
+
+## Authenticated role-browser verification — 27 July 2026
+
+The external browser suite now consumes an explicitly configured credentials
+file outside the repository and fails closed when the file is absent, relative,
+inside the repository, or missing. Authenticated tests disable screenshots,
+video, and traces so credentials cannot enter Playwright artifacts. The login
+form also remains disabled until hydration and does not expose credential field
+names to native form serialization.
+
+Eight live Chromium tests passed against the shared test environment with one
+synthetic account per Department V1 role:
+
+- HOD, PG Coordinator, Supervisor, Examiner, and Student each reached their
+  expected role dashboard with a secure, HTTP-only, same-site session cookie.
+- The Student reached the fixed progress-milestone surface.
+- The Supervisor opened a Student detail route from the supervision list.
+- The Student opened the role navigation at a 320-pixel viewport.
+
+The public browser suite remains independent of external credentials. All
+accounts and lifecycle records used by the authenticated suite are synthetic
+test data and are not production identities or records.
+
+Checkpoint verification passed lint, type checking, Prisma schema validation,
+the 11-entry migration policy, 91 ordinary test files/329 tests with the
+guarded database case skipped, the 87-page production build, 2/2 public browser
+tests, and 8/8 authenticated browser tests.

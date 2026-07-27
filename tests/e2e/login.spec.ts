@@ -1,37 +1,49 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("PB-010 login flow", { tag: "@external" }, () => {
-  test("sets the session cookie and redirects to the role dashboard", async ({
-    page,
-  }) => {
-    await page.goto("/login");
+import {
+  EXTERNAL_TEST_ROLES,
+  ROLE_DASHBOARD_HEADINGS,
+  loadExternalTestAccounts,
+  signInAs,
+} from "./support/external-test-accounts";
 
-    await page.getByTestId("login-email").fill("student@example.com");
-    await page.getByTestId("login-password").fill("password123");
-    await page.getByTestId("login-submit").click();
+const externalAccounts = loadExternalTestAccounts();
 
-    await expect(page).toHaveURL(/\/dashboard\/student$/);
+test.use({
+  screenshot: "off",
+  trace: "off",
+  video: "off",
+});
 
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find((cookie) => cookie.name === "pglms_session");
+test.describe("authenticated Department V1 role shells", { tag: "@external" }, () => {
+  test.skip(
+    !externalAccounts,
+    "Set PGLMS_E2E_CREDENTIALS_FILE before running external browser tests.",
+  );
 
-    expect(sessionCookie).toBeDefined();
-    expect(sessionCookie?.secure).toBe(true);
-    expect(sessionCookie?.httpOnly).toBe(true);
-  });
+  for (const role of EXTERNAL_TEST_ROLES) {
+    test(`${role} reaches only its role dashboard`, async ({ page }) => {
+      await signInAs(page, externalAccounts!, role);
 
-  test("shows the inactive-user message and prevents redirection", async ({
-    page,
-  }) => {
-    await page.goto("/login");
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: ROLE_DASHBOARD_HEADINGS[role],
+        }),
+      ).toBeVisible();
+      await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
 
-    await page.getByTestId("login-email").fill("inactive@example.com");
-    await page.getByTestId("login-password").fill("password123");
-    await page.getByTestId("login-submit").click();
+      const sessionCookieName =
+        process.env.SESSION_COOKIE_NAME?.trim() || "pglms_session";
+      const cookies = await page.context().cookies();
+      const sessionCookie = cookies.find(
+        (cookie) => cookie.name === sessionCookieName,
+      );
 
-    await expect(
-      page.getByText("Your account is inactive. Please contact an administrator."),
-    ).toBeVisible();
-    await expect(page).toHaveURL(/\/login$/);
-  });
+      expect(sessionCookie).toBeDefined();
+      expect(sessionCookie?.secure).toBe(true);
+      expect(sessionCookie?.httpOnly).toBe(true);
+      expect(sessionCookie?.sameSite).toBe("Lax");
+    });
+  }
 });

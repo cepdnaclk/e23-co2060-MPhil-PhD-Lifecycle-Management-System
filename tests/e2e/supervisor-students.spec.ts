@@ -1,6 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  loadExternalTestAccounts,
+  signInAs,
+} from "./support/external-test-accounts";
+
+const externalAccounts = loadExternalTestAccounts();
+
+test.use({
+  screenshot: "off",
+  trace: "off",
+  video: "off",
+});
+
 test.describe("authenticated supervisor dashboard", { tag: "@external" }, () => {
+  test.skip(
+    !externalAccounts,
+    "Set PGLMS_E2E_CREDENTIALS_FILE before running external browser tests.",
+  );
+
   test("clicking a student's name opens the supervisor student profile page", async ({
     page,
   }) => {
@@ -62,6 +80,7 @@ test.describe("authenticated supervisor dashboard", { tag: "@external" }, () => 
       });
     });
 
+    await signInAs(page, externalAccounts!, "SUPERVISOR");
     await page.goto("/dashboard/supervisor/students");
     await page.getByRole("link", { name: "Student One" }).first().click();
 
