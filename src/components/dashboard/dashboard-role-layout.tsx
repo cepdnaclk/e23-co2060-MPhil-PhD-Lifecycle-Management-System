@@ -25,7 +25,6 @@ import {
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
 import { Header } from "@/components/layout/header";
-import { Main } from "@/components/layout/main";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
@@ -65,7 +64,13 @@ export function DashboardRoleLayout({
   const navItems = getNavItems(role);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider data-dashboard-shell>
+      <a
+        href="#dashboard-content"
+        className="sr-only z-[100] rounded-md bg-background px-4 py-2 text-sm font-semibold text-foreground shadow-md focus:fixed focus:left-4 focus:top-4 focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to dashboard content
+      </a>
       <Sidebar variant="inset">
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2 font-semibold">
@@ -121,7 +126,7 @@ export function DashboardRoleLayout({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
+      <SidebarInset id="dashboard-content" tabIndex={-1}>
         <Header>
           <div className="flex items-center gap-2 max-md:scale-125">
             <SidebarTrigger variant='outline' />
@@ -134,9 +139,9 @@ export function DashboardRoleLayout({
             <ProfileDropdown role={role} />
           </div>
         </Header>
-        <Main>
+        <div className="mx-auto w-full max-w-7xl px-4 py-6">
           {children}
-        </Main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

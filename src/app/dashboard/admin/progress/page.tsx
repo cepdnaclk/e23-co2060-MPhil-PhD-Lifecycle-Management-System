@@ -26,7 +26,7 @@ export default async function AdminProgressPage() {
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Department progress</h1>
+        <h2 className="text-3xl font-bold tracking-tight">Department progress</h2>
         <p className="mt-2 text-muted-foreground">
           Four fixed tables derived from milestone records.
         </p>

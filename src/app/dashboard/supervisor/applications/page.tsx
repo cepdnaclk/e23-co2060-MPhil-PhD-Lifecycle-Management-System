@@ -37,7 +37,7 @@ export default async function SupervisorApplicationsPage() {
   ]);
   return (
     <div className="space-y-8 p-4 pt-6 md:p-8">
-      <section className="space-y-4"><div><h1 className="text-3xl font-bold tracking-tight">Application work</h1><p className="mt-2 text-muted-foreground">Proposed-supervisor consent and explicitly assigned proposal reviews.</p></div><h2 className="text-xl font-semibold">Consent requests</h2><ProposedSupervisorConsentPanel applications={applications} /></section>
+      <section className="space-y-4"><div><h2 className="text-3xl font-bold tracking-tight">Application work</h2><p className="mt-2 text-muted-foreground">Proposed-supervisor consent and explicitly assigned proposal reviews.</p></div><h3 className="text-xl font-semibold">Consent requests</h3><ProposedSupervisorConsentPanel applications={applications} /></section>
       <section className="space-y-4"><h2 className="text-xl font-semibold">Assigned reviews</h2><AssignedProposalReviewPanel assignments={assignments.map((assignment) => ({ id: assignment.id, applicantName: assignment.application.applicantName, ...assignment.proposalVersion }))} /></section>
     </div>
   );

@@ -115,7 +115,7 @@ export default async function HodCompletionsPage() {
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h1 className="text-3xl font-bold tracking-tight">Completion decisions</h1><p className="mt-2 text-muted-foreground">Close submitted corrections and approve academic completion.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Completion decisions</h2><p className="mt-2 text-muted-foreground">Close submitted corrections and approve academic completion.</p></div>
       <HodCompletionDecisionPanel
         corrections={corrections.map((order) => ({
           id: order.id,
