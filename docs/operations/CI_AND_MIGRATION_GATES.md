@@ -37,7 +37,7 @@ npm run build
 npm run test:e2e
 ```
 
-`npm test` runs the unit and mocked integration suites. The real database test is intentionally skipped unless a safe `TEST_DATABASE_URL` is supplied. `npm run test:e2e` runs the public Chromium and accessibility smoke set; tests tagged `@external` require isolated Firebase, Supabase, SMTP, and authenticated test accounts and are run separately with `npm run test:e2e:external`.
+`npm test` runs the unit and mocked integration suites. The real database test is intentionally skipped unless a safe `TEST_DATABASE_URL` is supplied. `npm run test:e2e` runs the public Chromium and accessibility smoke set. Tests tagged `@external` require isolated Firebase, Supabase, and authenticated test accounts and are run separately with `npm run test:e2e:external`; that command requires `PGLMS_E2E_CREDENTIALS_FILE` to point to a protected absolute path outside the repository and fails closed otherwise. Credential-bearing tests wait for client hydration and disable traces, screenshots, and video. Storage, scanner, and SMTP validation remain separate release gates.
 
 ## 3. Required hosted checks
 

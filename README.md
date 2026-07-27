@@ -565,6 +565,7 @@ Useful test commands:
 ```bash
 npm run test:unit
 npm run test:integration
+npm run test:e2e
 ```
 
 Available scripts:
@@ -584,11 +585,27 @@ Available scripts:
 | `npm test` | Run Vitest |
 | `npm run test:unit` | Run unit tests only |
 | `npm run test:integration` | Run integration tests only |
+| `npm run test:e2e` | Run public browser and accessibility tests |
+| `npm run test:e2e:external` | Run authenticated Firebase/Supabase browser tests using a protected external credentials file |
 
 The sample reset requires `NODE_ENV` to be non-production,
 `ALLOW_SAMPLE_DATA_RESET=true`, a local PostgreSQL host, and a database name
 containing `dev`, `development`, `local`, `sample`, or `test`. It never resets
 storage and never prints database credentials.
+
+Authenticated browser tests require `PGLMS_E2E_CREDENTIALS_FILE` to contain an
+absolute path to the protected role-account file outside the repository. The
+external runner fails closed when the variable is missing, the path is
+relative, the file is absent, or the file is inside the repository. Password
+entry waits for the login form to hydrate, and credential-bearing tests disable
+screenshots, video, and traces.
+
+PowerShell example:
+
+```powershell
+$env:PGLMS_E2E_CREDENTIALS_FILE = "$env:LOCALAPPDATA\PGLMS\test-accounts\<protected-file>.txt"
+npm run test:e2e:external
+```
 
 Testing coverage is prepared around major project areas, including:
 
