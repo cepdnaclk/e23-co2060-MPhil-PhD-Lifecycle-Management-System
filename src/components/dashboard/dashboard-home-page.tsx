@@ -9,8 +9,8 @@ export function DashboardHomePage({
   summary: DashboardSummary;
 }) {
   return (
-    <main className="space-y-6">
+    <div className="space-y-6">
       <DashboardSummaryClient role={role} initialSummary={summary} />
-    </main>
+    </div>
   );
 }

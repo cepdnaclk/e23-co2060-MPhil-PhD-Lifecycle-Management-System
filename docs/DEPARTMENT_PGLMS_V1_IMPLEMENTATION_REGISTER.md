@@ -270,3 +270,31 @@ Checkpoint verification passed lint, type checking, Prisma schema validation,
 the 11-entry migration policy, 91 ordinary test files/329 tests with the
 guarded database case skipped, the 87-page production build, 2/2 public browser
 tests, and 8/8 authenticated browser tests.
+
+## Authenticated accessibility verification — 27 July 2026
+
+The shared dashboard shell now exposes one main landmark and one page-level
+heading across overview and workflow routes. Nested main landmarks and duplicate
+route headings were removed, a keyboard-visible skip link targets the dashboard
+content, and the shell suppresses non-essential animation and transition motion
+when `prefers-reduced-motion: reduce` is active. The shared light-theme muted
+foreground token was strengthened beyond the WCAG AA contrast threshold.
+
+Six additional credential-protected Chromium tests cover:
+
+- axe WCAG 2 A/AA and WCAG 2.1 A/AA scans for every role overview and one
+  representative workflow route per role;
+- exactly one main landmark and one `h1` on each audited page;
+- reduced-motion emulation with no active dashboard animation or transition;
+- keyboard access to the skip link, main landmark, and sidebar trigger.
+
+The six-test authenticated accessibility slice passed against synthetic
+test-only accounts without changing shared database records. Storage, scanner,
+SMTP, the mutation-heavy full lifecycle browser journey, deployment approval,
+and runtime smoke evidence remain separate release gates.
+
+Current checkpoint verification passed the Impeccable implementation detector,
+lint, type checking, Prisma validation, the 11-entry migration policy, 91
+ordinary files/329 tests with the guarded database case skipped, the 87-page
+production build, 2/2 public browser tests, and the complete 14/14
+credential-protected browser suite.

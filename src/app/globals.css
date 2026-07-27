@@ -159,7 +159,7 @@ textarea {
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
+    --muted-foreground: oklch(0.4 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(87.077% 0.06066 15.767 / 0.888);
@@ -234,4 +234,15 @@ textarea {
 @keyframes custom-load-2 {
   0% { transform: rotate(0); }
   100% { transform: rotate(-360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dashboard-shell] *,
+  [data-dashboard-shell] *::before,
+  [data-dashboard-shell] *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0s !important;
+  }
 }

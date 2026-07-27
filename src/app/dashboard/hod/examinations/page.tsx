@@ -55,7 +55,7 @@ export default async function HodExaminationsPage() {
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h1 className="text-3xl font-bold tracking-tight">Examination decisions</h1><p className="mt-2 text-muted-foreground">Confirm exact assignments and record the final HOD viva outcome.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Examination decisions</h2><p className="mt-2 text-muted-foreground">Confirm exact assignments and record the final HOD viva outcome.</p></div>
       <HodReadinessPanel
         requests={readinessRequests.map((request) => ({
           id: request.id,

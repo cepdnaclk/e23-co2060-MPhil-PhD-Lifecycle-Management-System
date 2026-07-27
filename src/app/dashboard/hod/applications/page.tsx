@@ -28,7 +28,7 @@ export default async function HodApplicationsPage() {
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h1 className="text-3xl font-bold tracking-tight">Admission decisions</h1><p className="mt-2 text-muted-foreground">Decide only after consent and two exact-version reviews.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Admission decisions</h2><p className="mt-2 text-muted-foreground">Decide only after consent and two exact-version reviews.</p></div>
       <HodApplicationDecisionPanel applications={applications.map((application) => ({
         ...application,
         programType: application.programType,

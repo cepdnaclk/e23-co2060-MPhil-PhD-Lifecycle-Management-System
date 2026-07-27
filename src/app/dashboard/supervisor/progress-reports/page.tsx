@@ -48,7 +48,7 @@ export default async function SupervisorProgressPage() {
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Assigned progress</h1>
+        <h2 className="text-3xl font-bold tracking-tight">Assigned progress</h2>
         <p className="mt-2 text-muted-foreground">
           Milestones for your currently assigned students.
         </p>

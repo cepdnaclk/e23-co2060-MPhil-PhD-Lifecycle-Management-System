@@ -19,7 +19,7 @@ export default async function ExaminerProposalsPage() {
   });
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h1 className="text-3xl font-bold tracking-tight">Assigned proposals</h1><p className="mt-2 text-muted-foreground">Review only the exact proposal version assigned to you.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Assigned proposals</h2><p className="mt-2 text-muted-foreground">Review only the exact proposal version assigned to you.</p></div>
       <AssignedProposalReviewPanel assignments={assignments.map((assignment) => ({ id: assignment.id, applicantName: assignment.application.applicantName, ...assignment.proposalVersion }))} />
     </div>
   );

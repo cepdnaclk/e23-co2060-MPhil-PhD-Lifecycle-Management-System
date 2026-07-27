@@ -49,9 +49,9 @@ export default async function AdminCompletionsPage() {
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h2 className="text-3xl font-bold tracking-tight">
           Completion, graduation, and archive
-        </h1>
+        </h2>
         <p className="mt-2 text-muted-foreground">
           Execute HOD-approved completion, record externally confirmed
           graduation, and archive completed lifecycle records as separate
