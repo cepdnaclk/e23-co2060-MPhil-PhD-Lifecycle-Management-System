@@ -81,6 +81,45 @@ describe("ApplicationForm", () => {
     vi.clearAllMocks();
     fetchMock.mockReset();
     global.fetch = fetchMock;
+    window.sessionStorage.clear();
+  });
+
+  it("autosaves typed fields to the protected server draft", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+          draftToken: "a".repeat(43),
+          expiresAt: "2026-08-02T10:00:00.000Z",
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ supervisors: [] }))
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          savedAt: "2026-08-01T10:05:00.000Z",
+          expiresAt: "2026-08-02T10:00:00.000Z",
+        }),
+      );
+
+    render(<ApplicationForm />);
+    await screen.findByText("Protected draft ready");
+    fireEvent.change(screen.getByLabelText("Full name"), {
+      target: { value: "Jane Doe" },
+    });
+
+    await waitFor(
+      () => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/applications/drafts",
+          expect.objectContaining({
+            method: "PATCH",
+            body: expect.stringContaining('"applicantName":"Jane Doe"'),
+          }),
+        );
+      },
+      { timeout: 2_000 },
+    );
+    expect(await screen.findByText(/Draft saved/)).toBeInTheDocument();
   });
 
   it("lets applicants jump back and forth with the step boxes after reaching review", async () => {

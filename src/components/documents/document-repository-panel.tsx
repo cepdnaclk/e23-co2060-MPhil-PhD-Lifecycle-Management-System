@@ -1,15 +1,29 @@
 "use client";
 
-import { secureFetch } from "@/lib/security/client-request";
-
+import {
+  Archive,
+  Download,
+  FileText,
+  RefreshCw,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+
+import { secureFetch } from "@/lib/security/client-request";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
+import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
 import {
   Select,
   SelectContent,
@@ -17,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -53,12 +66,20 @@ type DownloadResponse = {
   error?: string;
 };
 
+type RepositoryFilters = {
+  q: string;
+  category: string;
+  tag: string;
+  startDate: string;
+  endDate: string;
+};
+
 const CATEGORY_OPTIONS = [
   { value: "", label: "All categories" },
   { value: "APPLICATION_ATTACHMENT", label: "Applications" },
   { value: "PROPOSAL", label: "Proposals" },
-  { value: "ETHICS_APPROVAL", label: "Ethics Approvals" },
-  { value: "PROGRESS_REPORT", label: "Progress Reports" },
+  { value: "ETHICS_APPROVAL", label: "Ethics approvals" },
+  { value: "PROGRESS_REPORT", label: "Progress reports" },
   { value: "THESIS", label: "Theses" },
   { value: "CORRECTION", label: "Corrections" },
 ];
@@ -91,13 +112,7 @@ function formatDate(value: string | Date) {
   }).format(new Date(value));
 }
 
-function buildQueryString(input: {
-  q: string;
-  category: string;
-  tag: string;
-  startDate: string;
-  endDate: string;
-}) {
+function buildQueryString(input: RepositoryFilters) {
   const params = new URLSearchParams();
 
   if (input.q.trim()) params.set("q", input.q.trim());
@@ -109,41 +124,48 @@ function buildQueryString(input: {
   return params.toString();
 }
 
+function getDefaultFilters(role: RepositoryRole): RepositoryFilters {
+  return {
+    q: "",
+    category: role === "examiner" ? "THESIS" : "",
+    tag: "",
+    startDate: "",
+    endDate: "",
+  };
+}
+
 export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
+  const defaultFilters = useMemo(() => getDefaultFilters(role), [role]);
   const [documents, setDocuments] = useState<RepositoryDocument[]>([]);
-  const [q, setQ] = useState("");
-  const [category, setCategory] = useState(role === "examiner" ? "THESIS" : "");
-  const [tag, setTag] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [filters, setFilters] = useState<RepositoryFilters>(defaultFilters);
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<RepositoryDocument | null>(null);
 
   const categoryOptions = useMemo(
     () =>
       role === "examiner"
-        ? CATEGORY_OPTIONS.filter((option) => option.value === "" || option.value === "THESIS")
+        ? CATEGORY_OPTIONS.filter(
+            (option) => option.value === "" || option.value === "THESIS",
+          )
         : CATEGORY_OPTIONS,
     [role],
   );
 
-  const loadDocuments = useCallback(async () => {
+  const loadDocuments = useCallback(async (nextFilters: RepositoryFilters) => {
     setIsLoading(true);
+    setMessage(null);
     setError(null);
 
     try {
-      const queryString = buildQueryString({
-        q,
-        category,
-        tag,
-        startDate,
-        endDate,
-      });
-      const response = await secureFetch(`/api/documents${queryString ? `?${queryString}` : ""}`, {
-        credentials: "include",
-      });
+      const queryString = buildQueryString(nextFilters);
+      const response = await secureFetch(
+        `/api/documents${queryString ? `?${queryString}` : ""}`,
+        { credentials: "include" },
+      );
       const payload = (await response.json()) as DocumentsResponse;
 
       if (!response.ok) {
@@ -157,15 +179,27 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
     } finally {
       setIsLoading(false);
     }
-  }, [category, endDate, q, startDate, tag]);
+  }, []);
 
   useEffect(() => {
-    void loadDocuments();
-  }, [loadDocuments]);
+    void loadDocuments(defaultFilters);
+  }, [defaultFilters, loadDocuments]);
+
+  function updateFilter<Key extends keyof RepositoryFilters>(
+    key: Key,
+    value: RepositoryFilters[Key],
+  ) {
+    setFilters((current) => ({ ...current, [key]: value }));
+  }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void loadDocuments();
+    void loadDocuments(filters);
+  }
+
+  function resetFilters() {
+    setFilters(defaultFilters);
+    void loadDocuments(defaultFilters);
   }
 
   async function handleDownload(document: RepositoryDocument) {
@@ -210,6 +244,8 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
 
       setDocuments((current) => current.filter((item) => item.id !== document.id));
       setMessage(`${document.fileName} archived from the repository.`);
+      setCompletedAt(new Date());
+      setPendingArchive(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to archive document.");
     } finally {
@@ -217,60 +253,117 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
     }
   }
 
-  function resetFilters() {
-    setQ("");
-    setCategory(role === "examiner" ? "THESIS" : "");
-    setTag("");
-    setStartDate("");
-    setEndDate("");
+  function renderActions(document: RepositoryDocument) {
+    const isDownloading = busyId === `download-${document.id}`;
+    const isArchiving = busyId === `archive-${document.id}`;
+
+    return (
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleDownload(document)}
+          disabled={isDownloading || isArchiving}
+        >
+          {isDownloading ? (
+            <RefreshCw className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Download aria-hidden="true" />
+          )}
+          {isDownloading ? "Opening..." : "Download"}
+        </Button>
+        {role === "admin" && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setPendingArchive(document)}
+            disabled={isDownloading || isArchiving}
+          >
+            {isArchiving ? (
+              <RefreshCw className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Archive aria-hidden="true" />
+            )}
+            {isArchiving ? "Archiving..." : "Archive"}
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
-      <div className="flex items-center justify-between space-y-2 mb-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Document Repository</h2>
-          <p className="text-muted-foreground mt-2">
-            Search lifecycle documents, open secure downloads, and manage archive visibility.
+    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-bold tracking-tight">Document Repository</h1>
+          <p className="mt-2 text-muted-foreground">
+            Find lifecycle records and open secure document downloads.
+            {role === "admin" ? " Archived records are removed from active views." : ""}
           </p>
         </div>
-        <Badge variant="outline" className="uppercase">
-          {documents.length} visible
+        <Badge variant="outline" className="w-fit normal-case">
+          {isLoading ? "Updating results" : `${documents.length} visible`}
         </Badge>
+      </header>
+
+      <div className="space-y-3">
+        <WorkflowFeedback error={error} success={message} completedAt={completedAt} />
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive-foreground">
-          {error}
-        </div>
-      )}
-
-      {message && (
-        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
-          {message}
-        </div>
-      )}
+      <DecisionReviewDialog
+        open={Boolean(pendingArchive)}
+        onOpenChange={(open) => {
+          if (!open) setPendingArchive(null);
+        }}
+        title="Archive document"
+        description="Review the repository change before removing this document from active views."
+        subjectLabel="Document"
+        subject={pendingArchive?.fileName ?? ""}
+        decision="Archive from active repository views"
+        consequences={[
+          "The document will disappear from active repository results.",
+          "The stored file and lifecycle association will be retained.",
+          "Existing audit history remains available to authorised staff.",
+        ]}
+        reversible={false}
+        destructive
+        confirmLabel="Archive document"
+        pendingLabel="Archiving..."
+        isPending={Boolean(pendingArchive && busyId === `archive-${pendingArchive.id}`)}
+        onConfirm={() => {
+          if (pendingArchive) void handleArchive(pendingArchive);
+        }}
+      />
 
       <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSearch}>
+        <CardHeader>
+          <CardTitle>Search documents</CardTitle>
+          <CardDescription>
+            Combine any of the filters below, then search to update the repository results.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSearch} className="space-y-5">
             <div className="grid gap-5 md:grid-cols-[1.4fr_0.9fr_0.9fr]">
               <div className="space-y-2">
-                <Label>Search</Label>
+                <Label htmlFor="repository-search">Search</Label>
                 <Input
-                  value={q}
-                  onChange={(event) => setQ(event.target.value)}
-                  placeholder="Filename, title, abstract, period..."
+                  id="repository-search"
+                  value={filters.q}
+                  onChange={(event) => updateFilter("q", event.target.value)}
+                  placeholder="Filename, title, summary, or period"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label htmlFor="repository-category">Category</Label>
                 <Select
-                  value={category}
-                  onValueChange={(val: string) => setCategory(val)}
+                  value={filters.category || "all"}
+                  onValueChange={(value: string) =>
+                    updateFilter("category", value === "all" ? "" : value)
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="repository-category">
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
@@ -284,12 +377,14 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
               </div>
 
               <div className="space-y-2">
-                <Label>Tag</Label>
+                <Label htmlFor="repository-tag">Tag</Label>
                 <Select
-                  value={tag}
-                  onValueChange={(val: string) => setTag(val)}
+                  value={filters.tag || "any"}
+                  onValueChange={(value: string) =>
+                    updateFilter("tag", value === "any" ? "" : value)
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="repository-tag">
                     <SelectValue placeholder="Any tag" />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,37 +398,39 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-5 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
+            <div className="grid gap-5 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
               <div className="space-y-2">
-                <Label>From</Label>
+                <Label htmlFor="repository-start-date">From</Label>
                 <Input
+                  id="repository-start-date"
                   type="date"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
+                  value={filters.startDate}
+                  max={filters.endDate || undefined}
+                  onChange={(event) => updateFilter("startDate", event.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>To</Label>
+                <Label htmlFor="repository-end-date">To</Label>
                 <Input
+                  id="repository-end-date"
                   type="date"
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
+                  value={filters.endDate}
+                  min={filters.startDate || undefined}
+                  onChange={(event) => updateFilter("endDate", event.target.value)}
                 />
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={resetFilters}
-              >
+              <Button type="button" variant="outline" onClick={resetFilters} disabled={isLoading}>
+                <RotateCcw aria-hidden="true" />
                 Reset
               </Button>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-              >
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <RefreshCw className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Search aria-hidden="true" />
+                )}
                 {isLoading ? "Searching..." : "Search"}
               </Button>
             </div>
@@ -341,97 +438,130 @@ export function DocumentRepositoryPanel({ role }: { role: RepositoryRole }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b bg-muted/20">
+          <CardTitle>Repository results</CardTitle>
+          <CardDescription>
+            Current, role-accessible documents matching the applied filters.
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">
-              Loading Documents...
+            <div className="flex min-h-48 flex-col items-center justify-center gap-3 px-6 text-sm text-muted-foreground">
+              <RefreshCw className="size-5 animate-spin text-primary" aria-hidden="true" />
+              <span>Loading documents...</span>
             </div>
           ) : documents.length === 0 ? (
-            <div className="rounded-md border-dashed p-12 text-center">
-              <p className="text-lg font-bold">No documents found</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Try a broader search or clear the filters.
+            <div className="flex min-h-48 flex-col items-center justify-center px-6 text-center">
+              <div className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <FileText className="size-5" aria-hidden="true" />
+              </div>
+              <p className="mt-4 font-semibold text-foreground">No documents found</p>
+              <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                Try a broader search, change the date range, or reset all filters.
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[300px]">Document</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Added</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((document) => (
-                  <TableRow key={document.id}>
-                    <TableCell className="align-top">
-                      <div className="font-semibold text-foreground">
-                        {document.title ?? document.fileName}
-                      </div>
-                      <p className="mt-1 break-all text-xs font-medium text-muted-foreground">
-                        {document.fileName}
-                      </p>
-                      {document.summary && (
-                        <p className="mt-2 line-clamp-2 max-w-xl text-xs text-muted-foreground">
-                          {document.summary}
+            <>
+              <Table className="hidden table-fixed md:table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Document</TableHead>
+                    <TableHead className="w-[150px]">Category</TableHead>
+                    <TableHead className="w-[180px]">Tags</TableHead>
+                    <TableHead className="w-[100px]">Added</TableHead>
+                    <TableHead className="w-[220px] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((document) => (
+                    <TableRow key={document.id}>
+                      <TableCell className="align-top">
+                        <div className="font-semibold text-foreground">
+                          {document.title ?? document.fileName}
+                        </div>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">
+                          {document.fileName}
                         </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <Badge variant="outline">
-                        {getCategoryLabel(document.documentType)}
-                      </Badge>
-                      <p className="mt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        Version {document.version}
-                        {document.isCurrentVersion ? " - Current" : ""}
-                      </p>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex max-w-sm flex-wrap gap-1">
+                        {document.summary && (
+                          <p className="mt-2 line-clamp-2 max-w-xl text-sm text-muted-foreground">
+                            {document.summary}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <Badge variant="outline">{getCategoryLabel(document.documentType)}</Badge>
+                        <p className="mt-2 text-xs font-medium text-muted-foreground">
+                          Version {document.version}{document.isCurrentVersion ? " · Current" : ""}
+                        </p>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="flex max-w-sm flex-wrap gap-1.5">
+                          {document.tags.length > 0 ? (
+                            document.tags.map((item) => (
+                              <Badge key={`${document.id}-${item}`} variant="secondary">
+                                {item}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No tags</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top text-sm text-muted-foreground">
+                        {formatDate(document.createdAt)}
+                      </TableCell>
+                      <TableCell className="align-top">{renderActions(document)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <div className="divide-y md:hidden">
+                {documents.map((document) => (
+                  <article key={document.id} className="space-y-4 px-5 py-5">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <FileText className="size-4" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="font-semibold text-foreground">
+                          {document.title ?? document.fileName}
+                        </h2>
+                        <p className="mt-1 break-all text-xs text-muted-foreground">
+                          {document.fileName}
+                        </p>
+                      </div>
+                    </div>
+
+                    {document.summary && (
+                      <p className="line-clamp-3 text-sm text-muted-foreground">{document.summary}</p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{getCategoryLabel(document.documentType)}</Badge>
+                      <span className="text-xs text-muted-foreground">
+                        Version {document.version}{document.isCurrentVersion ? " · Current" : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(document.createdAt)}</span>
+                    </div>
+
+                    {document.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
                         {document.tags.map((item) => (
-                          <Badge
-                            key={`${document.id}-${item}`}
-                            variant="secondary"
-                            className="text-[10px]"
-                          >
+                          <Badge key={`${document.id}-mobile-${item}`} variant="secondary">
                             {item}
                           </Badge>
                         ))}
                       </div>
-                    </TableCell>
-                    <TableCell className="align-top text-sm font-medium text-muted-foreground">
-                      {formatDate(document.createdAt)}
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void handleDownload(document)}
-                          disabled={busyId === `download-${document.id}`}
-                        >
-                          {busyId === `download-${document.id}` ? "Opening..." : "Download"}
-                        </Button>
-                        {role === "admin" && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => void handleArchive(document)}
-                            disabled={busyId === `archive-${document.id}`}
-                          >
-                            {busyId === `archive-${document.id}` ? "Archiving..." : "Archive"}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    )}
+
+                    <div className="border-t pt-4">{renderActions(document)}</div>
+                  </article>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -7,11 +7,17 @@ import {
 } from "node:crypto";
 
 import {
+  Prisma,
   UploadPurpose,
   UploadSessionStatus,
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma/client";
+import {
+  applicationDraftRequestSchema,
+  applicationDraftSaveSchema,
+  type ApplicationDraftSaveInput,
+} from "@/lib/applications/schemas";
 
 const PUBLIC_DRAFT_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const PUBLIC_DRAFT_REQUEST_LIMIT = 100;
@@ -128,7 +134,11 @@ export async function requirePublicApplicationDraft(
   if (session.expiresAt <= new Date()) {
     await prisma.uploadSession.updateMany({
       where: { id: session.id, status: UploadSessionStatus.OPEN },
-      data: { status: UploadSessionStatus.EXPIRED },
+      data: {
+        status: UploadSessionStatus.EXPIRED,
+        capabilityTokenHash: null,
+        result: Prisma.DbNull,
+      },
     });
     throw new PublicDraftCapabilityError("Application draft has expired.", 410);
   }
@@ -168,4 +178,96 @@ export async function requirePublicApplicationDraft(
   }
 
   return session;
+}
+
+type StoredApplicationDraft = {
+  values: ApplicationDraftSaveInput["values"];
+  currentStep: number;
+  furthestStep: number;
+  savedAt: string;
+};
+
+function readStoredApplicationDraft(result: unknown): StoredApplicationDraft | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const candidate = (result as Record<string, unknown>).draft;
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return null;
+
+  const draft = candidate as Record<string, unknown>;
+  const parsed = applicationDraftSaveSchema.safeParse({
+    draftId: "00000000-0000-4000-8000-000000000000",
+    draftToken: "validation-only-capability-token-value",
+    values: draft.values,
+    currentStep: draft.currentStep,
+    furthestStep: draft.furthestStep,
+  });
+  if (!parsed.success || typeof draft.savedAt !== "string") return null;
+
+  return {
+    values: parsed.data.values,
+    currentStep: parsed.data.currentStep,
+    furthestStep: parsed.data.furthestStep,
+    savedAt: draft.savedAt,
+  };
+}
+
+export async function savePublicApplicationDraft(input: unknown) {
+  const parsed = applicationDraftSaveSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new PublicDraftCapabilityError(
+      parsed.error.issues[0]?.message ?? "Invalid application draft.",
+      400,
+    );
+  }
+
+  const session = await requirePublicApplicationDraft(
+    parsed.data.draftId,
+    parsed.data.draftToken,
+  );
+  const savedAt = new Date().toISOString();
+  const draft: StoredApplicationDraft = {
+    values: parsed.data.values,
+    currentStep: parsed.data.currentStep,
+    furthestStep: parsed.data.furthestStep,
+    savedAt,
+  };
+
+  await prisma.uploadSession.update({
+    where: { id: session.id },
+    data: { result: { draft } },
+  });
+
+  return { savedAt, expiresAt: session.expiresAt };
+}
+
+export async function loadPublicApplicationDraft(input: unknown) {
+  const parsed = applicationDraftRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new PublicDraftCapabilityError(
+      parsed.error.issues[0]?.message ?? "Invalid application draft.",
+      400,
+    );
+  }
+
+  const session = await requirePublicApplicationDraft(
+    parsed.data.draftId,
+    parsed.data.draftToken,
+    { consumeRequest: false },
+  );
+
+  return {
+    draft: readStoredApplicationDraft(session.result),
+    documents: session.files
+      .filter(
+        (file) =>
+          file.actualMimeType &&
+          typeof file.actualSizeBytes === "number",
+      )
+      .map((file) => ({
+        fileName: file.fileName,
+        storagePath: file.storagePath,
+        mimeType: file.actualMimeType as string,
+        sizeBytes: file.actualSizeBytes as number,
+      })),
+    expiresAt: session.expiresAt,
+  };
 }

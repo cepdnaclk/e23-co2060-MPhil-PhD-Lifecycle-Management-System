@@ -25,6 +25,10 @@ export function SessionActivityTracker() {
       return;
     }
 
+    if (!window.location.pathname.startsWith("/dashboard")) {
+      return;
+    }
+
     const clearTimer = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);

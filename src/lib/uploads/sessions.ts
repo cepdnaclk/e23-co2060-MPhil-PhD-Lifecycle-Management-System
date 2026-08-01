@@ -5,7 +5,7 @@ import {
   UploadFileStatus,
   UploadPurpose,
   UploadSessionStatus,
-  type Prisma,
+  Prisma,
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma/client";
@@ -413,7 +413,11 @@ export async function cleanupExpiredUploadSessions(now = new Date()) {
         in: [UploadSessionStatus.OPEN, UploadSessionStatus.FAILED],
       },
     },
-    data: { status: UploadSessionStatus.EXPIRED },
+    data: {
+      status: UploadSessionStatus.EXPIRED,
+      capabilityTokenHash: null,
+      result: Prisma.DbNull,
+    },
   });
 
   return {

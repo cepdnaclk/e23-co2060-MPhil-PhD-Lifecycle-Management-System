@@ -102,5 +102,13 @@ describe("staged upload session lifecycle", () => {
       },
       include: { files: { select: { storagePath: true } } },
     });
+    expect(prisma.uploadSession.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: UploadSessionStatus.EXPIRED,
+          capabilityTokenHash: null,
+        }),
+      }),
+    );
   });
 });
