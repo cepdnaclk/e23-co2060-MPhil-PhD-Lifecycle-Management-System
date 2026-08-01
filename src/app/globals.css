@@ -9,20 +9,14 @@
 }
 
 html {
-  font-size: 14px;
-}
-
-@media (min-width: 640px) {
-  html {
-    font-size: 15px;
-  }
+  font-size: 16px;
+  background: oklch(0.982 0.006 85);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  min-width: 360px;
-  background: white;
+  min-width: 320px;
   overflow-x: hidden;
 }
 
@@ -148,25 +142,25 @@ textarea {
 
 @layer base {
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --background: oklch(0.982 0.006 85);
+    --foreground: oklch(0.19 0.018 34);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.19 0.018 34);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.4 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.19 0.018 34);
+    --primary: oklch(0.36 0.115 26);
+    --primary-foreground: oklch(0.985 0.006 85);
+    --secondary: oklch(0.953 0.012 80);
+    --secondary-foreground: oklch(0.26 0.025 34);
+    --muted: oklch(0.958 0.009 82);
+    --muted-foreground: oklch(0.44 0.022 36);
+    --accent: oklch(0.94 0.026 78);
+    --accent-foreground: oklch(0.32 0.07 28);
     --destructive: oklch(87.077% 0.06066 15.767 / 0.888);
     --destructive-foreground: oklch(56.975% 0.20112 26.415);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.89 0.014 78);
+    --input: oklch(0.86 0.015 76);
+    --ring: oklch(0.46 0.11 27);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -174,14 +168,14 @@ textarea {
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 28 18% 18%;
+    --sidebar-primary: 353 48% 31%;
+    --sidebar-primary-foreground: 40 30% 98%;
+    --sidebar-accent: 38 34% 93%;
+    --sidebar-accent-foreground: 353 36% 25%;
+    --sidebar-border: 34 18% 87%;
+    --sidebar-ring: 353 48% 36%;
+    --sidebar-background: 40 30% 98%;
   }
   .dark {
     --background: oklch(0.145 0 0);
@@ -223,6 +217,10 @@ textarea {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 22%, transparent);
   }
 }
 

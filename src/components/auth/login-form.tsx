@@ -71,7 +71,7 @@ export function LoginForm() {
 
   const timeoutMessage = useMemo(() => {
     return searchParams.get("reason") === "timeout"
-      ? "Session Timedout"
+      ? "Your session timed out. Sign in again to continue."
       : null;
   }, [searchParams]);
 
@@ -150,9 +150,9 @@ export function LoginForm() {
   if (isSubmitting) {
     return (
       <div className="fixed inset-0 z-[9999] flex min-h-screen w-full items-center justify-center bg-background">
-        <div className="text-center space-y-6 flex flex-col items-center">
+        <div className="flex flex-col items-center space-y-5 text-center">
           <Loader />
-          <p className="text-2xl font-medium text-muted-foreground">
+          <p className="font-medium text-muted-foreground">
             Signing in...
           </p>
         </div>
@@ -161,30 +161,30 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="mb-8 flex flex-col items-center justify-center space-y-3 pt-4 text-center">
+    <Card className="overflow-hidden border-border/90">
+      <div className="h-1 bg-primary" aria-hidden="true" />
+      <CardContent className="p-6 sm:p-8">
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
           <Image
             src="/uni-logo.png"
             alt="University of Peradeniya"
-            width={82}
-            height={82}
+            width={72}
+            height={72}
             priority
-            className="object-contain"
+            className="h-[4.5rem] w-[4.5rem] object-contain"
           />
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <div className="mt-5 space-y-2">
+            <p className="text-sm font-semibold text-primary">
               University of Peradeniya
+            </p>
+            <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
+              Sign in to PGLMS
             </h1>
-            <p className="text-lg font-medium text-foreground">
+            <p className="text-sm font-medium text-muted-foreground">
               Faculty of Engineering
             </p>
-            <br/>
-            <p className="text-3xl font-medium text-foreground">
-              PGLMS Login
-            </p>
           </div>
-          <p className="text-lg text-muted-foreground">
+          <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
             Use your assigned institutional account to sign in.
           </p>
         </div>
@@ -212,7 +212,7 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-xl">Email</Label>
+            <Label htmlFor="email" className="text-sm font-semibold">Email address</Label>
             <Input
               id="email"
               type="email"
@@ -220,28 +220,28 @@ export function LoginForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@eng.pdn.ac.lk"
-              className="h-12 text-lg md:text-lg border-zinc-400 focus-visible:ring-zinc-900"
+              className="h-11 text-base md:text-base"
               data-testid="login-email"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-xl">Password</Label>
-            <div className="flex items-center gap-2 rounded-md border border-zinc-400 bg-transparent px-3 py-2 focus-within:ring-1 focus-within:ring-zinc-900 transition-shadow">
+            <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
+            <div className="flex h-11 items-center gap-2 rounded-lg border border-input bg-card px-3 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background">
               <input
                 id="password"
                 type={isPasswordVisible ? "text" : "password"}
                 autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="h-10 w-full bg-transparent text-lg md:text-lg text-foreground placeholder:text-muted-foreground outline-none"
+                className="h-full w-full bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
                 placeholder="Enter your password"
                 data-testid="login-password"
               />
               <button
                 type="button"
                 onClick={() => setIsPasswordVisible((current) => !current)}
-                className="shrink-0 text-base font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 rounded-md px-1 py-1 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={isPasswordVisible ? "Hide password" : "Show password"}
                 aria-pressed={isPasswordVisible}
               >
@@ -250,13 +250,13 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid gap-3 pt-3 sm:grid-cols-[auto_1fr]">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/")}
               disabled={isSubmitting}
-              className="h-12 text-lg px-8"
+              className="h-11 px-6"
             >
               Back
             </Button>
@@ -265,7 +265,7 @@ export function LoginForm() {
               type="submit"
               disabled={isSubmitting || !isHydrated}
               data-testid="login-submit"
-              className="h-12 text-lg px-10"
+              className="h-11 w-full px-8"
             >
               {isSubmitting ? "Signing in..." : "Sign in"}
             </Button>

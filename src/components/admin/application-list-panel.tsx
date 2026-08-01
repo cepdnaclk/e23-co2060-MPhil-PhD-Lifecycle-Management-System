@@ -84,15 +84,15 @@ export function ApplicationListPanel() {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Pending Applications</CardTitle>
         <CardDescription>
           A list of all recently submitted student applications waiting for your approval.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+        <Table className="hidden sm:table">
           <TableHeader>
             <TableRow>
               <TableHead>Applicant</TableHead>
@@ -127,6 +127,33 @@ export function ApplicationListPanel() {
             ))}
           </TableBody>
         </Table>
+        <div className="divide-y sm:hidden">
+          {applications.map((app) => (
+            <article key={app.id} className="px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground">{app.applicantName}</p>
+                  <p className="mt-1 break-all text-sm text-muted-foreground">
+                    {app.applicantEmail}
+                  </p>
+                </div>
+                <Badge variant="outline" className="shrink-0">
+                  {app.programType}
+                </Badge>
+              </div>
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Submitted {format(new Date(app.createdAt), "MMM d, yyyy")}
+                </p>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/dashboard/admin/applications/${app.id}`}>
+                    Review
+                  </Link>
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
