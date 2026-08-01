@@ -6,6 +6,7 @@ import {
   ProposalStatus,
   ReadinessDecision,
   RegistrationStatus,
+  ThesisStatus,
   UserRole,
   type Prisma,
 } from "@prisma/client";
@@ -473,6 +474,12 @@ export async function confirmThesisExaminerAssignment(
         endedAt: decision === AssignmentStatus.DECLINED ? new Date() : null,
       },
     });
+    if (decision === AssignmentStatus.ACCEPTED) {
+      await tx.thesis.update({
+        where: { id: assignment.thesis.id },
+        data: { status: ThesisStatus.UNDER_EXAMINATION },
+      });
+    }
     await appendLifecycleEventAndEnqueue(
       tx as never,
       {

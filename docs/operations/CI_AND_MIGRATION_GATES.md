@@ -37,7 +37,35 @@ npm run build
 npm run test:e2e
 ```
 
-`npm test` runs the unit and mocked integration suites. The real database test is intentionally skipped unless a safe `TEST_DATABASE_URL` is supplied. `npm run test:e2e` runs the public Chromium and accessibility smoke set. Tests tagged `@external` require isolated Firebase, Supabase, and authenticated test accounts and are run separately with `npm run test:e2e:external`; that command requires `PGLMS_E2E_CREDENTIALS_FILE` to point to a protected absolute path outside the repository and fails closed otherwise. Credential-bearing tests wait for client hydration and disable traces, screenshots, and video. Storage, scanner, and SMTP validation remain separate release gates.
+`npm test` runs the unit and mocked integration suites. The real database test is intentionally skipped unless a safe `TEST_DATABASE_URL` is supplied. `npm run test:e2e` runs the public Chromium and accessibility smoke set. Tests tagged `@external` require isolated Firebase, Supabase, and authenticated test accounts and are run separately with `npm run test:e2e:external`; that command requires `PGLMS_E2E_CREDENTIALS_FILE` to point to a protected absolute path outside the repository and fails closed otherwise. Credential-bearing tests wait for client hydration and disable traces, screenshots, and video.
+
+`npm run test:e2e:lifecycle` is the destructive authenticated release journey.
+It requires `PGLMS_E2E_DATABASE_URL` to resolve to a local PostgreSQL database
+named exactly `pglms_e2e_test`. The runner resets and seeds that database,
+builds before importing Prisma into its parent process, creates temporary
+Firebase role identities from the configured Admin project, uses an isolated
+application port, disables retries and SMTP, and removes the identities and
+temporary credentials in teardown. It never accepts the normal or remote
+`DATABASE_URL` and never clears Supabase Storage. Live storage, scanner, and
+SMTP validation remain separate release gates.
+
+### Malware-scanner contract
+
+Production document finalization requires `MALWARE_SCANNER_URL` and
+`MALWARE_SCANNER_TOKEN`. The scanner endpoint must use HTTPS, accept the raw
+file bytes in a `POST` request, and return a bounded JSON response containing
+the boolean decision `{ "clean": true }` for an accepted file. Requests include
+`X-File-Name`, `X-Content-SHA256`, and a bearer token. Timeouts, connection
+errors, non-success responses, malformed or oversized JSON, missing decisions,
+and every decision other than boolean `true` fail closed. The local
+`FILE_SCAN_MODE=structural` escape hatch is ignored in production.
+
+Before approving a scanner for deployment, verify the provider's handling of
+confidential research documents, retention and deletion policy, processing
+region, maximum request size of at least 50 MiB, availability target, signature
+update process, and clean/malicious test behavior. Do not send real student
+documents to public multi-engine analysis services without an approved data
+processing decision.
 
 ## 3. Required hosted checks
 
@@ -81,6 +109,7 @@ The lockfile currently overrides vulnerable transitive versions of `minimatch`, 
 - The database name must contain `test` or `ci`.
 - A non-local database host is rejected unless `ALLOW_REMOTE_TEST_DATABASE=true` is deliberately set for an isolated test environment.
 - CI uses a disposable PostgreSQL service. External E2E suites must likewise use isolated, resettable service projects and non-production recipients.
+- The lifecycle E2E runner accepts only the exact local `pglms_e2e_test` database and must not be pointed at a shared Supabase PostgreSQL instance.
 
 ## 6. Migration policy
 
