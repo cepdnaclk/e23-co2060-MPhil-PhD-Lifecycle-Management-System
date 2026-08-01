@@ -1,7 +1,9 @@
 import {
   AcademicStatus,
+  AssignmentStatus,
   MilestoneStatus,
   ReadinessDecision,
+  ThesisStatus,
   UserRole,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,6 +23,7 @@ vi.mock("@/lib/prisma/client", () => ({
 
 import {
   certifyThesisReadiness,
+  confirmThesisExaminerAssignment,
   recordHodReadinessDecision,
   requestThesisReadiness,
 } from "@/lib/examination/department-workflow";
@@ -176,6 +179,57 @@ describe("three-party thesis-readiness workflow", () => {
         hodApprovedByUserId: "hod-user-1",
         hodApprovedAt: expect.any(Date),
       }),
+    });
+  });
+
+  it("moves the thesis under examination when the HOD accepts an examiner", async () => {
+    const assignmentUpdate = vi.fn().mockResolvedValue({
+      id: "examiner-assignment-1",
+      status: AssignmentStatus.ACCEPTED,
+    });
+    const thesisUpdate = vi.fn().mockResolvedValue({
+      id: "thesis-1",
+      status: ThesisStatus.UNDER_EXAMINATION,
+    });
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        thesisExaminerAssignment: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "examiner-assignment-1",
+            status: AssignmentStatus.PENDING,
+            thesis: {
+              id: "thesis-1",
+              studentId: "student-1",
+              title: "Synthetic thesis",
+              readinessCertification: {
+                decision: ReadinessDecision.HOD_APPROVED,
+              },
+            },
+            examiner: { userId: "examiner-user-1" },
+          }),
+          update: assignmentUpdate,
+        },
+        thesis: { update: thesisUpdate },
+        lifecycleAuditEvent: { create: vi.fn().mockResolvedValue({}) },
+        outboxMessage: { create: vi.fn().mockResolvedValue({}) },
+      } as never),
+    );
+
+    await expect(
+      confirmThesisExaminerAssignment(
+        "examiner-assignment-1",
+        "ACCEPTED",
+        {
+          uid: "firebase-hod-1",
+          firebaseUid: "firebase-hod-1",
+          userId: "hod-user-1",
+          role: UserRole.HOD,
+        },
+      ),
+    ).resolves.toMatchObject({ status: AssignmentStatus.ACCEPTED });
+    expect(thesisUpdate).toHaveBeenCalledWith({
+      where: { id: "thesis-1" },
+      data: { status: ThesisStatus.UNDER_EXAMINATION },
     });
   });
 });

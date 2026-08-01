@@ -49,6 +49,7 @@ vercel.json.local
 *.stream.pdf
 /.cache
 /tmp
+/scratch/pglms-e2e-postgres-*/
 *.tmp
 *.temp
 *.pdf.tmp

@@ -298,3 +298,70 @@ lint, type checking, Prisma validation, the 11-entry migration policy, 91
 ordinary files/329 tests with the guarded database case skipped, the 87-page
 production build, 2/2 public browser tests, and the complete 14/14
 credential-protected browser suite.
+
+## Isolated mutation lifecycle verification — 1 August 2026
+
+The production-mode lifecycle runner now fails closed unless its database URL
+targets a local PostgreSQL database named exactly `pglms_e2e_test`. It resets
+and seeds only that database, creates five temporary Firebase role identities,
+maps them into synthetic records, uses an isolated application port, disables
+SMTP and browser retries, and removes the identities and temporary credential
+file during teardown. The configured Supabase database was not accessed or
+modified, and Supabase Storage was not reset.
+
+The 1/1 Chromium journey passed through one Student's complete internal
+lifecycle: every fixed milestone and primary-Supervisor approval, the
+Student/Supervisor/PG Coordinator/HOD ethics chain, thesis readiness,
+exact-version Examiner assignment, independent thesis reports and viva
+recommendations, HOD major-correction outcome, Supervisor and Examiner
+correction review, HOD correction closure and completion approval, PG
+Coordinator completion execution, confirmed graduation, and non-destructive
+archive. The browser used all five authenticated role sessions; a deterministic
+second-Examiner fixture supplied the independently required two-Examiner gate.
+Verified document metadata was fixture-backed, leaving real Storage and scanner
+behavior for its separate external-service gate.
+
+The first complete run found that HOD acceptance changed an Examiner assignment
+to `ACCEPTED` without moving the thesis from `SUBMITTED` to
+`UNDER_EXAMINATION`, causing the next valid viva-scheduling command to fail.
+The assignment decision now performs both changes atomically, and a focused
+unit regression test covers that transition.
+
+Final verification passed lint, type checking, Prisma validation, the 11-entry
+migration policy, 92 ordinary files/333 tests with the guarded real-database
+case skipped, the 87-page production build, 2/2 public browser tests, and the
+1/1 isolated authenticated lifecycle journey. Live Supabase Storage and
+malware-scanner behavior, configured SMTP delivery/rendering, migration-release
+approval, deployment, and runtime smoke/recovery evidence remain release gates.
+
+## External storage, mail, and scanner boundary — 1 August 2026
+
+The configured Supabase Storage bucket passed a live isolated round trip. A
+uniquely named temporary PDF was uploaded through a signed upload, found through
+the authenticated object API, downloaded through both authenticated and signed
+paths with matching SHA-256 checksums, and deleted. An independent prefix check
+confirmed that no connectivity-test object remained. No application database
+record or existing storage object was changed.
+
+The configured SMTP service passed authentication, server acceptance, and
+recipient inbox delivery for one approved, non-confidential test message. The
+recipient confirmed delivery using the generated test reference. Firebase Admin
+also passed a read-only connectivity check without creating or changing an
+identity.
+
+The provider-neutral malware-scanner boundary now requires authenticated HTTPS
+in production, caps scanner JSON responses at 4 KiB, and converts connection,
+timeout, non-success, malformed-response, missing-decision, and unsafe-decision
+conditions into fail-closed upload verification errors. The scanner request
+continues to bind the raw bytes to the encoded filename and server-computed
+SHA-256 checksum. Nine focused upload-verification tests, lint, and type
+checking passed after the hardening.
+
+The final repository verification passed 92 ordinary test files and 338 tests
+with the guarded real-database case skipped, plus lint, type checking, and the
+87-page production build.
+
+A deployed scanner endpoint is still required. Its privacy/retention terms,
+processing region, 50 MiB request support, signature-update process,
+availability, and clean/malicious behavior must be approved and tested before
+production upload finalization is enabled.

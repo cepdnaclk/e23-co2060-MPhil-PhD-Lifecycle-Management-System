@@ -7,6 +7,8 @@ import { downloadStorageObject } from "@/lib/storage";
 const MAX_ARCHIVE_ENTRIES = 500;
 const MAX_ARCHIVE_UNCOMPRESSED_BYTES = 250 * 1024 * 1024;
 const MAX_COMPRESSION_RATIO = 100;
+const MAX_SCANNER_RESPONSE_BYTES = 4 * 1024;
+const MALWARE_SCANNER_TIMEOUT_MS = 30_000;
 const ZIP_END_OF_CENTRAL_DIRECTORY = 0x06054b50;
 const ZIP_CENTRAL_DIRECTORY_FILE = 0x02014b50;
 
@@ -198,11 +200,107 @@ function assertSafeZip(buffer: Buffer) {
   }
 }
 
+function getMalwareScannerConfig() {
+  const configuredUrl = process.env.MALWARE_SCANNER_URL?.trim();
+  const token = process.env.MALWARE_SCANNER_TOKEN?.trim();
+
+  if (!configuredUrl) {
+    throw new UploadVerificationError(
+      "Malware scanning is required but MALWARE_SCANNER_URL is not configured.",
+    );
+  }
+
+  let url: URL;
+  try {
+    url = new URL(configuredUrl);
+  } catch {
+    throw new UploadVerificationError(
+      "MALWARE_SCANNER_URL must be a valid HTTP(S) URL.",
+    );
+  }
+
+  if (
+    (url.protocol !== "https:" && url.protocol !== "http:") ||
+    url.username ||
+    url.password ||
+    url.hash
+  ) {
+    throw new UploadVerificationError(
+      "MALWARE_SCANNER_URL must be an HTTP(S) URL without credentials or a fragment.",
+    );
+  }
+
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new UploadVerificationError(
+      "Production malware scanning requires an HTTPS endpoint.",
+    );
+  }
+
+  if (process.env.NODE_ENV === "production" && !token) {
+    throw new UploadVerificationError(
+      "Production malware scanning requires MALWARE_SCANNER_TOKEN.",
+    );
+  }
+
+  return { url: url.toString(), token };
+}
+
+async function readScannerResponse(response: Response) {
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_SCANNER_RESPONSE_BYTES
+  ) {
+    throw new UploadVerificationError(
+      "The malware scanner returned an invalid response.",
+    );
+  }
+
+  if (!response.body) {
+    throw new UploadVerificationError(
+      "The malware scanner returned an invalid response.",
+    );
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_SCANNER_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new UploadVerificationError(
+          "The malware scanner returned an invalid response.",
+        );
+      }
+
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
+  } catch {
+    throw new UploadVerificationError(
+      "The malware scanner returned an invalid response.",
+    );
+  }
+}
+
 async function assertMalwareScanClean(
   buffer: Buffer,
   input: { fileName: string; checksumSha256: string },
 ) {
-  const scannerUrl = process.env.MALWARE_SCANNER_URL;
+  const scannerUrl = process.env.MALWARE_SCANNER_URL?.trim();
   const structuralOnly =
     process.env.NODE_ENV !== "production" &&
     (process.env.FILE_SCAN_MODE === "structural" || !scannerUrl);
@@ -211,32 +309,42 @@ async function assertMalwareScanClean(
     return;
   }
 
-  if (!scannerUrl) {
+  const scanner = getMalwareScannerConfig();
+  let response: Response;
+
+  try {
+    response = await fetch(scanner.url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/octet-stream",
+        "X-File-Name": encodeURIComponent(input.fileName),
+        "X-Content-SHA256": input.checksumSha256,
+        ...(scanner.token
+          ? { Authorization: `Bearer ${scanner.token}` }
+          : {}),
+      },
+      body: buffer,
+      redirect: "error",
+      signal: AbortSignal.timeout(MALWARE_SCANNER_TIMEOUT_MS),
+    });
+  } catch {
     throw new UploadVerificationError(
-      "Malware scanning is required but MALWARE_SCANNER_URL is not configured.",
+      "The malware scanner could not verify the file.",
     );
   }
-
-  const response = await fetch(scannerUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/octet-stream",
-      "X-File-Name": encodeURIComponent(input.fileName),
-      "X-Content-SHA256": input.checksumSha256,
-      ...(process.env.MALWARE_SCANNER_TOKEN
-        ? { Authorization: `Bearer ${process.env.MALWARE_SCANNER_TOKEN}` }
-        : {}),
-    },
-    body: buffer,
-    signal: AbortSignal.timeout(30_000),
-  });
 
   if (!response.ok) {
     throw new UploadVerificationError("The malware scanner could not verify the file.");
   }
 
-  const result = (await response.json()) as { clean?: boolean };
-  if (result.clean !== true) {
+  const result = await readScannerResponse(response);
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("clean" in result) ||
+    result.clean !== true
+  ) {
     throw new UploadVerificationError(
       "The uploaded file failed the malware safety check.",
     );

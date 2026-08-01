@@ -587,6 +587,7 @@ Available scripts:
 | `npm run test:integration` | Run integration tests only |
 | `npm run test:e2e` | Run public browser and accessibility tests |
 | `npm run test:e2e:external` | Run authenticated Firebase/Supabase browser tests using a protected external credentials file |
+| `npm run test:e2e:lifecycle` | Reset the exact local `pglms_e2e_test` database and run the authenticated mutation-heavy lifecycle journey |
 
 The sample reset requires `NODE_ENV` to be non-production,
 `ALLOW_SAMPLE_DATA_RESET=true`, a local PostgreSQL host, and a database name
@@ -606,6 +607,23 @@ PowerShell example:
 $env:PGLMS_E2E_CREDENTIALS_FILE = "$env:LOCALAPPDATA\PGLMS\test-accounts\<protected-file>.txt"
 npm run test:e2e:external
 ```
+
+The lifecycle journey uses Firebase Admin credentials from `.env`, creates five
+temporary role accounts, maps them only into freshly seeded local synthetic
+records, builds the production app, and removes the accounts and temporary
+credentials after the run. It refuses a remote database or any database name
+other than `pglms_e2e_test`, disables outbound SMTP, and never resets Supabase
+Storage. Configure the dedicated database and run it with:
+
+```powershell
+$env:PGLMS_E2E_DATABASE_URL = "postgresql://pglms:<local-password>@127.0.0.1:5432/pglms_e2e_test?schema=public"
+npm run test:e2e:lifecycle
+```
+
+The journey uses fixture-backed verified document metadata so lifecycle state
+transitions can be tested without leaving objects in shared storage. Live
+Supabase Storage, malware-scanner, and SMTP verification remain separate
+release gates.
 
 Testing coverage is prepared around major project areas, including:
 
