@@ -174,7 +174,9 @@ session-activity*.log
 
 # Agent workspace customizations & output directories
 /.agents/
+/.codex/
 /output/
+.playwright-cli/
 *.tex
 *.fls
 *.fdb_latexmk

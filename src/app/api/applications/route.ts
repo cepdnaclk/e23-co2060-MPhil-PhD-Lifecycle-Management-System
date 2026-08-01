@@ -20,6 +20,7 @@ export async function POST(request: Request) {
         application: {
           id: application.id,
           status: application.status,
+          submittedAt: application.createdAt,
         },
       },
       { status: 201 },

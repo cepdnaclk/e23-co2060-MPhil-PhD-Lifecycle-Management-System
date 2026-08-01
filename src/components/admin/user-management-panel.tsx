@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { UserPlus } from "lucide-react";
+import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
+import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
 
 const adminManagedRoles = [
   "STUDENT",
@@ -88,6 +90,9 @@ export function UserManagementPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+  const [pendingDeactivation, setPendingDeactivation] = useState<AdminUserListItem | null>(null);
   const [formValues, setFormValues] = useState({
     email: "",
     displayName: "",
@@ -178,13 +183,14 @@ export function UserManagementPanel() {
     }
   }
 
-  async function handleDeactivate(userId: string) {
+  async function handleDeactivate(user: AdminUserListItem) {
+    setDeactivatingId(user.id);
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
       const headers = await getAuthorizationHeader();
-      const response = await secureFetch(`/api/admin/users/${userId}/deactivate`, {
+      const response = await secureFetch(`/api/admin/users/${user.id}/deactivate`, {
         method: "PATCH",
         headers,
       });
@@ -197,9 +203,13 @@ export function UserManagementPanel() {
       }
 
       setSuccessMessage("User account deactivated.");
+      setCompletedAt(new Date());
+      setPendingDeactivation(null);
       await loadUsers(selectedRole);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to deactivate the user.");
+    } finally {
+      setDeactivatingId(null);
     }
   }
 
@@ -237,11 +247,12 @@ export function UserManagementPanel() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Label htmlFor="user-role-filter" className="sr-only">Filter users by role</Label>
           <Select
             value={selectedRole}
             onValueChange={(value) => setSelectedRole(value as AdminManagedRole)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger id="user-role-filter" className="w-[180px]">
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
@@ -260,19 +271,7 @@ export function UserManagementPanel() {
         </div>
       </div>
 
-      {errorMessage && (
-        <div className="flex items-center gap-2 rounded-md bg-destructive/15 p-3 text-sm text-destructive-foreground">
-          <AlertCircle className="h-4 w-4" />
-          <p>{errorMessage}</p>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-600 dark:bg-green-950/50 dark:text-green-400">
-          <CheckCircle2 className="h-4 w-4" />
-          <p>{successMessage}</p>
-        </div>
-      )}
+      <WorkflowFeedback error={errorMessage} success={successMessage} completedAt={completedAt} />
 
       <Card>
         <CardHeader className="px-6 py-4">
@@ -336,11 +335,13 @@ export function UserManagementPanel() {
                       <Button
                         variant="destructive"
                         size="sm"
-                        disabled={!user.isActive}
-                        onClick={() => void handleDeactivate(user.id)}
+                        disabled={!user.isActive || deactivatingId === user.id}
+                        aria-describedby={!user.isActive ? `deactivate-help-${user.id}` : undefined}
+                        onClick={() => setPendingDeactivation(user)}
                       >
-                        Deactivate
+                        {deactivatingId === user.id ? "Deactivating..." : "Deactivate"}
                       </Button>
+                      {!user.isActive ? <span id={`deactivate-help-${user.id}`} className="sr-only">This account is already inactive.</span> : null}
                     </TableCell>
                   </TableRow>
                 ))
@@ -383,12 +384,12 @@ export function UserManagementPanel() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>System Role</Label>
+                <Label htmlFor="create-user-role">System Role</Label>
                 <Select
                   value={formValues.role}
                   onValueChange={(val) => setFormValues({ ...formValues, role: val as AdminManagedRole })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="create-user-role">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -403,12 +404,12 @@ export function UserManagementPanel() {
 
               {formValues.role === "STUDENT" ? (
                 <div className="space-y-2">
-                  <Label>Program</Label>
+                  <Label htmlFor="create-user-programme">Programme</Label>
                   <Select
                     value={formValues.programType}
                     onValueChange={(val) => setFormValues({ ...formValues, programType: val })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="create-user-programme">
                       <SelectValue placeholder="Select program" />
                     </SelectTrigger>
                     <SelectContent>
@@ -444,6 +445,31 @@ export function UserManagementPanel() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <DecisionReviewDialog
+        open={Boolean(pendingDeactivation)}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeactivation(null);
+        }}
+        title="Deactivate user account"
+        description="Review the affected account and access change before continuing."
+        subjectLabel="User"
+        subject={pendingDeactivation ? `${pendingDeactivation.displayName} (${pendingDeactivation.email})` : ""}
+        decision="Deactivate system access"
+        consequences={[
+          "The user will no longer be able to sign in.",
+          "Existing academic records and audit history will be retained.",
+          "Restoring access requires a separate administrator operation outside this screen.",
+        ]}
+        reversible={false}
+        destructive
+        confirmLabel="Deactivate account"
+        pendingLabel="Deactivating..."
+        isPending={Boolean(pendingDeactivation && deactivatingId === pendingDeactivation.id)}
+        onConfirm={() => {
+          if (pendingDeactivation) void handleDeactivate(pendingDeactivation);
+        }}
+      />
     </div>
   );
 }

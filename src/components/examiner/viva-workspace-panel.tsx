@@ -51,6 +51,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
+import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
 
 export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
   const router = useRouter();
@@ -60,6 +62,8 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
   const [rationales, setRationales] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
+  const [pendingRecommendation, setPendingRecommendation] = useState<ExaminerViva | null>(null);
 
   const outcomes = ["PASS", "MINOR_CORRECTIONS", "MAJOR_CORRECTIONS", "FAIL"] as const;
   const outcomeLabels: Record<string, string> = {
@@ -92,6 +96,8 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
       };
       if (!response.ok) throw new Error(payload.error ?? "Unable to submit viva recommendation.");
       setMessage("Independent viva recommendation submitted to the Head of Department.");
+      setCompletedAt(new Date());
+      setPendingRecommendation(null);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to submit viva recommendation.");
@@ -139,17 +145,32 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive-foreground">
-          <p>{error}</p>
-        </div>
-      )}
+      <WorkflowFeedback error={error} success={message} completedAt={completedAt} />
 
-      {message && (
-        <div className="rounded-md border border-green-500/50 bg-green-500/10 p-4 text-green-600 dark:text-green-400">
-          <p>{message}</p>
-        </div>
-      )}
+      <DecisionReviewDialog
+        open={Boolean(pendingRecommendation)}
+        onOpenChange={(open) => {
+          if (!open) setPendingRecommendation(null);
+        }}
+        title="Submit viva recommendation"
+        description="Your independent recommendation becomes part of the examination record."
+        subjectLabel="Candidate and thesis"
+        subject={pendingRecommendation ? `${pendingRecommendation.thesis.student.user.displayName} — ${pendingRecommendation.thesis.title}` : ""}
+        decision={pendingRecommendation ? outcomeLabels[selectedOutcome[pendingRecommendation.id] ?? ""] ?? "" : ""}
+        rationale={pendingRecommendation ? rationales[pendingRecommendation.id] : null}
+        consequences={[
+          "The Head of Department will receive this recommendation for the final outcome decision.",
+          "The recommendation and rationale will be retained in the lifecycle audit record.",
+          "The final HOD outcome is recorded separately after all required recommendations are available.",
+        ]}
+        reversible={false}
+        confirmLabel="Submit recommendation"
+        pendingLabel="Submitting..."
+        isPending={Boolean(pendingRecommendation && busyId === pendingRecommendation.id)}
+        onConfirm={() => {
+          if (pendingRecommendation) void recordRecommendation(pendingRecommendation.id);
+        }}
+      />
 
       <div className="grid gap-6">
         {vivas.length === 0 ? (
@@ -217,13 +238,13 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                     {!isRecorded && (
                       <div className="flex flex-col sm:flex-row items-end gap-4 flex-1">
                         <div className="w-full sm:max-w-xs space-y-1.5 ml-auto">
-                          <Label>Recommendation</Label>
+                          <Label htmlFor={`recommendation-${viva.id}`}>Recommendation</Label>
                           <Select
                             value={selectedOutcome[viva.id] ?? ""}
                             onValueChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
                             disabled={!canRecord}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger id={`recommendation-${viva.id}`} aria-describedby={!canRecord ? `recommendation-help-${viva.id}` : undefined}>
                               <SelectValue placeholder="Select..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -236,8 +257,10 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                           </Select>
                         </div>
                         <div className="w-full space-y-1.5">
-                          <Label>Rationale</Label>
+                          <Label htmlFor={`rationale-${viva.id}`}>Rationale</Label>
                           <Textarea
+                            id={`rationale-${viva.id}`}
+                            aria-describedby={!canRecord ? `recommendation-help-${viva.id}` : `rationale-help-${viva.id}`}
                             value={rationales[viva.id] ?? ""}
                             onChange={(event) =>
                               setRationales((current) => ({
@@ -248,6 +271,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                             disabled={!canRecord}
                             placeholder="Explain the basis for your recommendation."
                           />
+                          <p id={`rationale-help-${viva.id}`} className="text-xs text-muted-foreground">Use at least 20 characters and explain the academic basis.</p>
                         </div>
                         <Button
                           disabled={
@@ -256,10 +280,12 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                             !selectedOutcome[viva.id] ||
                             (rationales[viva.id]?.trim().length ?? 0) < 20
                           }
-                          onClick={() => void recordRecommendation(viva.id)}
+                          aria-describedby={!canRecord ? `recommendation-help-${viva.id}` : undefined}
+                          onClick={() => setPendingRecommendation(viva)}
                         >
                           {busyId === viva.id ? "Submitting..." : "Submit Recommendation"}
                         </Button>
+                        {!canRecord ? <p id={`recommendation-help-${viva.id}`} className="sr-only">A recommendation is available only while the thesis is under examination.</p> : null}
                       </div>
                     )}
                   </div>

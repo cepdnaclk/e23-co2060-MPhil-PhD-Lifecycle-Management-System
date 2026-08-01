@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { 
   LogOut, 
@@ -34,6 +35,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -62,31 +64,67 @@ export function DashboardRoleLayout({
   }
 
   const navItems = getNavItems(role);
+  const overviewHref = `/dashboard/${role}`;
+  const currentPageLabel =
+    navItems.find((item) => isActive(item.href))?.label ?? "Overview";
+  const pageHeading = pathname === overviewHref ? heading : currentPageLabel;
 
   return (
-    <SidebarProvider data-dashboard-shell>
+    <SidebarProvider
+      data-dashboard-shell
+      className="bg-sidebar"
+      style={{ "--sidebar-width": "17rem" } as CSSProperties}
+    >
       <a
         href="#dashboard-content"
         className="sr-only z-[100] rounded-md bg-background px-4 py-2 text-sm font-semibold text-foreground shadow-md focus:fixed focus:left-4 focus:top-4 focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to dashboard content
       </a>
-      <Sidebar variant="inset">
-        <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2 font-semibold">
-            <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-              {heading.charAt(0)}
+      <Sidebar
+        variant="inset"
+        className="[&>[data-sidebar=sidebar]]:border [&>[data-sidebar=sidebar]]:border-sidebar-border"
+      >
+        <SidebarHeader className="border-b border-sidebar-border p-3">
+          <Link
+            href={overviewHref}
+            className="flex items-center gap-3 rounded-lg px-2 py-2 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          >
+            <Image
+              src="/uni-logo.png"
+              alt=""
+              width={36}
+              height={36}
+              className="h-9 w-9 shrink-0 object-contain"
+              priority
+            />
+            <div className="min-w-0 leading-tight">
+              <p className="font-semibold tracking-[-0.02em] text-sidebar-foreground">
+                PGLMS
+              </p>
+              <p className="truncate text-xs text-sidebar-foreground/75">
+                {heading}
+              </p>
             </div>
-            {heading}
-          </div>
+          </Link>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
+          <SidebarGroup className="px-3 py-4">
+            <SidebarGroupLabel className="px-3 font-semibold">
+              Workspace
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive(`/dashboard/${role}`)}>
-                    <Link href={`/dashboard/${role}`}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(overviewHref)}
+                    className="h-10 gap-3 rounded-lg px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                  >
+                    <Link
+                      href={overviewHref}
+                      aria-current={isActive(overviewHref) ? "page" : undefined}
+                    >
                       <LayoutDashboard />
                       <span>Overview</span>
                     </Link>
@@ -94,8 +132,15 @@ export function DashboardRoleLayout({
                 </SidebarMenuItem>
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive(item.href)}>
-                      <Link href={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      className="h-10 gap-3 rounded-lg px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                    >
+                      <Link
+                        href={item.href}
+                        aria-current={isActive(item.href) ? "page" : undefined}
+                      >
                         <item.icon />
                         <span>{item.label}</span>
                       </Link>
@@ -106,12 +151,15 @@ export function DashboardRoleLayout({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="border-t border-sidebar-border p-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <DashboardNotificationsMenu
                 trigger={
-                  <SidebarMenuButton tooltip="Notifications">
+                  <SidebarMenuButton
+                    tooltip="Notifications"
+                    className="h-10 gap-3 rounded-lg px-3"
+                  >
                     <Bell />
                     <span>Notifications</span>
                   </SidebarMenuButton>
@@ -119,27 +167,33 @@ export function DashboardRoleLayout({
               />
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/logout"><LogOut /> Sign Out</Link>
+              <SidebarMenuButton asChild className="h-10 gap-3 rounded-lg px-3">
+                <Link href="/logout"><LogOut /> <span>Sign Out</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset id="dashboard-content" tabIndex={-1}>
-        <Header>
-          <div className="flex items-center gap-2 max-md:scale-125">
-            <SidebarTrigger variant='outline' />
-            <Separator orientation='vertical' className='h-6 ml-2 mr-2' />
+      <SidebarInset
+        id="dashboard-content"
+        tabIndex={-1}
+        className="overflow-hidden bg-background"
+      >
+        <Header fixed className="border-b border-border/80 bg-background/95">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger variant="outline" className="h-9 w-9" />
+            <Separator orientation="vertical" className="mx-2 h-6" />
           </div>
-          <div className="flex-1">
-            <h1 className="text-sm font-medium">{heading}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-sm font-semibold tracking-[-0.01em] sm:text-base">
+              {pageHeading}
+            </h1>
           </div>
-          <div className="ml-auto flex items-center space-x-4">
+          <div className="ml-auto flex items-center">
             <ProfileDropdown role={role} />
           </div>
         </Header>
-        <div className="mx-auto w-full max-w-7xl px-4 py-6">
+        <div className="mx-auto w-full max-w-[94rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {children}
         </div>
       </SidebarInset>

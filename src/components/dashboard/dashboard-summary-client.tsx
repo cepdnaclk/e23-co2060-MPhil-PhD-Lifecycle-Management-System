@@ -1,11 +1,13 @@
 "use client";
 
 import useSWR from "swr";
+import { RefreshCw } from "lucide-react";
 
 import {
   DashboardSkeletonGrid,
   DashboardSummaryPanel,
 } from "@/components/dashboard/dashboard-summary-panel";
+import { Button } from "@/components/ui/button";
 import type { DashboardRole, DashboardSummary } from "@/types/dashboard";
 
 async function fetchDashboardSummary(url: string): Promise<DashboardSummary> {
@@ -46,17 +48,21 @@ export function DashboardSummaryClient({
     return (
       <div className="space-y-4">
         <DashboardSkeletonGrid />
-        <div className="rounded-[1.75rem] border border-gray-300 bg-transparent px-5 py-4">
-          <p className="text-base font-medium text-black">
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-5 sm:px-6">
+          <p className="font-semibold text-destructive-foreground">
             We could not refresh the latest dashboard metrics.
           </p>
-          <button
-            type="button"
+          <p className="mt-1 text-sm text-destructive-foreground/80">
+            Check your connection and try loading the latest data again.
+          </p>
+          <Button
             onClick={() => void mutate()}
-            className="mt-3 rounded-2xl border border-gray-300 px-4 py-2 text-base font-semibold text-black transition hover:border-gray-300"
+            variant="outline"
+            className="mt-4 border-destructive/30 bg-background text-destructive-foreground hover:bg-destructive/10"
           >
+            <RefreshCw aria-hidden="true" />
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );

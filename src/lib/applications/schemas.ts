@@ -73,6 +73,31 @@ export const applicationSubmissionSchema = z.object({
     .max(10, "Upload at most 10 supporting documents."),
 });
 
+export const applicationDraftValuesSchema = z.object({
+  applicantName: sanitizedString.max(200),
+  applicantEmail: sanitizedString.max(320),
+  applicantPhone: sanitizedString.max(50),
+  programType: z.enum(applicationProgramTypes),
+  studyMode: z.enum(applicationStudyModes),
+  proposalTitle: sanitizedString.max(500),
+  proposalAbstract: sanitizedString.max(20_000),
+  proposedSupervisorId: sanitizedString.max(200),
+  researchArea: sanitizedString.max(500),
+  supervisor: sanitizedString.max(200),
+  statementOfPurpose: sanitizedString.max(20_000),
+});
+
+export const applicationDraftRequestSchema = z.object({
+  draftId: z.string().uuid("A valid application draft ID is required."),
+  draftToken: sanitizedString.min(32, "A draft capability token is required."),
+});
+
+export const applicationDraftSaveSchema = applicationDraftRequestSchema.extend({
+  values: applicationDraftValuesSchema,
+  currentStep: z.number().int().min(0).max(3),
+  furthestStep: z.number().int().min(0).max(3),
+});
+
 export const applicationUploadRequestSchema = z.object({
   draftId: z.string().uuid("A valid application draft ID is required."),
   draftToken: sanitizedString.min(32, "A draft capability token is required."),
@@ -82,6 +107,8 @@ export const applicationUploadRequestSchema = z.object({
 });
 
 export type ApplicationSubmissionInput = z.infer<typeof applicationSubmissionSchema>;
+export type ApplicationDraftValues = z.infer<typeof applicationDraftValuesSchema>;
+export type ApplicationDraftSaveInput = z.infer<typeof applicationDraftSaveSchema>;
 export type ApplicationUploadRequest = z.infer<typeof applicationUploadRequestSchema>;
 export type ApplicationDocumentDeleteRequest = z.infer<
   typeof applicationDocumentDeleteRequestSchema

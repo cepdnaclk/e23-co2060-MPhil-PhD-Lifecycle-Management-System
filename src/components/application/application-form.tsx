@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { z } from "zod";
+import { CheckCircle2 } from "lucide-react";
 
 import {
   applicationProgramTypes,
   applicationStudyModes,
   applicationSubmissionSchema,
+  type ApplicationDraftValues,
 } from "@/lib/applications/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,20 @@ type UploadedSupportingDocument = {
 };
 
 const stepLabels = ["Applicant", "Research", "Documents", "Review"] as const;
+const DRAFT_SESSION_KEY = "pglms.application-draft.v1";
+const INITIAL_FORM_VALUES: ApplicationDraftValues = {
+  applicantName: "",
+  applicantEmail: "",
+  applicantPhone: "",
+  programType: "MPHIL",
+  studyMode: "FULL_TIME",
+  proposalTitle: "",
+  proposalAbstract: "",
+  proposedSupervisorId: "",
+  researchArea: "",
+  supervisor: "",
+  statementOfPurpose: "",
+};
 
 const applicantStepSchema = applicationSubmissionSchema.pick({
   applicantName: true,
@@ -54,6 +70,14 @@ const documentsStepSchema = z.object({
   supportingDocuments: applicationSubmissionSchema.shape.supportingDocuments,
 });
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+  return message ? (
+    <p id={id} className="text-sm text-destructive">
+      {message}
+    </p>
+  ) : null;
+}
+
 export function ApplicationForm() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -64,24 +88,22 @@ export function ApplicationForm() {
   const [isRemovingDocument, setIsRemovingDocument] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [saveStatus, setSaveStatus] = useState<
+    "initializing" | "saved" | "saving" | "unsaved" | "error"
+  >("initializing");
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [draftExpiresAt, setDraftExpiresAt] = useState<string | null>(null);
   const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
   const [documents, setDocuments] = useState<UploadedSupportingDocument[]>([]);
   const [supervisors, setSupervisors] = useState<
     Array<{ id: string; displayName: string; specialization: string | null }>
   >([]);
-  const [formValues, setFormValues] = useState({
-    applicantName: "",
-    applicantEmail: "",
-    applicantPhone: "",
-    programType: "MPHIL" as (typeof applicationProgramTypes)[number],
-    studyMode: "FULL_TIME" as (typeof applicationStudyModes)[number],
-    proposalTitle: "",
-    proposalAbstract: "",
-    proposedSupervisorId: "",
-    researchArea: "",
-    supervisor: "",
-    statementOfPurpose: "",
-  });
+  const [formValues, setFormValues] = useState<ApplicationDraftValues>(INITIAL_FORM_VALUES);
+  const draftReadyRef = useRef(false);
+  const lastSavedSnapshotRef = useRef("");
+  const latestSnapshotRef = useRef("");
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const currentStepLabel = useMemo(() => stepLabels[step], [step]);
   const isNavigationBusy =
@@ -93,23 +115,87 @@ export function ApplicationForm() {
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/applications/drafts", { method: "POST" })
-      .then(async (response) => {
-        const payload = (await response.json()) as {
-          draftId?: string;
-          draftToken?: string;
-          error?: string;
-        };
-        if (!response.ok || !payload.draftId || !payload.draftToken) {
-          throw new Error(payload.error ?? "Unable to initialize the application draft.");
+    void (async () => {
+      const storedCapability = window.sessionStorage.getItem(DRAFT_SESSION_KEY);
+      if (storedCapability) {
+        try {
+          const capability = JSON.parse(storedCapability) as {
+            draftId?: string;
+            draftToken?: string;
+          };
+          if (capability.draftId && capability.draftToken) {
+            const response = await fetch("/api/applications/drafts", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(capability),
+            });
+            const payload = (await response.json()) as {
+              draft?: {
+                values: typeof formValues;
+                currentStep: number;
+                furthestStep: number;
+                savedAt: string;
+              } | null;
+              documents?: UploadedSupportingDocument[];
+              expiresAt?: string;
+            };
+            if (response.ok) {
+              if (!active) return;
+              setDraftId(capability.draftId);
+              setDraftToken(capability.draftToken);
+              setDraftExpiresAt(payload.expiresAt ?? null);
+              if (payload.draft) {
+                setFormValues(payload.draft.values);
+                setStep(payload.draft.currentStep);
+                setFurthestStep(payload.draft.furthestStep);
+                setSavedAt(payload.draft.savedAt);
+                lastSavedSnapshotRef.current = JSON.stringify({
+                  values: payload.draft.values,
+                  currentStep: payload.draft.currentStep,
+                  furthestStep: payload.draft.furthestStep,
+                });
+              }
+              setDocuments(payload.documents ?? []);
+              draftReadyRef.current = true;
+              setSaveStatus("saved");
+              return;
+            }
+          }
+        } catch {
+          // Invalid or expired session capabilities are replaced below.
         }
-        if (active) {
-          setDraftId(payload.draftId);
-          setDraftToken(payload.draftToken);
-        }
-      })
+        window.sessionStorage.removeItem(DRAFT_SESSION_KEY);
+      }
+
+      const response = await fetch("/api/applications/drafts", { method: "POST" });
+      const payload = (await response.json()) as {
+        draftId?: string;
+        draftToken?: string;
+        expiresAt?: string;
+        error?: string;
+      };
+      if (!response.ok || !payload.draftId || !payload.draftToken) {
+        throw new Error(payload.error ?? "Unable to initialize the application draft.");
+      }
+      if (!active) return;
+      window.sessionStorage.setItem(
+        DRAFT_SESSION_KEY,
+        JSON.stringify({ draftId: payload.draftId, draftToken: payload.draftToken }),
+      );
+      setDraftId(payload.draftId);
+      setDraftToken(payload.draftToken);
+      setDraftExpiresAt(payload.expiresAt ?? null);
+      lastSavedSnapshotRef.current = JSON.stringify({
+        values: INITIAL_FORM_VALUES,
+        currentStep: 0,
+        furthestStep: 0,
+      });
+      draftReadyRef.current = true;
+      setSaveStatus("saved");
+    })()
       .catch((error) => {
         if (active) {
+          setSaveStatus("error");
           setErrorMessage(
             error instanceof Error
               ? error.message
@@ -121,6 +207,64 @@ export function ApplicationForm() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!draftReadyRef.current || !draftId || !draftToken || isSubmitting) return;
+
+    const snapshot = JSON.stringify({
+      values: formValues,
+      currentStep: step,
+      furthestStep,
+    });
+    latestSnapshotRef.current = snapshot;
+    if (snapshot === lastSavedSnapshotRef.current) return;
+
+    setSaveStatus("unsaved");
+    const timeout = window.setTimeout(() => {
+      setSaveStatus("saving");
+      saveQueueRef.current = saveQueueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          const response = await fetch("/api/applications/drafts", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              draftId,
+              draftToken,
+              values: formValues,
+              currentStep: step,
+              furthestStep,
+            }),
+          });
+          const payload = (await response.json()) as {
+            savedAt?: string;
+            expiresAt?: string;
+            error?: string;
+          };
+          if (!response.ok || !payload.savedAt) {
+            throw new Error(payload.error ?? "Unable to save the application draft.");
+          }
+          lastSavedSnapshotRef.current = snapshot;
+          if (latestSnapshotRef.current === snapshot) {
+            setSavedAt(payload.savedAt);
+            setDraftExpiresAt(payload.expiresAt ?? null);
+            setSaveStatus("saved");
+          }
+        })
+        .catch(() => setSaveStatus("error"));
+    }, 800);
+
+    return () => window.clearTimeout(timeout);
+  }, [draftId, draftToken, formValues, furthestStep, isSubmitting, step]);
+
+  useEffect(() => {
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      if (saveStatus === "saved" || saveStatus === "initializing") return;
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [saveStatus]);
 
   useEffect(() => {
     void fetch("/api/public/supervisors", { cache: "no-store" })
@@ -145,10 +289,33 @@ export function ApplicationForm() {
 
   function updateField(name: keyof typeof formValues, value: string) {
     setIsReviewConfirmed(false);
+    setFieldErrors((current) => {
+      if (!current[name]) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
     setFormValues((current) => ({
       ...current,
       [name]: value,
     }));
+  }
+
+  function showValidationErrors(error: z.ZodError) {
+    const errors = Object.fromEntries(
+      error.issues
+        .filter((issue) => typeof issue.path[0] === "string")
+        .map((issue) => [String(issue.path[0]), issue.message]),
+    );
+    setFieldErrors(errors);
+    const firstIssue = error.issues[0];
+    setErrorMessage(firstIssue?.message ?? "Review the highlighted fields.");
+    const firstField = firstIssue?.path[0];
+    if (typeof firstField === "string") {
+      window.requestAnimationFrame(() => {
+        document.getElementById(firstField)?.focus();
+      });
+    }
   }
 
   function validateStep(stepToValidate: number) {
@@ -160,10 +327,7 @@ export function ApplicationForm() {
       });
 
       if (!parsed.success) {
-        setErrorMessage(
-          parsed.error.issues[0]?.message ??
-            "Complete the applicant details before continuing.",
-        );
+        showValidationErrors(parsed.error);
         return false;
       }
     }
@@ -181,10 +345,7 @@ export function ApplicationForm() {
       });
 
       if (!parsed.success) {
-        setErrorMessage(
-          parsed.error.issues[0]?.message ??
-            "Complete the research details before continuing.",
-        );
+        showValidationErrors(parsed.error);
         return false;
       }
     }
@@ -195,14 +356,12 @@ export function ApplicationForm() {
       });
 
       if (!parsed.success) {
-        setErrorMessage(
-          parsed.error.issues[0]?.message ??
-            "Upload a supporting document before continuing.",
-        );
+        showValidationErrors(parsed.error);
         return false;
       }
     }
 
+    setFieldErrors({});
     return true;
   }
 
@@ -414,9 +573,7 @@ export function ApplicationForm() {
     });
 
     if (!parsed.success) {
-      setErrorMessage(
-        parsed.error.issues[0]?.message ?? "Invalid application data.",
-      );
+      showValidationErrors(parsed.error);
       return;
     }
 
@@ -432,6 +589,7 @@ export function ApplicationForm() {
       });
       const payload = (await response.json()) as {
         error?: string;
+        application?: { id?: string; submittedAt?: string };
       };
 
       if (!response.ok) {
@@ -441,21 +599,15 @@ export function ApplicationForm() {
       setStep(0);
       setFurthestStep(0);
       setDocuments([]);
-      setFormValues({
-        applicantName: "",
-        applicantEmail: "",
-        applicantPhone: "",
-        programType: "MPHIL",
-        studyMode: "FULL_TIME",
-        proposalTitle: "",
-        proposalAbstract: "",
-        proposedSupervisorId: "",
-        researchArea: "",
-        supervisor: "",
-        statementOfPurpose: "",
-      });
+      setFormValues(INITIAL_FORM_VALUES);
       setIsReviewConfirmed(false);
-      router.push("/apply/success");
+      window.sessionStorage.removeItem(DRAFT_SESSION_KEY);
+      const reference = payload.application?.id;
+      const submittedAt = payload.application?.submittedAt;
+      const params = new URLSearchParams();
+      if (reference) params.set("reference", reference);
+      if (submittedAt) params.set("submittedAt", submittedAt);
+      router.push(params.size > 0 ? `/apply/success?${params.toString()}` : "/apply/success");
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -480,6 +632,28 @@ export function ApplicationForm() {
           Complete the public application form, upload supporting PDF/ZIP documents, and
           submit your research interest for review.
         </p>
+        <div role="status" aria-live="polite" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <span className="font-medium text-foreground">
+            {saveStatus === "initializing"
+              ? "Preparing protected draft..."
+              : saveStatus === "saving"
+                ? "Saving changes..."
+                : saveStatus === "unsaved"
+                  ? "Changes waiting to save"
+                  : saveStatus === "error"
+                    ? "Draft save interrupted"
+                    : savedAt
+                      ? `Draft saved ${new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                      : "Protected draft ready"}
+          </span>
+          <span className="text-muted-foreground">
+            {saveStatus === "error"
+              ? "Keep this page open; saving will retry after your next change."
+              : draftExpiresAt
+                ? `Recoverable in this browser session until ${new Date(draftExpiresAt).toLocaleString()}.`
+                : "Your typed answers will be saved with this protected session."}
+          </span>
+        </div>
       </section>
 
       {/* Step Navigator */}
@@ -540,7 +714,7 @@ export function ApplicationForm() {
         </div>
 
         {errorMessage && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
+          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
             {errorMessage}
           </div>
         )}
@@ -552,6 +726,8 @@ export function ApplicationForm() {
               <Label htmlFor="applicantName">Full name</Label>
               <Input
                 id="applicantName"
+                aria-invalid={Boolean(fieldErrors.applicantName)}
+                aria-describedby={fieldErrors.applicantName ? "applicantName-error" : undefined}
                 value={formValues.applicantName}
                 onChange={(event) =>
                   updateField("applicantName", event.target.value)
@@ -559,11 +735,14 @@ export function ApplicationForm() {
                 placeholder="Applicant full name"
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="applicantName-error" message={fieldErrors.applicantName} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="applicantEmail">Email</Label>
               <Input
                 id="applicantEmail"
+                aria-invalid={Boolean(fieldErrors.applicantEmail)}
+                aria-describedby={fieldErrors.applicantEmail ? "applicantEmail-error" : undefined}
                 value={formValues.applicantEmail}
                 onChange={(event) =>
                   updateField("applicantEmail", event.target.value)
@@ -572,11 +751,14 @@ export function ApplicationForm() {
                 type="email"
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="applicantEmail-error" message={fieldErrors.applicantEmail} />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="applicantPhone">Phone</Label>
               <Input
                 id="applicantPhone"
+                aria-invalid={Boolean(fieldErrors.applicantPhone)}
+                aria-describedby={fieldErrors.applicantPhone ? "applicantPhone-error" : undefined}
                 value={formValues.applicantPhone}
                 onChange={(event) =>
                   updateField("applicantPhone", event.target.value)
@@ -585,6 +767,7 @@ export function ApplicationForm() {
                 type="tel"
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="applicantPhone-error" message={fieldErrors.applicantPhone} />
             </div>
           </div>
         )}
@@ -593,12 +776,12 @@ export function ApplicationForm() {
         {step === 1 && (
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label>Programme</Label>
+              <Label htmlFor="programType">Programme</Label>
               <Select
                 value={formValues.programType}
                 onValueChange={(value) => updateField("programType", value)}
               >
-                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                <SelectTrigger id="programType" aria-invalid={Boolean(fieldErrors.programType)} aria-describedby={fieldErrors.programType ? "programType-error" : undefined} className="border-zinc-400 focus-visible:ring-zinc-900">
                   <SelectValue placeholder="Select programme" />
                 </SelectTrigger>
                 <SelectContent>
@@ -609,14 +792,15 @@ export function ApplicationForm() {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError id="programType-error" message={fieldErrors.programType} />
             </div>
             <div className="space-y-2">
-              <Label>Study mode</Label>
+              <Label htmlFor="studyMode">Study mode</Label>
               <Select
                 value={formValues.studyMode}
                 onValueChange={(value) => updateField("studyMode", value)}
               >
-                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                <SelectTrigger id="studyMode" aria-invalid={Boolean(fieldErrors.studyMode)} aria-describedby={fieldErrors.studyMode ? "studyMode-error" : undefined} className="border-zinc-400 focus-visible:ring-zinc-900">
                   <SelectValue placeholder="Select study mode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -627,11 +811,14 @@ export function ApplicationForm() {
                   ))}
                 </SelectContent>
               </Select>
+              <FieldError id="studyMode-error" message={fieldErrors.studyMode} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="researchArea">Research area</Label>
               <Input
                 id="researchArea"
+                aria-invalid={Boolean(fieldErrors.researchArea)}
+                aria-describedby={fieldErrors.researchArea ? "researchArea-error" : undefined}
                 value={formValues.researchArea}
                 onChange={(event) =>
                   updateField("researchArea", event.target.value)
@@ -639,16 +826,17 @@ export function ApplicationForm() {
                 placeholder="Machine Learning for Education"
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="researchArea-error" message={fieldErrors.researchArea} />
             </div>
             <div className="space-y-2">
-              <Label>Proposed supervisor</Label>
+              <Label htmlFor="proposedSupervisorId">Proposed supervisor</Label>
               <Select
                 value={formValues.proposedSupervisorId}
                 onValueChange={(value) =>
                   updateField("proposedSupervisorId", value)
                 }
               >
-                <SelectTrigger className="border-zinc-400 focus-visible:ring-zinc-900">
+                <SelectTrigger id="proposedSupervisorId" aria-invalid={Boolean(fieldErrors.proposedSupervisorId)} aria-describedby={fieldErrors.proposedSupervisorId ? "proposedSupervisorId-error proposedSupervisor-help" : "proposedSupervisor-help"} className="border-zinc-400 focus-visible:ring-zinc-900">
                   <SelectValue placeholder="Select a proposed supervisor" />
                 </SelectTrigger>
                 <SelectContent>
@@ -662,36 +850,45 @@ export function ApplicationForm() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
+              <p id="proposedSupervisor-help" className="text-xs text-muted-foreground">
                 Consent is required before the application can proceed.
               </p>
+              <FieldError id="proposedSupervisorId-error" message={fieldErrors.proposedSupervisorId} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="proposalTitle">Proposal title</Label>
               <Input
                 id="proposalTitle"
+                aria-invalid={Boolean(fieldErrors.proposalTitle)}
+                aria-describedby={fieldErrors.proposalTitle ? "proposalTitle-error" : undefined}
                 value={formValues.proposalTitle}
                 onChange={(event) =>
                   updateField("proposalTitle", event.target.value)
                 }
                 className="border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="proposalTitle-error" message={fieldErrors.proposalTitle} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="proposalAbstract">Proposal abstract</Label>
               <Textarea
                 id="proposalAbstract"
+                aria-invalid={Boolean(fieldErrors.proposalAbstract)}
+                aria-describedby={fieldErrors.proposalAbstract ? "proposalAbstract-error" : undefined}
                 value={formValues.proposalAbstract}
                 onChange={(event) =>
                   updateField("proposalAbstract", event.target.value)
                 }
                 className="min-h-40 border-zinc-400 focus-visible:ring-zinc-900"
               />
+              <FieldError id="proposalAbstract-error" message={fieldErrors.proposalAbstract} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="statementOfPurpose">Statement of purpose</Label>
               <Textarea
                 id="statementOfPurpose"
+                aria-invalid={Boolean(fieldErrors.statementOfPurpose)}
+                aria-describedby={fieldErrors.statementOfPurpose ? "statementOfPurpose-error" : undefined}
                 value={formValues.statementOfPurpose}
                 onChange={(event) =>
                   updateField("statementOfPurpose", event.target.value)
@@ -699,6 +896,7 @@ export function ApplicationForm() {
                 className="min-h-40 border-zinc-400 focus-visible:ring-zinc-900"
                 placeholder="Describe your motivation, proposed area, and fit for the programme."
               />
+              <FieldError id="statementOfPurpose-error" message={fieldErrors.statementOfPurpose} />
             </div>
           </div>
         )}
@@ -709,12 +907,15 @@ export function ApplicationForm() {
             <Card>
               <CardContent className="pt-5 space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Upload supporting documents</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <Label htmlFor="supportingDocuments" className="text-sm font-semibold text-foreground">Upload supporting documents</Label>
+                  <p id="supportingDocuments-help" className="mt-1 text-xs text-muted-foreground">
                     PDF or ZIP only. Maximum file size: 10MB each. Up to 10 files can be uploaded.
                   </p>
                 </div>
                 <input
+                  id="supportingDocuments"
+                  aria-invalid={Boolean(fieldErrors.supportingDocuments)}
+                  aria-describedby={fieldErrors.supportingDocuments ? "supportingDocuments-help supportingDocuments-error" : "supportingDocuments-help"}
                   className="block w-full cursor-pointer text-sm text-foreground file:mr-4 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-background file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground file:transition-all hover:file:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                   type="file"
                   accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
@@ -727,8 +928,9 @@ export function ApplicationForm() {
                     !draftToken
                   }
                 />
+                <FieldError id="supportingDocuments-error" message={fieldErrors.supportingDocuments} />
                 {isUploadingDocument && (
-                  <p className="text-sm text-muted-foreground">Uploading documents...</p>
+                  <p role="status" aria-live="polite" className="text-sm text-muted-foreground">Uploading documents...</p>
                 )}
               </CardContent>
             </Card>
@@ -775,6 +977,25 @@ export function ApplicationForm() {
                 incorrect, use the step boxes above or the Back button to update
                 it before submitting.
               </div>
+
+              <section aria-labelledby="preflight-heading" className="rounded-md border p-4">
+                <h3 id="preflight-heading" className="font-semibold text-foreground">
+                  Submission checklist
+                </h3>
+                <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                  {[
+                    "Applicant contact details are complete",
+                    "Research proposal details are complete",
+                    `${documents.length} supporting document${documents.length === 1 ? "" : "s"} attached`,
+                    "Proposed supervisor selected",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
 
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold text-foreground">{formValues.applicantName}</p>
@@ -852,11 +1073,21 @@ export function ApplicationForm() {
 
         {/* Navigation Buttons */}
         <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+          <p id="application-navigation-status" className="sr-only" aria-live="polite">
+            {isNavigationBusy
+              ? isSubmitting
+                ? "Application submission is in progress."
+                : isUploadingDocument || isRemovingDocument
+                  ? "Finish the document operation before changing steps."
+                  : "The protected draft is being prepared."
+              : ""}
+          </p>
           <Button
             type="button"
             variant="outline"
             onClick={previousStep}
             disabled={isNavigationBusy}
+            aria-describedby={isNavigationBusy ? "application-navigation-status" : undefined}
           >
             Back
           </Button>
@@ -867,6 +1098,7 @@ export function ApplicationForm() {
                 type="button"
                 onClick={nextStep}
                 disabled={isNavigationBusy}
+                aria-describedby={isNavigationBusy ? "application-navigation-status" : undefined}
               >
                 Continue
               </Button>
@@ -874,12 +1106,18 @@ export function ApplicationForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !isReviewConfirmed}
+                aria-describedby={!isReviewConfirmed ? "submission-confirmation-help" : undefined}
               >
                 {isSubmitting ? "Submitting..." : "Submit application"}
               </Button>
             )}
           </div>
         </div>
+        {step === 3 && !isReviewConfirmed ? (
+          <p id="submission-confirmation-help" className="text-sm text-muted-foreground">
+            Confirm that you reviewed the application before submission becomes available.
+          </p>
+        ) : null}
       </form>
     </div>
   );

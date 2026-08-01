@@ -15,14 +15,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
+import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
+import { Label } from "@/components/ui/label";
 
 type ApplicationDetails = {
   id: string;
@@ -63,6 +58,8 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
   const [isUpdating, setIsUpdating] = useState(false);
   const [reviewers, setReviewers] = useState<ReviewerOption[]>([]);
   const [selectedReviewerId, setSelectedReviewerId] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<{
     show: boolean;
     type: "UNDER_REVIEW" | "EXECUTE" | null;
@@ -109,7 +106,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
       // Open the signed URL in a new tab
       window.open(data.downloadUrl, "_blank");
     } catch {
-      alert("Failed to download document. Please try again.");
+      setError("Failed to download document. Please try again.");
     }
   };
 
@@ -128,8 +125,10 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Unable to assign reviewer.");
       setSelectedReviewerId("");
+      setMessage("Proposal reviewer assigned.");
+      setCompletedAt(new Date());
     } catch (caught) {
-      alert(caught instanceof Error ? caught.message : "Unable to assign reviewer.");
+      setError(caught instanceof Error ? caught.message : "Unable to assign reviewer.");
     } finally {
       setIsUpdating(false);
     }
@@ -140,7 +139,8 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     if (!status) return;
 
     setIsUpdating(true);
-    setShowConfirmModal({ show: false, type: null });
+    setError(null);
+    setMessage(null);
 
     try {
       const executeAdmission = status === "EXECUTE";
@@ -159,10 +159,17 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
         throw new Error(data.error || "Failed to update status");
       }
 
-      router.push("/dashboard/admin/applications");
+      setApplication((current) => current ? {
+        ...current,
+        status: executeAdmission ? "ADMITTED" : "UNDER_REVIEW",
+      } : current);
+      setMessage(executeAdmission ? "Admission executed and the Student lifecycle created." : "Department review started.");
+      setCompletedAt(new Date());
+      setShowConfirmModal({ show: false, type: null });
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "An error occurred updating the status.");
+      setError(err instanceof Error ? err.message : "An error occurred updating the status.");
+    } finally {
       setIsUpdating(false);
     }
   };
@@ -176,7 +183,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
     );
   }
 
-  if (error || !application) {
+  if (!application) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -188,36 +195,33 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
 
   return (
     <div className="space-y-6 pb-10">
-      <Dialog
+      <DecisionReviewDialog
         open={showConfirmModal.show}
         onOpenChange={(open) => {
           if (!open) setShowConfirmModal({ show: false, type: null });
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {showConfirmModal.type === "EXECUTE"
-                ? "Execute Approved Admission"
-                : "Begin Department Review"}
-            </DialogTitle>
-            <DialogDescription>
-              Confirm this controlled workflow action for{" "}
-              <strong>{application.applicantName}</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmModal({ show: false, type: null })}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateStatus}
-            >
-              Yes, Proceed
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={showConfirmModal.type === "EXECUTE" ? "Execute approved admission" : "Begin Department review"}
+        description="Review the applicant and workflow effects before continuing."
+        subjectLabel="Applicant"
+        subject={`${application.applicantName} (${application.applicantEmail})`}
+        decision={showConfirmModal.type === "EXECUTE" ? "Execute admission" : "Start Department review"}
+        consequences={showConfirmModal.type === "EXECUTE" ? [
+          "A Student account and registration will be created.",
+          "Programme milestones will be scheduled from the registration date.",
+          "The applicant will receive account setup and admission notification messages.",
+        ] : [
+          "The application status will change to under review.",
+          "The Department review workflow will become active.",
+          "The action will be retained in the lifecycle history.",
+        ]}
+        reversible={showConfirmModal.type !== "EXECUTE"}
+        confirmLabel={showConfirmModal.type === "EXECUTE" ? "Execute admission" : "Begin review"}
+        pendingLabel={showConfirmModal.type === "EXECUTE" ? "Executing..." : "Starting..."}
+        isPending={isUpdating}
+        onConfirm={() => void handleUpdateStatus()}
+      />
+
+      <WorkflowFeedback error={error} success={message} completedAt={completedAt} />
 
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Review Application</h2>
@@ -265,7 +269,9 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
                 </p>
                 {application.supervisorConsentStatus === "CONSENTED" && (
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <Label htmlFor="proposal-reviewer" className="sr-only">Proposal reviewer</Label>
                     <select
+                      id="proposal-reviewer"
                       className="h-10 flex-1 rounded-md border bg-background px-3 text-sm"
                       value={selectedReviewerId}
                       onChange={(event) => setSelectedReviewerId(event.target.value)}

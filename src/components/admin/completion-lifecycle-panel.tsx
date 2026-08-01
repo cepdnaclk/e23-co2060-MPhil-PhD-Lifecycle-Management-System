@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
+import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
 import { secureFetch } from "@/lib/security/client-request";
 
 type CompletionLifecycleItem = {
@@ -61,6 +64,13 @@ export function CompletionLifecyclePanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    student: CompletionLifecycleItem;
+    action: "completion" | "graduation" | "archive";
+    body?: unknown;
+    rationale?: string;
+  } | null>(null);
   const [graduationDates, setGraduationDates] = useState<
     Record<string, string>
   >({});
@@ -89,6 +99,8 @@ export function CompletionLifecyclePanel({
             ? "Confirmed graduation recorded."
             : "Student lifecycle record archived.",
       );
+      setCompletedAt(new Date());
+      setPendingAction(null);
       router.refresh();
     } catch (caught) {
       setError(
@@ -101,16 +113,39 @@ export function CompletionLifecyclePanel({
 
   return (
     <div className="space-y-5">
-      {message && (
-        <p className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
-          {message}
-        </p>
-      )}
-      {error && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <WorkflowFeedback error={error} success={message} completedAt={completedAt} />
+      <DecisionReviewDialog
+        open={Boolean(pendingAction)}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+        title={pendingAction?.action === "archive" ? "Archive lifecycle record" : pendingAction?.action === "graduation" ? "Record confirmed graduation" : "Record programme completion"}
+        description="Review the Student record and downstream lifecycle changes before continuing."
+        subjectLabel="Student"
+        subject={pendingAction ? `${pendingAction.student.studentName} — ${pendingAction.student.programmeLabel}` : ""}
+        decision={pendingAction?.action === "archive" ? "Archive completed lifecycle" : pendingAction?.action === "graduation" ? "Record confirmed graduation" : "Execute programme completion"}
+        rationale={pendingAction?.rationale}
+        consequences={pendingAction?.action === "archive" ? [
+          "The Student, registration, thesis, and related operational records become read-only.",
+          "Documents and audit history are retained.",
+          "The active account is not deactivated by this action.",
+        ] : pendingAction?.action === "graduation" ? [
+          "The external confirmation reference and graduation date become part of the official record.",
+          "Lifecycle archiving becomes available next.",
+          "The action is retained in the audit history.",
+        ] : [
+          "The thesis, Student profile, and registration are completed atomically.",
+          "A lifecycle audit event and notification intent are recorded.",
+          "Graduation still requires separate external confirmation.",
+        ]}
+        reversible={false}
+        destructive={pendingAction?.action === "archive"}
+        confirmLabel={pendingAction?.action === "archive" ? "Archive lifecycle" : pendingAction?.action === "graduation" ? "Record graduation" : "Record completion"}
+        isPending={Boolean(pendingAction && busy === `${pendingAction.student.id}:${pendingAction.action}`)}
+        onConfirm={() => {
+          if (pendingAction) void act(pendingAction.student.id, pendingAction.action, pendingAction.body);
+        }}
+      />
 
       {students.length === 0 ? (
         <Card>
@@ -165,7 +200,7 @@ export function CompletionLifecyclePanel({
                     </p>
                     <Button
                       disabled={busy === `${student.id}:completion`}
-                      onClick={() => void act(student.id, "completion")}
+                      onClick={() => setPendingAction({ student, action: "completion" })}
                     >
                       {busy === `${student.id}:completion`
                         ? "Recording..."
@@ -184,9 +219,10 @@ export function CompletionLifecyclePanel({
                       confirmation.
                     </p>
                     <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1 text-sm">
-                        <span>Graduation date</span>
+                      <div className="space-y-1 text-sm">
+                        <Label htmlFor={`graduation-date-${student.id}`}>Graduation date</Label>
                         <Input
+                          id={`graduation-date-${student.id}`}
                           type="date"
                           value={graduationDate}
                           max={new Date().toISOString().slice(0, 10)}
@@ -197,10 +233,11 @@ export function CompletionLifecyclePanel({
                             }))
                           }
                         />
-                      </label>
-                      <label className="space-y-1 text-sm">
-                        <span>External confirmation reference</span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <Label htmlFor={`graduation-reference-${student.id}`}>External confirmation reference</Label>
                         <Input
+                          id={`graduation-reference-${student.id}`}
                           value={confirmationReference}
                           onChange={(event) =>
                             setReferences((current) => ({
@@ -210,9 +247,11 @@ export function CompletionLifecyclePanel({
                           }
                           placeholder="Reference, minute, or confirmation ID"
                         />
-                      </label>
+                      </div>
                     </div>
+                    <Label htmlFor={`graduation-notes-${student.id}`} className="sr-only">Optional Department notes</Label>
                     <Textarea
+                      id={`graduation-notes-${student.id}`}
                       value={graduationNotes[student.id] ?? ""}
                       onChange={(event) =>
                         setGraduationNotes((current) => ({
@@ -229,11 +268,11 @@ export function CompletionLifecyclePanel({
                         confirmationReference.trim().length < 5
                       }
                       onClick={() =>
-                        void act(student.id, "graduation", {
+                        setPendingAction({ student, action: "graduation", body: {
                           graduationDate,
                           confirmationReference,
                           notes: graduationNotes[student.id],
-                        })
+                        }, rationale: `External confirmation: ${confirmationReference}` })
                       }
                     >
                       {busy === `${student.id}:graduation`
@@ -253,7 +292,9 @@ export function CompletionLifecyclePanel({
                       documents, audit history, and the original completion
                       date. It does not deactivate Firebase.
                     </p>
+                    <Label htmlFor={`archive-reason-${student.id}`} className="sr-only">Archive reason</Label>
                     <Textarea
+                      id={`archive-reason-${student.id}`}
                       value={archiveReason}
                       onChange={(event) =>
                         setArchiveReasons((current) => ({
@@ -268,11 +309,12 @@ export function CompletionLifecyclePanel({
                         busy === `${student.id}:archive` ||
                         archiveReason.trim().length < 10
                       }
-                      onClick={() =>
-                        void act(student.id, "archive", {
-                          reason: archiveReason,
-                        })
-                      }
+                      onClick={() => setPendingAction({
+                        student,
+                        action: "archive",
+                        body: { reason: archiveReason },
+                        rationale: archiveReason,
+                      })}
                     >
                       {busy === `${student.id}:archive`
                         ? "Archiving..."
