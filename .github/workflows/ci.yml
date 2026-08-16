@@ -195,7 +195,7 @@ jobs:
           persist-credentials: false
 
       - name: Scan repository history for verified secrets
-        uses: trufflesecurity/trufflehog@17456f8c7d042d8c82c9a8ca9e937231f9f42e26 # v3.95.2
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318 # v3.97.0
         with:
           path: ./
           base: ""
