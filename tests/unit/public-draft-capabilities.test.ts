@@ -69,7 +69,7 @@ describe("public application draft capabilities", () => {
       purpose: UploadPurpose.APPLICATION,
       status: UploadSessionStatus.OPEN,
       capabilityTokenHash: createHash("sha256").update(draftToken).digest("hex"),
-      expiresAt: new Date("2026-08-02T10:00:00.000Z"),
+      expiresAt: new Date(Date.now() + 60_000),
       files: [],
       result: null,
     } as never);
