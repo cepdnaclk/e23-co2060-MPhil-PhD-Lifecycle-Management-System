@@ -41,31 +41,31 @@ The platform covers:
 
 The public landing page introduces the system and provides access to applications and authentication.
 
-![PGLMS landing page](../images/screenshots/landing_page.png)
+![PGLMS landing page](./assets/images/screenshots/landing_page.png)
 
 ### Authentication
 
 Firebase Authentication provides identity verification, while server-side authorization restricts access according to the user's assigned role.
 
-![PGLMS login page](../images/screenshots/login.png)
+![PGLMS login page](./assets/images/screenshots/login.png)
 
 ### Application portal
 
 Prospective candidates can complete a structured application and upload the required supporting documents.
 
-![PGLMS application portal](../images/screenshots/application.png)
+![PGLMS application portal](./assets/images/screenshots/application.png)
 
 ### Administration dashboard
 
 The administration dashboard summarizes active candidates, pending decisions, registrations, and examination activity.
 
-![PGLMS administration dashboard](../images/screenshots/admin_dashboard.png)
+![PGLMS administration dashboard](./assets/images/screenshots/admin_dashboard.png)
 
 ### User management
 
 Authorized administrators can provision accounts, assign roles, and maintain user records.
 
-![PGLMS user management interface](../images/screenshots/mng_usrs.png)
+![PGLMS user management interface](./assets/images/screenshots/mng_usrs.png)
 
 ## Architecture
 
