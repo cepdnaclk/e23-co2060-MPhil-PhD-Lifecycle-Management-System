@@ -5,162 +5,148 @@ repository-name: e23-co2060-MPhil-PhD-Lifecycle-Management-System
 title: Postgraduate Lifecycle Management System (PGLMS)
 ---
 
-# Postgraduate Lifecycle Management System (PGLMS)
+# Postgraduate Lifecycle Management System
 
-> A centralized, role-aware web platform automating and managing the complete MPhil and PhD academic lifecycle at the Faculty of Engineering, University of Peradeniya.
+The Postgraduate Lifecycle Management System (PGLMS) supports the MPhil and PhD academic lifecycle at the Faculty of Engineering, University of Peradeniya. It provides role-based workflows for applications, admissions, supervision, progress monitoring, thesis examination, and programme completion.
 
----
+## Overview
 
-## 📌 Executive Summary
+PGLMS consolidates processes that would otherwise rely on paper forms, spreadsheets, and email. The system maintains a consistent record of decisions, submissions, assignments, and supporting documents throughout a candidate's programme.
 
-The **Postgraduate Lifecycle Management System (PGLMS)** replaces fragmented paper forms, spreadsheets, and email chains with a unified digital platform. Designed for high transparency and accountability, PGLMS orchestrates every phase of research degrees—from initial public applications and student admissions to supervisor assignments, proposal evaluations, progress monitoring, viva scheduling, thesis defense, and degree finalization.
+The platform covers:
 
----
+- Public applications and admission review
+- Student registration and programme milestones
+- Supervisor and examiner assignments
+- Research proposal and ethics workflows
+- Progress-report submission and review
+- Thesis submission, examination, and corrections
+- Viva scheduling and outcome recording
+- Completion, graduation, and record archiving
+- In-app and email notifications
 
-## 🚀 Key Features & Core Capabilities
+## Users and Responsibilities
 
-- **End-to-End Candidate Lifecycle Tracking**: Full digital auditing from application to graduation and record archiving.
-- **Role-Based Access & Security**: Custom dashboards for Students, Supervisors, Examiners, the PG Coordinator, and the HOD.
-- **Public Admissions Portal**: Online application submission with encrypted upload handling for academic transcripts and identity documentation.
-- **Registration & Programme Scheduling**: One current registration, an expected completion date, and deterministic six-month milestones.
-- **Milestone & Progress Monitoring**: Standardized submission workflows for progress reports, research proposals, ethics approvals, and thesis drafts.
-- **Examination & Viva Orchestration**: HOD-confirmed exact-version examiner assignments, viva scheduling, independent recommendations, and final HOD outcome.
-- **Secure Private Document Repository**: Time-limited signed URL downloads via Supabase Storage for sensitive candidate files.
-- **Omnichannel Communication**: In-app real-time notification drawer coupled with automated SMTP email delivery via Nodemailer.
-
----
-
-## 🖼️ Visual Tour & User Interfaces
-
-Below is a showcase of the key user interfaces implemented across the PGLMS platform:
-
-### 1. Public Landing & Information Portal
-The gateway providing prospective research students and faculty members with platform information and direct access to admissions.
-
-![PGLMS Landing Page](../images/screenshots/landing_page.png)
-
----
-
-### 2. Authentication & Access Control
-Secure multi-factor authentication powered by Firebase Auth, enforcing role-based authorization rules across all system features.
-
-![PGLMS Login Interface](../images/screenshots/login.png)
-
----
-
-### 3. Postgraduate Application & Admission System
-Prospective MPhil and PhD candidates can complete multi-step applications, select research areas, and upload supporting documents.
-
-![PGLMS Application Portal](../images/screenshots/application.png)
-
----
-
-### 4. Administrative Oversight Dashboard
-An institutional command center offering real-time analytics on candidate counts, pending approvals, active registrations, and upcoming viva schedules.
-
-![PGLMS Administrator Dashboard](../images/screenshots/admin_dashboard.png)
-
----
-
-### 5. User Management & Account Provisioning
-Administrators can verify incoming applications, manage role permissions, assign academic credentials, and maintain candidate directories.
-
-![PGLMS User Management Panel](../images/screenshots/mng_usrs.png)
-
----
-
-## 👥 User Roles & Workflow Responsibilities
-
-| Role | Core Workflow Responsibilities |
+| Role | Primary responsibilities |
 |---|---|
-| 🎓 **Student** | Submit research proposals, periodic progress reports, thesis drafts, and corrections; track registration validity and milestone status. |
-| 👨‍🏫 **Supervisor** | Oversee assigned research candidates, evaluate progress reports, sign off on submissions, and participate in academic review panels. |
-| 🔍 **Examiner** | Review submitted thesis documentation, inspect candidate research outputs, and submit formal viva examination evaluations. |
-| ⚡ **Administrator** | Manage prospective applications, provision accounts, handle supervisor/examiner assignments, schedule vivas, and manage system settings. |
+| Student | Submit proposals, progress reports, ethics declarations, theses, and corrections; monitor programme milestones and decisions. |
+| Supervisor | Review assigned students, provide recommendations, assess progress reports, and certify academic submissions. |
+| Examiner | Access assigned thesis material and submit examination or viva recommendations. |
+| Head of Department | Confirm academic decisions, examiner assignments, ethics outcomes, viva outcomes, and programme completion. |
+| Administrator | Review applications, manage users, coordinate assignments, schedule vivas, maintain records, and monitor system activity. |
 
----
+## Interface Overview
 
-## 🛠️ System Architecture & Technology Stack
+### Public landing page
 
-PGLMS is architected as a modern, decoupled full-stack web application leveraging the **Next.js 14 App Router** framework.
+The public landing page introduces the system and provides access to applications and authentication.
+
+![PGLMS landing page](../images/screenshots/landing_page.png)
+
+### Authentication
+
+Firebase Authentication provides identity verification, while server-side authorization restricts access according to the user's assigned role.
+
+![PGLMS login page](../images/screenshots/login.png)
+
+### Application portal
+
+Prospective candidates can complete a structured application and upload the required supporting documents.
+
+![PGLMS application portal](../images/screenshots/application.png)
+
+### Administration dashboard
+
+The administration dashboard summarizes active candidates, pending decisions, registrations, and examination activity.
+
+![PGLMS administration dashboard](../images/screenshots/admin_dashboard.png)
+
+### User management
+
+Authorized administrators can provision accounts, assign roles, and maintain user records.
+
+![PGLMS user management interface](../images/screenshots/mng_usrs.png)
+
+## Architecture
+
+PGLMS is implemented as a full-stack Next.js application. Client and server components communicate with validated route handlers, which integrate with the system's authentication, database, storage, email, and monitoring services.
+
+| Area | Technology |
+|---|---|
+| Application framework | Next.js 16 with the App Router |
+| User interface | React 19, TypeScript, Tailwind CSS, Radix UI, and Lucide |
+| API and validation | Next.js Route Handlers and Zod |
+| Database | PostgreSQL hosted on Supabase |
+| Data access | Prisma ORM |
+| Authentication | Firebase Authentication and Firebase Admin SDK |
+| Document storage | Private Supabase Storage buckets with signed URLs |
+| Email | Nodemailer over SMTP |
+| Monitoring | Sentry |
+| Testing | Vitest, React Testing Library, and Playwright |
+
+### Request flow
 
 ```text
-                             ┌──────────────────────────────────┐
-                             │   React / Next.js App Router     │
-                             │      (Client & Server Pages)     │
-                             └─────────────────┬────────────────┘
-                                               │
-                                               ▼
-                             ┌──────────────────────────────────┐
-                             │    Zod Validated API Handlers    │
-                             └────────┬─────────────────┬───────┘
-                                      │                 │
-              ┌───────────────────────┘                 └───────────────────────┐
-              ▼                                                                 ▼
-┌───────────────────────────┐    ┌───────────────────────────┐    ┌───────────────────────────┐
-│     Firebase Admin SDK    │    │      Prisma ORM (Data)    │    │      Supabase Storage     │
-│   (Auth & Token Verif.)   │    │  (PostgreSQL Database)    │    │     (Private Documents)   │
-└───────────────────────────┘    └───────────────────────────┘    └───────────────────────────┘
+Browser
+  |
+  v
+Next.js application
+  |
+  v
+Validated route handlers
+  |
+  +-- Firebase Authentication
+  +-- Prisma and Supabase PostgreSQL
+  +-- Supabase Storage
+  +-- SMTP email delivery
+  +-- Sentry monitoring
 ```
 
-### Technology Breakdown
+## Security and Data Handling
 
-| Component Layer | Technologies Used |
-|---|---|
-| **Frontend Framework** | Next.js 14 (App Router), React 18, TypeScript |
-| **UI Component Library** | Tailwind CSS, Radix UI Primitives, Lucide Icons, SWR |
-| **Backend & APIs** | Next.js Route Handlers, Zod Validation |
-| **Database & ORM** | PostgreSQL (Supabase Hosted), Prisma ORM |
-| **Authentication** | Firebase Authentication & Firebase Admin SDK |
-| **Object Storage** | Supabase Storage (Private Buckets & Signed URLs) |
-| **Email Delivery** | Nodemailer with SMTP Integration |
-| **Monitoring & Telemetry** | Sentry SDK |
-| **Testing Suite** | Vitest, React Testing Library, Playwright E2E |
+- Role checks protect authenticated routes and operations.
+- Firebase tokens are verified on the server.
+- Application input is validated before processing.
+- Sensitive documents are stored in private buckets and accessed through time-limited signed URLs.
+- Academic decisions and workflow transitions are retained for audit purposes.
 
----
+## Testing
 
-## 🧪 Testing & Quality Assurance
+The repository includes several levels of automated testing:
 
-To ensure system reliability, operational security, and workflow correctness, PGLMS maintains an extensive test suite:
+- Unit tests for business rules, validation, and data transformations
+- Integration tests for database-backed workflows
+- Component tests for rendering and user interaction
+- Playwright end-to-end tests for complete user journeys
+- Static analysis through ESLint and TypeScript
+- Dependency auditing through npm
 
-- **Unit Testing**: Business rule validation, schema parsing, and data transformer logic evaluated using Vitest.
-- **Integration Testing**: Route handler authorization, Prisma database interactions, and notification dispatch workflows.
-- **Component Testing**: UI component state rendering, form interactions, and accessibility compliance.
-- **End-to-End (E2E) Testing**: Full browser lifecycle simulations powered by Playwright covering student application submission, administrative approval, and login flows.
+See the main [project README](../README.md) for setup instructions and the complete command reference.
 
----
+## Project Documentation
 
-## 📄 Project Documentation & Registers
+- [Master System Audit and Progress Register](./PGLMS_MASTER_SYSTEM_AUDIT_AND_PROGRESS_REGISTER.md)
+- [Workflow Implementation Report](./WORKFLOW_REPORT.md)
+- [Project Overview](../PROJECT_OVERVIEW.md)
+- [Repository documentation index](./)
 
-Detailed project specifications, architecture audit reports, and technical workflow registers:
+## Project Team
 
-- 📋 [Master System Audit & Progress Register](./PGLMS_MASTER_SYSTEM_AUDIT_AND_PROGRESS_REGISTER.md)
-- 🔄 [Workflow Implementation Report](./WORKFLOW_REPORT.md)
-- 📖 [Project Overview Specification](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System/blob/main/PROJECT_OVERVIEW.md)
-
----
-
-## 👨‍💻 Project Team & Supervision
-
-### Development Team
-
-| E-Number | Name | Email |
+| Registration number | Name | Email |
 |---|---|---|
-| **E/23/442** | D.K.G.P.C.B. Wijerathne | [e23442@eng.pdn.ac.lk](mailto:e23442@eng.pdn.ac.lk) |
-| **E/23/118** | D.A.A. Gunawardana | [e23118@eng.pdn.ac.lk](mailto:e23118@eng.pdn.ac.lk) |
-| **E/23/178** | S.N.R. Kodituwakku | [e23178@eng.pdn.ac.lk](mailto:e23178@eng.pdn.ac.lk) |
-| **E/23/023** | M.N.P.V. Aththanayake | [e23023@eng.pdn.ac.lk](mailto:e23023@eng.pdn.ac.lk) |
+| E/23/442 | D.K.G.P.C.B. Wijerathne | [e23442@eng.pdn.ac.lk](mailto:e23442@eng.pdn.ac.lk) |
+| E/23/118 | D.A.A. Gunawardana | [e23118@eng.pdn.ac.lk](mailto:e23118@eng.pdn.ac.lk) |
+| E/23/178 | S.N.R. Kodituwakku | [e23178@eng.pdn.ac.lk](mailto:e23178@eng.pdn.ac.lk) |
+| E/23/023 | M.N.P.V. Aththanayake | [e23023@eng.pdn.ac.lk](mailto:e23023@eng.pdn.ac.lk) |
 
-### Academic Supervision
+### Academic supervision
 
-- **Supervisor**: Dr. Upul Jayasinghe ([upul@eng.pdn.ac.lk](mailto:upul@eng.pdn.ac.lk))
+Dr. Upul Jayasinghe — [upul@eng.pdn.ac.lk](mailto:upul@eng.pdn.ac.lk)
 
----
+## Related Links
 
-## 🔗 Quick Links
-
-- [GitHub Code Repository](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System)
-- [PGLMS Project Web Page](https://cepdnaclk.github.io/e23-co2060-MPhil-PhD-Lifecycle-Management-System/)
+- [Source repository](https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System)
+- [Project website](https://cepdnaclk.github.io/e23-co2060-MPhil-PhD-Lifecycle-Management-System/)
 - [Department of Computer Engineering](https://www.ce.pdn.ac.lk/)
-- [Faculty of Engineering, University of Peradeniya](https://eng.pdn.ac.lk/)
+- [Faculty of Engineering](https://eng.pdn.ac.lk/)
 - [University of Peradeniya](https://www.pdn.ac.lk/)
