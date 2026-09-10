@@ -49,7 +49,7 @@
     "firebase-admin": "14.2.0",
     "lucide-react": "^1.23.0",
     "next": "16.2.11",
-    "nodemailer": "9.0.3",
+    "nodemailer": "9.1.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "swr": "2.3.3",
