@@ -46,10 +46,10 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "12.16.0",
-    "firebase-admin": "14.2.0",
+    "firebase-admin": "14.4.0",
     "lucide-react": "^1.23.0",
-    "next": "16.2.11",
-    "nodemailer": "9.0.3",
+    "next": "16.3.5",
+    "nodemailer": "9.1.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "swr": "2.3.3",
@@ -101,7 +101,7 @@
       }
     },
     "next": {
-      "sharp": "0.35.3"
+      "sharp": "0.35.4"
     }
   },
   "prisma": {
