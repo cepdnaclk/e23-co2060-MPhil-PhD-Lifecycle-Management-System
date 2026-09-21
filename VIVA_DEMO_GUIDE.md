@@ -69,29 +69,25 @@ Before starting the viva demonstration, ensure the application is initialized wi
 
 ### Phase 2: Proposal & Ethics Governance
 
-#### Step 2.1: Proposal Submission & Ethics Declaration (Student)
+#### Step 2.1: Proposal Submission (Student)
 1. Log in as **Student** at `/login`.
 2. Navigate to `/dashboard/student`.
 3. Show the **Milestone Progress Timeline** (currently at Stage 1: Proposal Submission).
-4. Click **Submit Research Proposal**, enter proposal details, attach version PDF, and click **Submit**.
-5. Complete the **Ethics Applicability Declaration** (select `REQUIRED` or `NOT_REQUIRED` with compliance details) and submit.
+4. Click **Submit Research Proposal**, enter proposal details, attach version PDF, and click **Submit**. (Status becomes `UNDER_REVIEW`).
 
-#### Step 2.2: Proposal Evaluation & Ethics Recommendation (Supervisor)
-1. Log in as **Supervisor** at `/login`.
-2. Navigate to `/dashboard/supervisor`.
-3. Open **Proposal Evaluations**, select the submitted proposal, fill out the numerical evaluation rubric, and submit (`APPROVED`).
-4. Open **Ethics Reviews**, inspect the student's ethics declaration, and submit a **Supervisor Recommendation** (`RECOMMENDED`).
+#### Step 2.2: Proposal Evaluation & Approval (Supervisor & Administrator)
+1. Log in as **Supervisor** at `/login`, navigate to `/dashboard/supervisor`, open **Proposal Evaluations**, fill out evaluation rubric, and submit.
+2. Log in as **Administrator** at `/login`, navigate to `/dashboard/admin`, open **Proposal Approvals**, and click **Approve Proposal** (`ProposalStatus.APPROVED`).
+3. Log back in as **Student** to show the **Proposal Milestone Card** turning **Green (Approved)**.
 
-#### Step 2.3: Ethics Confirmation (HOD)
-1. Log in as **Head of Department (HOD)** at `/login`.
-2. Navigate to `/dashboard/hod/ethics`.
-3. Select the pending ethics record, review the supervisor's recommendation, and click **Confirm Ethics Clearance** (`HOD_CONFIRMED`).
+#### Step 2.3: Ethics Applicability Declaration (Student)
+1. As **Student** at `/dashboard/student`, open **Ethics Declaration** (unlocked once proposal is `APPROVED`).
+2. Complete the **Ethics Applicability Declaration** (select `REQUIRED` or `NOT_REQUIRED` with compliance details) and submit. (Stage becomes `SUPERVISOR_RECOMMENDATION`).
 
-#### Step 2.4: Proposal Approval (Administrator)
-1. Log in as **Administrator** at `/login`.
-2. Navigate to `/dashboard/admin`.
-3. Open **Proposal Approvals**, review supervisor score aggregations, and click **Approve Proposal** (`ProposalStatus.APPROVED`).
-4. Log back in as **Student** to show the **Proposal Milestone Card** turning **Green (Approved)**.
+#### Step 2.4: Ethics Review, PG Coordinator Record & HOD Clearance (Supervisor, Admin, HOD)
+1. Log in as **Supervisor** at `/login`, navigate to `/dashboard/supervisor/ethics`, select the declaration, and click **Record Recommendation** (`RECOMMENDED`). (Stage becomes `COORDINATOR_RECORD`).
+2. Log in as **Administrator** at `/login`, navigate to `/dashboard/admin/ethics`, and click **Record Status** (`EXEMPT` or `APPROVED`). (Stage becomes `HOD_CONFIRMATION`).
+3. Log in as **Head of Department (HOD)** at `/login`, navigate to `/dashboard/hod/ethics`, and click **Confirm Ethics Clearance** (`CONFIRMED`). (Final Status becomes `EXEMPT` / `APPROVED`).
 
 ---
 
