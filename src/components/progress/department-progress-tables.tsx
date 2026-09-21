@@ -50,7 +50,7 @@ export function DepartmentProgressTables({
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div>
                 <CardTitle>
-                  {table.programType === ProgramType.MPHIL ? "M.Phil." : "Ph.D."}{" "}
+                  {table.programType === ProgramType.MPHIL ? "MPhil" : "PhD"}{" "}
                   {table.studyMode === StudyMode.FULL_TIME ? "Full-time" : "Part-time"}
                 </CardTitle>
                 <CardDescription>
