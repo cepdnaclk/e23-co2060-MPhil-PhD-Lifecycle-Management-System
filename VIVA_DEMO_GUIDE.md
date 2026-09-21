@@ -38,9 +38,9 @@ The system uses Firebase Auth for identity authentication linked with PostgreSQL
 ### 2. Admin-Seeded Accounts
 
 When creating new accounts via the **Admin Portal** (`/dashboard/admin` -> **User Management**):
-- The system automatically generates a secure 18-character temporary password using `generateTemporaryPassword()`.
-- The credentials are sent to the target email address via Nodemailer SMTP.
-- **Audit/Demo Shortcut**: If SMTP is disabled locally, you can view the sent welcome credentials directly inside **Admin Notification Logs** (`/dashboard/admin` -> **Notification Logs**).
+- The system automatically generates a secure **one-time Firebase password setup link**.
+- The account setup link is sent to the target email address via Nodemailer SMTP.
+- **Audit/Demo Shortcut**: If SMTP is disabled locally, you can view the sent welcome email (which contains the setup link) directly inside **Admin Notification Logs** (`/dashboard/admin` -> **Notification Logs**).
 
 ---
 
