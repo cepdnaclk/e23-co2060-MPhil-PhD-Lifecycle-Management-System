@@ -22,34 +22,6 @@ Before starting the viva demonstration, ensure the application is initialized wi
 
 ---
 
-## 🔑 Mock Account Credentials & Passwords
-
-The system uses Firebase Auth for identity authentication linked with PostgreSQL database user records.
-
-### 1. Pre-configured Sample Accounts (from `Passwords.txt`)
-
-| Role | Email Address | Password |
-| :--- | :--- | :--- |
-| **Student** | `student@gmail.com` | `8%nS#2f!rZrU!UcAVx` |
-| **Supervisor** | `supervisor@gmail.com` | `UjqyvM3F^6P&XY765Z` |
-
----
-
-### 2. Admin-Seeded Accounts
-
-When creating new accounts via the **Admin Portal** (`/dashboard/admin` -> **User Management**):
-- The system automatically generates a secure **one-time Firebase password setup link**.
-- The account setup link is sent to the target email address via Nodemailer SMTP.
-- **Audit/Demo Shortcut**: If SMTP is disabled locally, you can view the sent welcome email (which contains the setup link) directly inside **Admin Notification Logs** (`/dashboard/admin` -> **Notification Logs**).
-
----
-
-### 3. Custom E2E / Firebase Test Accounts
-
-- For automated test suites (`npm run test:e2e:external` or `npm run test:e2e:lifecycle`), test credentials can be configured via environment variables (`PGLMS_SEED_USERS_JSON` or `PGLMS_E2E_CREDENTIALS_FILE`).
-
----
-
 ## 👤 Quick Access Portals & Roles Summary
 
 | Role | Portal URL | Primary Responsibilities in Demonstration |
