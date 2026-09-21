@@ -783,6 +783,9 @@ export async function executeApprovedAdmission(
           },
         ],
       );
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
     });
 
     return prisma.application.findUniqueOrThrow({

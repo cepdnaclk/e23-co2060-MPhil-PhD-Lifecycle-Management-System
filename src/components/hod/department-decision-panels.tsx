@@ -96,9 +96,7 @@ export function HodApplicationDecisionPanel({
         }}
       />
       {applications.length === 0 ? <p className="text-muted-foreground">No applications await a decision.</p> : applications.map((application) => {
-        const ready =
-          application.supervisorConsentStatus === "CONSENTED" &&
-          application.completedReviews >= 2;
+        const ready = application.supervisorConsentStatus === "CONSENTED";
         return (
           <Card key={application.id}>
             <CardHeader>
@@ -106,7 +104,7 @@ export function HodApplicationDecisionPanel({
               <div className="flex gap-2">
                 <Badge variant="secondary">{application.programType} {application.studyMode.replaceAll("_", " ")}</Badge>
                 <Badge variant={ready ? "default" : "secondary"}>
-                  {application.supervisorConsentStatus}; {application.completedReviews}/2 reviews
+                  {application.supervisorConsentStatus}
                 </Badge>
               </div>
             </CardHeader>
@@ -134,7 +132,7 @@ export function HodApplicationDecisionPanel({
                   </Button>
                 ))}
               </div>
-              {!ready ? <p id={`application-decision-help-${application.id}`} className="text-xs text-muted-foreground">Supervisor consent and two completed reviews are required before a decision can be recorded.</p> : null}
+              {!ready ? <p id={`application-decision-help-${application.id}`} className="text-xs text-muted-foreground">Supervisor consent is required before a decision can be recorded.</p> : null}
             </CardContent>
           </Card>
         );

@@ -251,14 +251,14 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
             <div className="space-y-8">
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Research Area</h3>
-                <div className="rounded-md border bg-muted/50 p-4 text-base">
+                <div className="rounded-md border bg-muted/50 p-4 text-base break-words">
                   {application.researchArea || "Not specified"}
                 </div>
               </div>
 
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Proposal</h3>
-                <div className="rounded-md border bg-muted/50 p-4 text-base">
+                <div className="rounded-md border bg-muted/50 p-4 text-base break-words">
                   <p className="font-medium">{application.proposalTitle}</p>
                   <p className="mt-2 whitespace-pre-wrap text-sm">
                     {application.proposalAbstract}
@@ -297,7 +297,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
 
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">Statement of Purpose</h3>
-                <div className="rounded-md border bg-muted/50 p-4 text-sm leading-relaxed whitespace-pre-wrap">
+                <div className="rounded-md border bg-muted/50 p-4 text-sm leading-relaxed whitespace-pre-wrap break-words">
                   {application.statementOfPurpose || "No statement provided."}
                 </div>
               </div>
@@ -336,7 +336,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
           </div>
         </CardContent>
         <CardFooter className="flex flex-col-reverse justify-end gap-4 border-t pt-6 sm:flex-row">
-          {application.status === "SUBMITTED" && (
+          {application.status === "SUBMITTED" && application.departmentDecision === "PENDING" && (
             <Button
               onClick={() =>
                 setShowConfirmModal({ show: true, type: "UNDER_REVIEW" })
