@@ -77,8 +77,8 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
         },
         {
           id: "manage-thesis-documents",
-          label: "Manage Thesis Documents",
-          description: "Review thesis versions and corrections.",
+          label: "Request Thesis Readiness",
+          description: "Verify prerequisites and request Supervisor certification.",
           href: "/dashboard/student/theses/submit",
         },
         {

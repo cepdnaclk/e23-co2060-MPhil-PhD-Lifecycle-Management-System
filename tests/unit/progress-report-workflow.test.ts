@@ -138,6 +138,13 @@ describe("fixed milestone progress workflow", () => {
         }),
       }),
     );
+    expect(prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      {
+        maxWait: 10_000,
+        timeout: 20_000,
+      },
+    );
   });
 
   it("marks past-due incomplete milestones as overdue", async () => {

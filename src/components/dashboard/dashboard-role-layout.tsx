@@ -220,6 +220,7 @@ function getNavItems(role: DashboardRole) {
         { href: "/dashboard/supervisor/proposals/evaluate", label: "Monitor Proposals", icon: ClipboardCheck },
         { href: "/dashboard/supervisor/ethics", label: "Ethics Recommendations", icon: ClipboardCheck },
         { href: "/dashboard/supervisor/progress-reports", label: "Monitor Reports", icon: TrendingUp },
+        { href: "/dashboard/supervisor/readiness", label: "Thesis Readiness", icon: GraduationCap },
         { href: "/dashboard/supervisor/corrections", label: "Correction Reviews", icon: FileEdit },
         { href: "/dashboard/supervisor/documents", label: "Documents", icon: FolderOpen },
       ];

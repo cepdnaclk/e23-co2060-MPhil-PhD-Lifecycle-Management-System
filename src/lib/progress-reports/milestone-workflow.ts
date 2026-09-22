@@ -296,6 +296,9 @@ export async function submitMilestoneProgress(
     );
 
     return report;
+    }, {
+      maxWait: 10_000,
+      timeout: 20_000,
     });
   } catch (error) {
     if (verifiedSession) {
@@ -492,9 +495,16 @@ export async function decideMilestoneProgress(
       actorRole: auth.role,
       previousState: ProgressSubmissionStatus.SUBMITTED,
       newState: status,
-      metadata: returned ? { reason: input.reason } : undefined,
+      metadata: returned
+        ? { reason: input.reason }
+        : input.reason
+          ? { supervisorComments: input.reason }
+          : undefined,
     });
 
     return updated;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }

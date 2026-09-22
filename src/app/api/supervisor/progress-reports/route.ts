@@ -16,7 +16,6 @@ export const GET = withAuth(
         return NextResponse.json({ error: "Supervisor profile not found." }, { status: 404 });
       }
 
-      // Find all progress reports for students assigned to this supervisor.
       const reports = await prisma.progressReport.findMany({
         where: {
           isArchived: false,
@@ -24,6 +23,8 @@ export const GET = withAuth(
             supervisorAssignments: {
               some: {
                 supervisorId: supervisor.id,
+                isPrimary: true,
+                effectiveTo: null,
               },
             },
           },
@@ -66,6 +67,11 @@ export const GET = withAuth(
           id: r.id,
           periodLabel: r.periodLabel,
           narrative: r.narrative,
+          status: r.status,
+          currentVersion: r.currentVersion,
+          submittedAt: r.submittedAt,
+          returnReason: r.returnReason,
+          approvedAt: r.approvedAt,
           createdAt: r.createdAt,
           documents: r.documents,
           student: {

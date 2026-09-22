@@ -68,7 +68,7 @@ export default function HomePage() {
             />
           </div>
           <h1 className={`${montserrat.className} relative -top-4 mx-auto max-w-5xl text-balance text-center text-[2.1rem] font-normal leading-[1.1] tracking-[-0.06em] text-[#111318] sm:-top-5 sm:text-[3.7rem] lg:-top-6 lg:text-[4.8rem]`}>
-            Postgraduate Lifecycle Platform
+            Postgraduate Management Platform
           </h1>
 
           <Link

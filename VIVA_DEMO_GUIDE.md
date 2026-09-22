@@ -102,6 +102,7 @@ Before starting the viva demonstration, ensure the application is initialized wi
 1. Log in as **Supervisor** at `/login`.
 2. Navigate to `/dashboard/supervisor`.
 3. Open **Progress Reports**, review the student submission, type supervisor comments, and click **Sign Off Progress Report**.
+4. Repeat Steps 3.1 and 3.2 until every scheduled progress milestone is signed off; thesis readiness remains blocked while any milestone is incomplete.
 
 #### Step 3.3: Department Progress Oversight (HOD)
 1. Log in as **Head of Department (HOD)** at `/login`.
@@ -109,9 +110,9 @@ Before starting the viva demonstration, ensure the application is initialized wi
 3. Highlight the **Department Progress Table**: demonstrate filtering by registration status, monitoring active candidate milestones, and checking overdue alert flags.
 
 #### Step 3.4: Thesis Readiness Certification (Supervisor)
-1. Log in as **Supervisor** at `/login`.
-2. Navigate to `/dashboard/supervisor`.
-3. Select the student, verify all prerequisite criteria (approved proposal, ethics clearance, signed progress reports), and click **Certify Thesis Readiness**.
+1. Log in as **Student** at `/login`, open **Thesis Submission**, and click **Request Thesis Readiness**.
+2. Log in as **Supervisor** at `/login` and open **Thesis Readiness**.
+3. Select the student request, verify all prerequisite criteria (approved proposal, ethics clearance, signed progress reports, and examination copy readiness), and click **Certify Thesis Readiness**.
 
 #### Step 3.5: Thesis Readiness Approval (HOD)
 1. Log in as **Head of Department (HOD)** at `/login`.

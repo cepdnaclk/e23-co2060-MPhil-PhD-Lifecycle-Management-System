@@ -53,9 +53,17 @@ type ReadinessSummary = {
 export function ThesisSubmissionPanel({
   thesis,
   readiness,
+  readinessCriteria,
 }: {
   thesis: ThesisSummary;
   readiness: ReadinessSummary;
+  readinessCriteria?: {
+    proposalApproved: boolean;
+    ethicsSatisfied: boolean;
+    milestonesApproved: boolean;
+    approvedMilestones: number;
+    totalMilestones: number;
+  };
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(thesis?.title ?? "");
@@ -308,6 +316,31 @@ export function ThesisSubmissionPanel({
             Submission opens only after your request, primary Supervisor
             certification, and HOD approval.
           </p>
+          {readinessCriteria && (
+            <div className="space-y-2 rounded-md border p-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span>Approved proposal</span>
+                <Badge variant={readinessCriteria.proposalApproved ? "default" : "destructive"}>
+                  {readinessCriteria.proposalApproved ? "Satisfied" : "Required"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>HOD-confirmed ethics clearance</span>
+                <Badge variant={readinessCriteria.ethicsSatisfied ? "default" : "destructive"}>
+                  {readinessCriteria.ethicsSatisfied ? "Satisfied" : "Required"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>
+                  Signed progress milestones ({readinessCriteria.approvedMilestones}/
+                  {readinessCriteria.totalMilestones})
+                </span>
+                <Badge variant={readinessCriteria.milestonesApproved ? "default" : "destructive"}>
+                  {readinessCriteria.milestonesApproved ? "Satisfied" : "Incomplete"}
+                </Badge>
+              </div>
+            </div>
+          )}
           {readiness?.supervisorNotes && (
             <p className="text-sm">Supervisor: {readiness.supervisorNotes}</p>
           )}
@@ -328,7 +361,7 @@ export function ThesisSubmissionPanel({
                 disabled={isRequesting}
                 onClick={() => void requestReadiness()}
               >
-                {isRequesting ? "Requesting…" : "Request readiness"}
+                {isRequesting ? "Requesting…" : "Request Thesis Readiness"}
               </Button>
             </>
           )}

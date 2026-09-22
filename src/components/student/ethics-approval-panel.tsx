@@ -272,9 +272,11 @@ export function EthicsApprovalPanel() {
       const payload = (await response.json()) as {
         error?: string;
         approval?: EthicsApproval;
+        record?: EthicsApproval;
       };
+      const submittedApproval = payload.approval ?? payload.record;
 
-      if (!response.ok || !payload.approval) {
+      if (!response.ok || !submittedApproval) {
         throw new Error(payload.error ?? "Ethics approval submission failed.");
       }
 
