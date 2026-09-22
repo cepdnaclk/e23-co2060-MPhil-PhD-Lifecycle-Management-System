@@ -16,6 +16,22 @@ vi.mock("@/lib/firebase/admin", () => ({
   setCustomClaimsForUser: vi.fn(),
 }));
 
+vi.mock("@/lib/outbox/service", () => ({
+  enqueueOutboxMessage: vi.fn(async (transaction, input) =>
+    transaction.outboxMessage.create({
+      data: {
+        ...input,
+        topic: input.topic ?? "user.notification",
+        maxAttempts: 5,
+      },
+    }),
+  ),
+  processOutboxMessage: vi.fn().mockResolvedValue({
+    claimed: true,
+    status: "DELIVERED",
+  }),
+}));
+
 vi.mock("@/lib/email", () => ({
   buildWelcomeAccountTemplate: vi.fn().mockReturnValue({
     subject: "Account ready",
@@ -43,6 +59,9 @@ vi.mock("@/lib/prisma/client", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    administrator: {
+      findUnique: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -60,6 +79,7 @@ import {
   setCustomClaimsForUser,
 } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/prisma/client";
+import { processOutboxMessage } from "@/lib/outbox/service";
 
 describe("application submission utilities", () => {
   beforeEach(() => {
@@ -192,6 +212,10 @@ describe("application submission utilities", () => {
   });
 
   it("executes HOD-approved admission with one registration and milestones", async () => {
+    vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
+      id: "admin-profile-1",
+      userId: "admin-user-1",
+    } as never);
     vi.mocked(prisma.application.findUnique)
       .mockResolvedValueOnce({
         id: "application-admit-2",
@@ -202,6 +226,8 @@ describe("application submission utilities", () => {
         studyMode: StudyMode.PART_TIME,
         departmentDecision: DepartmentDecision.APPROVED,
         studentId: null,
+        proposedSupervisorId: "sup-profile-1",
+        proposedSupervisorUserId: "sup-user-1",
       } as never)
       .mockResolvedValueOnce({
         id: "application-admit-2",
@@ -235,6 +261,11 @@ describe("application submission utilities", () => {
           create: vi.fn().mockResolvedValue({
             id: "registration-2",
             status: RegistrationStatus.ACTIVE,
+          }),
+        },
+        supervisorAssignment: {
+          create: vi.fn().mockResolvedValue({
+            id: "assignment-2",
           }),
         },
         application: {
@@ -289,6 +320,17 @@ describe("application submission utilities", () => {
           }),
         }),
       );
+      expect(tx.supervisorAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            studentId: "student-2",
+            supervisorId: "sup-profile-1",
+            supervisorUserId: "sup-user-1",
+            isPrimary: true,
+            assignedBy: "admin-profile-1",
+          }),
+        }),
+      );
 
       return result;
     });
@@ -321,5 +363,9 @@ describe("application submission utilities", () => {
     expect(vi.mocked(createFirebaseAuthUser).mock.calls[0]?.[0]).not.toHaveProperty(
       "password",
     );
+    expect(processOutboxMessage).toHaveBeenCalledWith({
+      id: "outbox-2",
+      workerId: expect.stringMatching(/^admission:application-admit-2:/),
+    });
   });
 });

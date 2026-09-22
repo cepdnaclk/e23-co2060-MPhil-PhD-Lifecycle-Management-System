@@ -107,3 +107,66 @@ export function ProposedSupervisorConsentPanel({
     </div>
   );
 }
+
+export type StudentResearchProposalItem = {
+  id: string;
+  title: string;
+  abstract: string;
+  status: string;
+  currentVersion: number;
+  updatedAt: string | Date;
+  student: {
+    user: {
+      displayName: string;
+      email: string;
+    };
+  };
+};
+
+export function StudentResearchProposalsPanel({
+  proposals,
+}: {
+  proposals: StudentResearchProposalItem[];
+}) {
+  if (proposals.length === 0) {
+    return (
+      <p className="text-muted-foreground">
+        No research proposals have been submitted by your assigned students yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {proposals.map((proposal) => (
+        <Card key={proposal.id}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>{proposal.title}</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">v{proposal.currentVersion}</Badge>
+                <Badge>{proposal.status}</Badge>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {proposal.student.user.displayName} &middot; {proposal.student.user.email}
+            </p>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground line-clamp-4">
+              {proposal.abstract}
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Last updated:{" "}
+              {new Intl.DateTimeFormat("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }).format(new Date(proposal.updatedAt))}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

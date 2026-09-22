@@ -227,6 +227,7 @@ function getNavItems(role: DashboardRole) {
       return [
         { href: "/dashboard/admin/users", label: "Manage Users", icon: UserCog },
         { href: "/dashboard/admin/applications", label: "Applications", icon: Inbox },
+        { href: "/dashboard/admin/proposals/evaluate", label: "Proposal Approvals", icon: ClipboardCheck },
         { href: "/dashboard/admin/progress", label: "Department Progress", icon: TrendingUp },
         { href: "/dashboard/admin/ethics", label: "Ethics Documents", icon: ClipboardCheck },
         { href: "/dashboard/admin/assignments/supervisors", label: "Supervisor Assignments", icon: UserCheck },

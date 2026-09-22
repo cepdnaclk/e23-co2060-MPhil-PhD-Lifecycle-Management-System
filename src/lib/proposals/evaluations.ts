@@ -198,8 +198,29 @@ async function findProposalForEvaluation(
 async function requireExaminerContext(
   auth: AuthenticatedUserContext,
 ): Promise<ExaminerContext> {
-  if (auth.role !== UserRole.EXAMINER) {
-    throw new ProposalEvaluationError("Only examiners can submit proposal reviews.", 403);
+  if (auth.role !== UserRole.EXAMINER && auth.role !== UserRole.SUPERVISOR) {
+    throw new ProposalEvaluationError("Only examiners or supervisors can submit proposal evaluations.", 403);
+  }
+
+  // For supervisors, auto-create an Examiner profile if one doesn't exist yet
+  if (auth.role === UserRole.SUPERVISOR) {
+    const examiner = await prisma.examiner.upsert({
+      where: { userId: auth.userId },
+      create: { userId: auth.userId },
+      update: {},
+      select: {
+        id: true,
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+    });
+    return examiner;
   }
 
   const examiner = await prisma.examiner.findUnique({
@@ -229,14 +250,20 @@ async function requireExaminerContext(
 function assertExaminerNotAssignedSupervisor(
   proposal: ProposalEvaluationView,
   examiner: ExaminerContext,
+  auth: AuthenticatedUserContext,
 ) {
+  // Supervisors are explicitly allowed to evaluate their own students' proposals
+  if (auth.role === UserRole.SUPERVISOR) {
+    return;
+  }
+
   const hasSupervisorConflict = proposal.student.supervisorAssignments.some(
     (assignment) => assignment.supervisorUserId === examiner.userId,
   );
 
   if (hasSupervisorConflict) {
     throw new ProposalEvaluationError(
-      "Assigned supervisors cannot review the same student's proposal.",
+      "Assigned supervisors cannot review the same student's proposal as an examiner.",
       403,
     );
   }
@@ -344,7 +371,7 @@ export async function createProposalEvaluation(
     throw new ProposalEvaluationError("Research proposal not found.", 404);
   }
 
-  assertExaminerNotAssignedSupervisor(proposal, examiner);
+  assertExaminerNotAssignedSupervisor(proposal, examiner, auth);
   assertProposalUnderReview(proposal);
 
   if (proposal.versions.length !== 1) {
@@ -454,9 +481,9 @@ export async function getProposalEvaluations(
     throw new ProposalEvaluationError("Research proposal not found.", 404);
   }
 
-  if (auth.role === UserRole.EXAMINER) {
+  if (auth.role === UserRole.EXAMINER || auth.role === UserRole.SUPERVISOR) {
     const examiner = await requireExaminerContext(auth);
-    assertExaminerNotAssignedSupervisor(proposal, examiner);
+    assertExaminerNotAssignedSupervisor(proposal, examiner, auth);
   } else if (auth.role !== UserRole.ADMINISTRATOR) {
     throw new ProposalEvaluationError("Forbidden.", 403);
   }

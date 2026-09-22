@@ -3,13 +3,21 @@ import { AssignmentStatus, SupervisorConsentStatus } from "@prisma/client";
 import {
   AssignedProposalReviewPanel,
   ProposedSupervisorConsentPanel,
+  StudentResearchProposalsPanel,
 } from "@/components/applications/assigned-proposal-work";
 import { getServerDashboardContext } from "@/lib/dashboard/server";
 import { prisma } from "@/lib/prisma/client";
 
 export default async function SupervisorApplicationsPage() {
   const { auth } = await getServerDashboardContext("supervisor");
-  const [applications, assignments] = await Promise.all([
+
+  // Find the supervisor's profile ID first
+  const supervisorProfile = await prisma.supervisor.findUnique({
+    where: { userId: auth.userId },
+    select: { id: true },
+  });
+
+  const [applications, assignments, studentProposals] = await Promise.all([
     prisma.application.findMany({
       where: {
         proposedSupervisorUserId: auth.userId,
@@ -34,11 +42,57 @@ export default async function SupervisorApplicationsPage() {
         },
       },
     }),
+    // Proposals submitted by currently-assigned students
+    supervisorProfile
+      ? prisma.researchProposal.findMany({
+          where: {
+            isArchived: false,
+            student: {
+              supervisorAssignments: {
+                some: {
+                  supervisorId: supervisorProfile.id,
+                  effectiveTo: null,
+                },
+              },
+            },
+          },
+          orderBy: { updatedAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            abstract: true,
+            status: true,
+            currentVersion: true,
+            updatedAt: true,
+            student: {
+              select: {
+                user: { select: { displayName: true, email: true } },
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
+
   return (
     <div className="space-y-8 p-4 pt-6 md:p-8">
-      <section className="space-y-4"><div><h2 className="text-3xl font-bold tracking-tight">Application work</h2><p className="mt-2 text-muted-foreground">Proposed-supervisor consent and explicitly assigned proposal reviews.</p></div><h3 className="text-xl font-semibold">Consent requests</h3><ProposedSupervisorConsentPanel applications={applications} /></section>
-      <section className="space-y-4"><h2 className="text-xl font-semibold">Assigned reviews</h2><AssignedProposalReviewPanel assignments={assignments.map((assignment) => ({ id: assignment.id, applicantName: assignment.application.applicantName, ...assignment.proposalVersion }))} /></section>
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Application work</h2>
+          <p className="mt-2 text-muted-foreground">Proposed-supervisor consent and explicitly assigned proposal reviews.</p>
+        </div>
+        <h3 className="text-xl font-semibold">Consent requests</h3>
+        <ProposedSupervisorConsentPanel applications={applications} />
+      </section>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Assigned reviews</h2>
+        <AssignedProposalReviewPanel assignments={assignments.map((assignment) => ({ id: assignment.id, applicantName: assignment.application.applicantName, ...assignment.proposalVersion }))} />
+      </section>
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Student research proposals</h2>
+        <p className="text-muted-foreground text-sm">Research proposals submitted by your currently assigned students.</p>
+        <StudentResearchProposalsPanel proposals={studentProposals} />
+      </section>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export const GET = withAuth<RouteParams>(
       );
     }
   },
-  [UserRole.EXAMINER, UserRole.ADMINISTRATOR],
+  [UserRole.EXAMINER, UserRole.ADMINISTRATOR, UserRole.SUPERVISOR],
 );
 
 export const POST = withAuth<RouteParams>(
@@ -58,5 +58,5 @@ export const POST = withAuth<RouteParams>(
       );
     }
   },
-  [UserRole.EXAMINER],
+  [UserRole.EXAMINER, UserRole.SUPERVISOR],
 );
