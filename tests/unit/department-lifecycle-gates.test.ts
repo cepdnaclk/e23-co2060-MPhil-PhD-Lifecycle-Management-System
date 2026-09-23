@@ -91,6 +91,7 @@ describe("Department lifecycle gates", () => {
               examinerAssignments: [
                 {
                   report: { id: "report-1" },
+                  documents: [{ id: "report-pdf-1" }],
                   vivaRecommendation: { id: "recommendation-1" },
                 },
               ],
@@ -117,7 +118,7 @@ describe("Department lifecycle gates", () => {
     ).rejects.toMatchObject({
       status: 409,
       message:
-        "All confirmed examiners must submit independent reports and recommendations.",
+        "At least two confirmed examiners must each submit an independent report, report PDF, and viva recommendation.",
     });
   });
 

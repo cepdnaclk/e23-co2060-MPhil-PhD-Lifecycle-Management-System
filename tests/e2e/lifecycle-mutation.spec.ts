@@ -127,7 +127,10 @@ test.describe(
           );
         }
 
-        const declared = await postJson<{ record: { id: string } }>(
+        const declared = await postJson<{
+          approval: { id: string };
+          record: { id: string };
+        }>(
           pages.STUDENT,
           "/api/student/ethics/declaration",
           {

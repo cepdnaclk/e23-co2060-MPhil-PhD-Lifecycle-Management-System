@@ -222,6 +222,41 @@ export type ProcessOutboxResult = {
   recoveredStaleLeases: number;
 };
 
+export type ProcessOutboxMessageResult =
+  | { claimed: false; status: "NOT_CLAIMED" }
+  | { claimed: true; status: "DELIVERED" | "FAILED" | "DEAD_LETTER" };
+
+/**
+ * Delivers one known outbox message after its owning transaction commits.
+ * Scheduled batch processing remains the recovery path when an immediate
+ * attempt cannot claim or deliver the message.
+ */
+export async function processOutboxMessage(input: {
+  id: string;
+  workerId: string;
+}): Promise<ProcessOutboxMessageResult> {
+  const message = await claimMessage(input.id, input.workerId);
+
+  if (!message) {
+    return { claimed: false, status: "NOT_CLAIMED" };
+  }
+
+  try {
+    await deliverClaimedMessage(message);
+    await finishDelivery(message);
+    return { claimed: true, status: "DELIVERED" };
+  } catch (error) {
+    await finishDelivery(message, error);
+    return {
+      claimed: true,
+      status:
+        message.attempts + 1 >= message.maxAttempts
+          ? "DEAD_LETTER"
+          : "FAILED",
+    };
+  }
+}
+
 export async function processOutboxBatch(input: {
   workerId: string;
   batchSize?: number;
@@ -262,26 +297,23 @@ export async function processOutboxBatch(input: {
   };
 
   for (const candidate of candidates) {
-    const message = await claimMessage(candidate.id, input.workerId);
+    const delivery = await processOutboxMessage({
+      id: candidate.id,
+      workerId: input.workerId,
+    });
 
-    if (!message) {
+    if (!delivery.claimed) {
       continue;
     }
 
     result.claimed += 1;
 
-    try {
-      await deliverClaimedMessage(message);
-      await finishDelivery(message);
+    if (delivery.status === "DELIVERED") {
       result.delivered += 1;
-    } catch (error) {
-      await finishDelivery(message, error);
-
-      if (message.attempts + 1 >= message.maxAttempts) {
-        result.deadLettered += 1;
-      } else {
-        result.failed += 1;
-      }
+    } else if (delivery.status === "DEAD_LETTER") {
+      result.deadLettered += 1;
+    } else {
+      result.failed += 1;
     }
   }
 

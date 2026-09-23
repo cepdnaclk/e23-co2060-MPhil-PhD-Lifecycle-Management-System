@@ -28,6 +28,7 @@ import {
 } from "@/lib/firebase/admin";
 import { assertValidApplicationStatusTransition } from "@/lib/prisma/application-status";
 import { prisma } from "@/lib/prisma/client";
+import { processOutboxMessage } from "@/lib/outbox/service";
 import { withSerializableRetry } from "@/lib/prisma/transactions";
 import { buildProgrammeSchedule } from "@/lib/programmes/rules";
 import type { AuthenticatedUserContext } from "@/types/auth";
@@ -631,6 +632,11 @@ export async function executeApprovedAdmission(
     );
   }
 
+  const adminProfile = await prisma.administrator?.findUnique({
+    where: { userId: auth.userId },
+    select: { id: true },
+  });
+
   const application = await prisma.application.findUnique({
     where: { id: applicationId },
     select: {
@@ -641,6 +647,8 @@ export async function executeApprovedAdmission(
       studyMode: true,
       departmentDecision: true,
       studentId: true,
+      proposedSupervisorId: true,
+      proposedSupervisorUserId: true,
     },
   });
 
@@ -698,7 +706,7 @@ export async function executeApprovedAdmission(
       accountSetupUrl,
     });
 
-    await prisma.$transaction(async (tx) => {
+    const welcomeOutboxId = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
           email: application.applicantEmail,
@@ -733,6 +741,24 @@ export async function executeApprovedAdmission(
         },
       });
 
+      if (
+        application.proposedSupervisorId &&
+        application.proposedSupervisorUserId &&
+        adminProfile
+      ) {
+        await tx.supervisorAssignment?.create({
+          data: {
+            studentId: student.id,
+            supervisorId: application.proposedSupervisorId,
+            supervisorUserId: application.proposedSupervisorUserId,
+            isPrimary: true,
+            assignedAt: registrationStartDate,
+            effectiveFrom: registrationStartDate,
+            assignedBy: adminProfile.id,
+          },
+        });
+      }
+
       await tx.application.update({
         where: { id: application.id },
         data: {
@@ -748,7 +774,7 @@ export async function executeApprovedAdmission(
           registrationId: registration.id,
         },
       });
-      await appendLifecycleEventAndEnqueue(
+      const { outboxMessages } = await appendLifecycleEventAndEnqueue(
         tx as never,
         {
           eventKey: `application:${application.id}:admission-executed`,
@@ -783,7 +809,24 @@ export async function executeApprovedAdmission(
           },
         ],
       );
+
+      return outboxMessages[0]?.id ?? null;
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
     });
+
+    if (welcomeOutboxId) {
+      await processOutboxMessage({
+        id: welcomeOutboxId,
+        workerId: `admission:${application.id}:${randomUUID()}`,
+      }).catch((deliveryError) => {
+        console.error(
+          "Immediate admission welcome delivery failed; the outbox will retry it.",
+          deliveryError,
+        );
+      });
+    }
 
     return prisma.application.findUniqueOrThrow({
       where: { id: application.id },

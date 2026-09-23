@@ -35,7 +35,43 @@ export default async function HodExaminationsPage() {
       orderBy: { scheduledDate: "asc" },
       select: {
         id: true,
-        thesis: { select: { title: true } },
+        thesis: {
+          select: {
+            title: true,
+            examinerAssignments: {
+              where: { status: AssignmentStatus.ACCEPTED },
+              orderBy: { assignedAt: "asc" },
+              select: {
+                id: true,
+                examiner: {
+                  select: { user: { select: { displayName: true } } },
+                },
+                report: {
+                  select: {
+                    recommendation: true,
+                    reportText: true,
+                    submittedAt: true,
+                  },
+                },
+                vivaRecommendation: {
+                  select: {
+                    recommendation: true,
+                    rationale: true,
+                    submittedAt: true,
+                  },
+                },
+                documents: {
+                  where: {
+                    documentType: "REVIEW_ATTACHMENT",
+                    isDeleted: false,
+                  },
+                  orderBy: { createdAt: "desc" },
+                  select: { id: true, fileName: true },
+                },
+              },
+            },
+          },
+        },
         _count: { select: { recommendations: true } },
       },
     }),
@@ -66,7 +102,29 @@ export default async function HodExaminationsPage() {
       />
       <HodExaminationDecisionPanel
         assignments={assignments.map((assignment) => ({ id: assignment.id, thesisTitle: assignment.thesis.title, examinerName: assignment.examiner.user.displayName }))}
-        vivas={vivas.map((viva) => ({ id: viva.id, thesisTitle: viva.thesis.title, recommendationCount: viva._count.recommendations }))}
+        vivas={vivas.map((viva) => ({
+          id: viva.id,
+          thesisTitle: viva.thesis.title,
+          recommendationCount: viva._count.recommendations,
+          examinerEvidence: viva.thesis.examinerAssignments.map((assignment) => ({
+            id: assignment.id,
+            examinerName: assignment.examiner.user.displayName,
+            report: assignment.report
+              ? {
+                  ...assignment.report,
+                  submittedAt: assignment.report.submittedAt.toISOString(),
+                  document: assignment.documents[0] ?? null,
+                }
+              : null,
+            vivaRecommendation: assignment.vivaRecommendation
+              ? {
+                  ...assignment.vivaRecommendation,
+                  submittedAt:
+                    assignment.vivaRecommendation.submittedAt.toISOString(),
+                }
+              : null,
+          })),
+        }))}
         correctionVivas={correctionVivas.flatMap((viva) => {
           if (
             viva.hodOutcome !== ExaminerRecommendation.MINOR_CORRECTIONS &&

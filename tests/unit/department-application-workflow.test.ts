@@ -85,17 +85,14 @@ describe("Department application workflow boundaries", () => {
     });
   });
 
-  it("requires two completed current-version reviews before an HOD decision", async () => {
+  it("requires supervisor consent before an HOD decision", async () => {
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
       callback({
         application: {
           findUnique: vi.fn().mockResolvedValue({
             id: "application-1",
             departmentDecision: DepartmentDecision.PENDING,
-            supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
-            proposalReviewerAssignments: [
-              { status: AssignmentStatus.COMPLETED },
-            ],
+            supervisorConsentStatus: SupervisorConsentStatus.PENDING,
           }),
         },
       } as never),
@@ -117,7 +114,7 @@ describe("Department application workflow boundaries", () => {
       ),
     ).rejects.toMatchObject({
       status: 409,
-      message: "Two completed reviews of the current proposal version are required.",
+      message: "Supervisor consent is incomplete.",
     });
   });
 });

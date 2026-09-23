@@ -19,7 +19,7 @@ export default function LogoutPage() {
         console.error("Logout failed:", error);
       } finally {
         // Always redirect to home even if API fails
-        window.location.href = "/";
+        router.replace("/");
       }
     }
 

@@ -93,7 +93,8 @@ describe("proposal evaluation integration", () => {
       ),
     ).rejects.toMatchObject({
       status: 403,
-      message: "Assigned supervisors cannot review the same student's proposal.",
+      message:
+        "Assigned supervisors cannot review the same student's proposal as an examiner.",
     });
   });
 

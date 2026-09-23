@@ -224,6 +224,13 @@ npm run dev
 
 The application will be accessible at `http://localhost:3000`.
 
+### Local Testing Utilities
+
+When running the application locally without an active SMTP configuration, password setup emails will not be delivered. You can manually generate a Firebase password setup link for any user account (e.g., a newly admitted student or a test user) by running the included utility script:
+
+```bash
+npx tsx scratch/generate-link.mjs <user-email-address>
+```
 ---
 
 ## Repository Structure

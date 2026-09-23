@@ -15,7 +15,7 @@ export default async function ExaminerVivasPage() {
         where: {
           thesis: {
             examinerAssignments: {
-              some: { examinerId: examiner.id },
+              some: { examinerId: examiner.id, status: "ACCEPTED" },
             },
           },
         },
@@ -36,6 +36,19 @@ export default async function ExaminerVivasPage() {
               title: true,
               abstract: true,
               status: true,
+              examinerAssignments: {
+                where: { examinerId: examiner.id, status: "ACCEPTED" },
+                take: 1,
+                select: {
+                  id: true,
+                  report: { select: { id: true } },
+                  documents: {
+                    where: { documentType: "REVIEW_ATTACHMENT", isDeleted: false },
+                    take: 1,
+                    select: { id: true, fileName: true },
+                  },
+                },
+              },
               student: {
                 select: {
                   user: {
@@ -54,16 +67,24 @@ export default async function ExaminerVivasPage() {
 
   return (
     <VivaWorkspacePanel
-      vivas={vivas.map((viva) => ({
-        ...viva,
-        scheduledDate: viva.scheduledDate.toISOString(),
-        outcome: viva.outcome,
-        recommendation: viva.recommendations[0]?.recommendation ?? null,
-        thesis: {
-          ...viva.thesis,
-          status: viva.thesis.status,
-        },
-      }))}
+      vivas={vivas.map((viva) => {
+        const { examinerAssignments, ...thesis } = viva.thesis;
+        return {
+          ...viva,
+          scheduledDate: viva.scheduledDate.toISOString(),
+          outcome: viva.outcome,
+          recommendation: viva.recommendations[0]?.recommendation ?? null,
+          assignment: {
+            id: examinerAssignments[0]?.id ?? "",
+            reportSubmitted: Boolean(examinerAssignments[0]?.report),
+            reportDocument: examinerAssignments[0]?.documents[0] ?? null,
+          },
+          thesis: {
+            ...thesis,
+            status: thesis.status,
+          },
+        };
+      })}
     />
   );
 }

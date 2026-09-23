@@ -1,12 +1,18 @@
+import { randomUUID } from "node:crypto";
+
 import {
   AcademicStatus,
   AssignmentStatus,
+  DocumentType,
+  DocumentVerificationStatus,
   ExaminerRecommendation,
   MilestoneStatus,
   ProposalStatus,
   ReadinessDecision,
   RegistrationStatus,
   ThesisStatus,
+  UploadPurpose,
+  UploadSessionStatus,
   UserRole,
   type Prisma,
 } from "@prisma/client";
@@ -18,6 +24,13 @@ import {
 } from "@/lib/audit/lifecycle";
 import { assertEthicsGateSatisfied } from "@/lib/ethics/department-record";
 import { prisma } from "@/lib/prisma/client";
+import type { StagedUploadFileInput } from "@/lib/uploads/schemas";
+import {
+  createStagedUploadSession,
+  reopenUploadSessionAfterFinalizeFailure,
+  UploadSessionError,
+  verifyUploadSessionForFinalize,
+} from "@/lib/uploads/sessions";
 import type { AuthenticatedUserContext } from "@/types/auth";
 
 export class DepartmentExaminationError extends Error {
@@ -516,6 +529,7 @@ export async function submitThesisExaminerReport(
   input: {
     recommendation: ExaminerRecommendation;
     reportText: string;
+    uploadSessionId: string;
   },
   auth: AuthenticatedUserContext,
 ) {
@@ -526,11 +540,55 @@ export async function submitThesisExaminerReport(
     );
   }
 
-  return prisma.$transaction(async (tx) => {
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      input.uploadSessionId,
+      UploadPurpose.REVIEW_ATTACHMENT,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new DepartmentExaminationError(error.message, error.status);
+    }
+    throw error;
+  }
+
+  if (verification.state === "FINALIZED") {
+    const existing = await prisma.thesisExaminerReport.findUnique({
+      where: { id: verification.finalizedEntityId },
+    });
+    if (!existing) {
+      throw new DepartmentExaminationError(
+        "Finalized examiner report could not be loaded.",
+        500,
+      );
+    }
+    return existing;
+  }
+
+  if (
+    verification.session.files.length !== 1 ||
+    verification.session.files[0]?.mimeType !== "application/pdf"
+  ) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verification.session.id,
+      "An independent examiner report requires exactly one PDF file.",
+    );
+    throw new DepartmentExaminationError(
+      "Upload exactly one PDF examiner report.",
+      400,
+    );
+  }
+
+  const verifiedSession = verification.session;
+  try {
+    return await prisma.$transaction(async (tx) => {
     const assignment = await tx.thesisExaminerAssignment.findUnique({
       where: { id: assignmentId },
       select: {
         id: true,
+        studentId: true,
         examinerUserId: true,
         status: true,
         report: { select: { id: true } },
@@ -566,6 +624,38 @@ export async function submitThesisExaminerReport(
         reportText: input.reportText,
       },
     });
+    const file = verifiedSession.files[0];
+    const documentId = randomUUID();
+    await tx.document.create({
+      data: {
+        id: documentId,
+        documentType: DocumentType.REVIEW_ATTACHMENT,
+        studentId: assignment.studentId,
+        thesisExaminerAssignmentId: assignment.id,
+        fileName: file.fileName,
+        storagePath: file.storagePath,
+        mimeType: file.mimeType,
+        sizeBytes: file.sizeBytes,
+        checksumSha256: file.checksumSha256,
+        verificationStatus: DocumentVerificationStatus.VERIFIED,
+        verifiedAt: new Date(),
+        version: 1,
+        isCurrentVersion: true,
+      },
+    });
+    await tx.stagedUploadFile.update({
+      where: { id: file.id },
+      data: { documentId },
+    });
+    await tx.uploadSession.update({
+      where: { id: verifiedSession.id },
+      data: {
+        status: UploadSessionStatus.FINALIZED,
+        finalizedAt: new Date(),
+        finalizedEntityId: report.id,
+        result: { assignmentId: assignment.id, documentId },
+      },
+    });
     await appendLifecycleEvent(tx as never, {
       eventKey: `thesis-examiner-assignment:${assignment.id}:report-submitted`,
       eventType: LIFECYCLE_EVENT.THESIS_REPORT_SUBMITTED,
@@ -578,7 +668,217 @@ export async function submitThesisExaminerReport(
     });
 
     return report;
+    });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Examiner report finalization failed.",
+    );
+    throw error;
+  }
+}
+
+export async function createExaminerReportUploadUrl(
+  assignmentId: string,
+  input: { idempotencyKey: string; files: StagedUploadFileInput[] },
+  auth: AuthenticatedUserContext,
+) {
+  if (auth.role !== UserRole.EXAMINER) {
+    throw new DepartmentExaminationError(
+      "Only the assigned examiner can upload this report.",
+      403,
+    );
+  }
+
+  const assignment = await prisma.thesisExaminerAssignment.findUnique({
+    where: { id: assignmentId },
+    select: {
+      id: true,
+      studentId: true,
+      examinerUserId: true,
+      status: true,
+      report: { select: { id: true } },
+      documents: {
+        where: { documentType: DocumentType.REVIEW_ATTACHMENT, isDeleted: false },
+        take: 1,
+        select: { id: true },
+      },
+    },
   });
+  if (!assignment) {
+    throw new DepartmentExaminationError("Examiner assignment not found.", 404);
+  }
+  if (
+    assignment.examinerUserId !== auth.userId ||
+    assignment.status !== AssignmentStatus.ACCEPTED
+  ) {
+    throw new DepartmentExaminationError(
+      "This confirmed assignment belongs to another examiner.",
+      403,
+    );
+  }
+  if (assignment.report && assignment.documents.length > 0) {
+    throw new DepartmentExaminationError(
+      "The examiner report PDF has already been attached.",
+      409,
+    );
+  }
+  if (
+    !Array.isArray(input.files) ||
+    input.files.length !== 1 ||
+    input.files[0]?.mimeType !== "application/pdf" ||
+    !input.files[0]?.fileName.toLowerCase().endsWith(".pdf")
+  ) {
+    throw new DepartmentExaminationError(
+      "Upload exactly one PDF examiner report.",
+      400,
+    );
+  }
+
+  try {
+    return await createStagedUploadSession(
+      {
+        purpose: UploadPurpose.REVIEW_ATTACHMENT,
+        idempotencyKey: input.idempotencyKey,
+        files: input.files,
+      },
+      auth,
+      `${assignment.studentId}/${assignment.id}`,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new DepartmentExaminationError(error.message, error.status);
+    }
+    throw error;
+  }
+}
+
+export async function attachExaminerReportPdf(
+  assignmentId: string,
+  uploadSessionId: string,
+  auth: AuthenticatedUserContext,
+) {
+  if (auth.role !== UserRole.EXAMINER) {
+    throw new DepartmentExaminationError(
+      "Only the assigned examiner can attach this report PDF.",
+      403,
+    );
+  }
+
+  let verification;
+  try {
+    verification = await verifyUploadSessionForFinalize(
+      uploadSessionId,
+      UploadPurpose.REVIEW_ATTACHMENT,
+      auth,
+    );
+  } catch (error) {
+    if (error instanceof UploadSessionError) {
+      throw new DepartmentExaminationError(error.message, error.status);
+    }
+    throw error;
+  }
+  if (verification.state === "FINALIZED") {
+    return { attached: true };
+  }
+  if (
+    verification.session.files.length !== 1 ||
+    verification.session.files[0]?.mimeType !== "application/pdf"
+  ) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verification.session.id,
+      "An independent examiner report requires exactly one PDF file.",
+    );
+    throw new DepartmentExaminationError(
+      "Upload exactly one PDF examiner report.",
+      400,
+    );
+  }
+
+  const verifiedSession = verification.session;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const assignment = await tx.thesisExaminerAssignment.findUnique({
+        where: { id: assignmentId },
+        select: {
+          id: true,
+          studentId: true,
+          examinerUserId: true,
+          status: true,
+          report: { select: { id: true } },
+          documents: {
+            where: {
+              documentType: DocumentType.REVIEW_ATTACHMENT,
+              isDeleted: false,
+            },
+            take: 1,
+            select: { id: true },
+          },
+        },
+      });
+      if (!assignment?.report) {
+        throw new DepartmentExaminationError(
+          "Submit the independent thesis report before attaching its PDF.",
+          409,
+        );
+      }
+      if (
+        assignment.examinerUserId !== auth.userId ||
+        assignment.status !== AssignmentStatus.ACCEPTED
+      ) {
+        throw new DepartmentExaminationError(
+          "This confirmed assignment belongs to another examiner.",
+          403,
+        );
+      }
+      if (assignment.documents.length > 0) {
+        throw new DepartmentExaminationError(
+          "The examiner report PDF has already been attached.",
+          409,
+        );
+      }
+
+      const file = verifiedSession.files[0];
+      const documentId = randomUUID();
+      const document = await tx.document.create({
+        data: {
+          id: documentId,
+          documentType: DocumentType.REVIEW_ATTACHMENT,
+          studentId: assignment.studentId,
+          thesisExaminerAssignmentId: assignment.id,
+          fileName: file.fileName,
+          storagePath: file.storagePath,
+          mimeType: file.mimeType,
+          sizeBytes: file.sizeBytes,
+          checksumSha256: file.checksumSha256,
+          verificationStatus: DocumentVerificationStatus.VERIFIED,
+          verifiedAt: new Date(),
+          version: 1,
+          isCurrentVersion: true,
+        },
+      });
+      await tx.stagedUploadFile.update({
+        where: { id: file.id },
+        data: { documentId },
+      });
+      await tx.uploadSession.update({
+        where: { id: verifiedSession.id },
+        data: {
+          status: UploadSessionStatus.FINALIZED,
+          finalizedAt: new Date(),
+          finalizedEntityId: assignment.report.id,
+          result: { assignmentId: assignment.id, documentId },
+        },
+      });
+      return document;
+    });
+  } catch (error) {
+    await reopenUploadSessionAfterFinalizeFailure(
+      verifiedSession.id,
+      error instanceof Error ? error.message : "Examiner report PDF attachment failed.",
+    );
+    throw error;
+  }
 }
 
 export async function submitVivaRecommendation(
@@ -694,6 +994,14 @@ export async function recordHodVivaOutcome(
               select: {
                 report: { select: { id: true } },
                 vivaRecommendation: { select: { id: true } },
+                documents: {
+                  where: {
+                    documentType: DocumentType.REVIEW_ATTACHMENT,
+                    isDeleted: false,
+                  },
+                  take: 1,
+                  select: { id: true },
+                },
               },
             },
           },
@@ -716,11 +1024,14 @@ export async function recordHodVivaOutcome(
     if (
       assignments.length < 2 ||
       assignments.some(
-        (assignment) => !assignment.report || !assignment.vivaRecommendation,
+        (assignment) =>
+          !assignment.report ||
+          assignment.documents.length !== 1 ||
+          !assignment.vivaRecommendation,
       )
     ) {
       throw new DepartmentExaminationError(
-        "All confirmed examiners must submit independent reports and recommendations.",
+        "At least two confirmed examiners must each submit an independent report, report PDF, and viva recommendation.",
         409,
       );
     }

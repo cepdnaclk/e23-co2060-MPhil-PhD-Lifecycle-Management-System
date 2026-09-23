@@ -49,7 +49,7 @@ describe("proposal evaluation utilities", () => {
     }
   });
 
-  it("blocks supervisors from submitting proposal reviews", async () => {
+  it("blocks roles that cannot submit proposal reviews", async () => {
     await expect(
       createProposalEvaluation(
         "proposal-1",
@@ -58,16 +58,16 @@ describe("proposal evaluation utilities", () => {
           documents: [],
         },
         {
-          uid: "firebase-supervisor-1",
-          userId: "user-supervisor-1",
-          firebaseUid: "firebase-supervisor-1",
-          role: "SUPERVISOR",
-          email: "supervisor@example.com",
+          uid: "firebase-hod-1",
+          userId: "user-hod-1",
+          firebaseUid: "firebase-hod-1",
+          role: "HOD",
+          email: "hod@example.com",
         },
       ),
     ).rejects.toMatchObject({
       status: 403,
-      message: "Only examiners can submit proposal reviews.",
+      message: "Only examiners or supervisors can submit proposal evaluations.",
     });
   });
 });

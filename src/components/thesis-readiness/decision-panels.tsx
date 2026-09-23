@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -27,7 +28,9 @@ export function SupervisorReadinessPanel({
   requests: Array<{
     id: string;
     studentName: string;
+    studentEmail: string;
     studentMessage: string | null;
+    criteria: Record<(typeof CHECKLIST_ITEMS)[number][0], boolean>;
   }>;
 }) {
   const router = useRouter();
@@ -72,14 +75,17 @@ export function SupervisorReadinessPanel({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-xl font-semibold">Thesis-readiness requests</h2>
+        <h2 className="text-xl font-semibold">Thesis Readiness Certification</h2>
         <p className="text-sm text-muted-foreground">
-          Only the active primary Supervisor can certify or return a request.
+          Select a student request, verify every prerequisite, and record your decision.
         </p>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {requests.length === 0 ? (
-        <p className="text-muted-foreground">No readiness requests await you.</p>
+        <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+          No readiness requests await you. The student must open Thesis Submission
+          and click Request readiness before certification can begin.
+        </div>
       ) : (
         requests.map((request) => {
           const allChecked = CHECKLIST_ITEMS.every(
@@ -90,6 +96,7 @@ export function SupervisorReadinessPanel({
               <CardHeader>
                 <CardTitle>{request.studentName}</CardTitle>
                 <CardDescription>
+                  {request.studentEmail} &middot;{" "}
                   {request.studentMessage || "No Student message supplied."}
                 </CardDescription>
               </CardHeader>
@@ -99,6 +106,7 @@ export function SupervisorReadinessPanel({
                     <input
                       type="checkbox"
                       checked={Boolean(checks[request.id]?.[key])}
+                      disabled={!request.criteria[key]}
                       onChange={(event) =>
                         setChecks((current) => ({
                           ...current,
@@ -109,7 +117,12 @@ export function SupervisorReadinessPanel({
                         }))
                       }
                     />
-                    {label}
+                    <span className="flex flex-1 items-center justify-between gap-3">
+                      {label}
+                      <Badge variant={request.criteria[key] ? "default" : "destructive"}>
+                        {request.criteria[key] ? "Satisfied" : "Not satisfied"}
+                      </Badge>
+                    </span>
                   </label>
                 ))}
                 <Textarea
@@ -128,7 +141,7 @@ export function SupervisorReadinessPanel({
                     disabled={busy === request.id || !allChecked}
                     onClick={() => void decide(request.id, "CERTIFIED")}
                   >
-                    Certify readiness
+                    Certify Thesis Readiness
                   </Button>
                   <Button
                     variant="outline"

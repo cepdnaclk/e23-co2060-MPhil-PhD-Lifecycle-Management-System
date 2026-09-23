@@ -19,6 +19,28 @@ describe("ThesisSubmissionPanel staged multi-file flow", () => {
     vi.clearAllMocks();
   });
 
+  it("shows the readiness request action and its prerequisite status", () => {
+    render(
+      <ThesisSubmissionPanel
+        thesis={null}
+        readiness={null}
+        readinessCriteria={{
+          proposalApproved: true,
+          ethicsSatisfied: true,
+          milestonesApproved: false,
+          approvedMilestones: 1,
+          totalMilestones: 6,
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Request Thesis Readiness" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Signed progress milestones \(1\/6\)/)).toBeInTheDocument();
+    expect(screen.getByText("Incomplete")).toBeInTheDocument();
+  });
+
   it("presents a multi-file picker and accepts a two-file logical version", async () => {
     const { container } = render(
       <ThesisSubmissionPanel

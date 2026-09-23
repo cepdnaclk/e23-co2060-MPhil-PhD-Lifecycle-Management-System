@@ -331,17 +331,7 @@ export async function recordHodAdmissionDecision(
       );
     }
 
-    if (
-      application.proposalReviewerAssignments.length < 2 ||
-      application.proposalReviewerAssignments.some(
-        (assignment) => assignment.status !== AssignmentStatus.COMPLETED,
-      )
-    ) {
-      throw new DepartmentApplicationError(
-        "Two completed reviews of the current proposal version are required.",
-        409,
-      );
-    }
+    // Review validation removed as admissions only require supervisor consent
 
     const updated = await tx.application.update({
       where: { id: application.id },

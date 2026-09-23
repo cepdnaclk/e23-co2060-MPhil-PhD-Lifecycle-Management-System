@@ -41,6 +41,7 @@ vi.mock("@/lib/uploads/sessions", () => ({
   },
 }));
 
+import { appendLifecycleEventAndEnqueue } from "@/lib/audit/lifecycle";
 import {
   decideCorrectionCompletion,
   orderVivaCorrections,
@@ -330,6 +331,62 @@ describe("version-bound correction workflow", () => {
         data: { status: CorrectionOrderStatus.RETURNED },
       }),
     );
+  });
+
+  it("uses a unique outbox key for every HOD after Supervisor certification", async () => {
+    const append = vi.mocked(appendLifecycleEventAndEnqueue);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        correctionOrder: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "order-1",
+            status: CorrectionOrderStatus.SUBMITTED,
+            requiresExaminerReview: false,
+            originatingThesisVersionId: "thesis-version-1",
+            thesis: {
+              studentId: "student-1",
+              student: {
+                userId: "user-student",
+                supervisorAssignments: [{ id: "assignment-1" }],
+              },
+              examinerAssignments: [],
+            },
+            submissions: [
+              {
+                id: "submission-1",
+                versionNumber: 1,
+                revisedThesisVersionId: "thesis-version-2",
+                documents: [{ id: "document-1" }],
+              },
+            ],
+          }),
+          update: vi.fn().mockResolvedValue({
+            status: CorrectionOrderStatus.SUPERVISOR_CERTIFIED,
+          }),
+        },
+        correctionReview: {
+          create: vi.fn().mockResolvedValue({ id: "review-1" }),
+        },
+        user: {
+          findMany: vi.fn().mockResolvedValue([
+            { id: "hod-user-1" },
+            { id: "hod-user-2" },
+          ]),
+        },
+      } as never),
+    );
+
+    await reviewCorrectionsBySupervisor(
+      "order-1",
+      { decision: "CERTIFY", notes: "The submitted corrections satisfy the order." },
+      supervisorAuth,
+    );
+
+    const messages = append.mock.calls.at(-1)?.[2] ?? [];
+    expect(messages.map((message) => message.eventKey)).toEqual([
+      "correction-order:order-1:version:1:hod:hod-user-1",
+      "correction-order:order-1:version:1:hod:hod-user-2",
+    ]);
   });
 
   it("does not let one Examiner block independent required approvals", async () => {

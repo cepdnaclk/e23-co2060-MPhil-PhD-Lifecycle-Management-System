@@ -31,6 +31,7 @@ export default defineConfig([
     "playwright-report/**",
     "reports/**",
     "scratch/**",
+    "scripts/list-prisma.js",
     "test-results/**",
     "vitest-report/**",
   ]),

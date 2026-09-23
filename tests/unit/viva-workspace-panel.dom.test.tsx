@@ -22,6 +22,11 @@ const assignedViva = {
   venue: "Boardroom 1",
       outcome: null,
       recommendation: null,
+  assignment: {
+    id: "assignment-1",
+    reportSubmitted: false,
+    reportDocument: null,
+  },
   thesis: {
     id: "thesis-1",
     title: "Adaptive Systems Thesis",
@@ -71,6 +76,17 @@ describe("VivaWorkspacePanel", () => {
 
     expect(
       await screen.findByText("Secure download opened for thesis.pdf."),
+    ).toBeInTheDocument();
+  });
+
+  it("requires the independent thesis report before the viva recommendation", () => {
+    render(<VivaWorkspacePanel vivas={[assignedViva]} />);
+
+    expect(screen.getByText("Independent thesis report")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit Report" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit Recommendation" })).toBeDisabled();
+    expect(
+      screen.getByText("Submit the independent thesis report above to unlock this action."),
     ).toBeInTheDocument();
   });
 });

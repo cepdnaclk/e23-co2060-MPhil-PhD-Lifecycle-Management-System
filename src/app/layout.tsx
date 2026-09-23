@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "PGLMS",
-  description: "MPhil and PhD lifecycle management system",
+  description: "MPhil and PhD postgraduate management system",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",

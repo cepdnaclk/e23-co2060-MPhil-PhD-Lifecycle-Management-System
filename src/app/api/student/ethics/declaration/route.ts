@@ -30,11 +30,14 @@ export const POST = withAuth(
     }
 
     try {
-      const record = await declareEthicsNotRequired(
+      const approval = await declareEthicsNotRequired(
         parsed.data,
         context.auth,
       );
-      return NextResponse.json({ record }, { status: 201 });
+      return NextResponse.json(
+        { approval, record: approval },
+        { status: 201 },
+      );
     } catch (error) {
       if (error instanceof DepartmentEthicsError) {
         return NextResponse.json(

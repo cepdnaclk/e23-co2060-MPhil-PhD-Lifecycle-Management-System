@@ -184,9 +184,6 @@ async function findStudentProgressRecord(
         },
       },
       ethicsApprovals: {
-        where: {
-          isArchived: false,
-        },
         orderBy: {
           createdAt: "desc",
         },
@@ -380,6 +377,10 @@ export function calculateStageCompletionPercentages(input: {
   documents: StudentDocumentRecord[];
 }) {
   const counts = getDocumentStageCounts(input.documents);
+  const thesisIsFinalized =
+    input.thesisStatus === ThesisStatus.COMPLETED ||
+    input.thesisStatus === ThesisStatus.ARCHIVED ||
+    input.thesisStatus === ThesisStatus.CLOSED;
 
   const proposalCompletion =
     input.proposalStatus === ProposalStatus.APPROVED
@@ -405,11 +406,7 @@ export function calculateStageCompletionPercentages(input: {
 
   let thesisCompletion = 0;
 
-  if (
-    input.thesisStatus === ThesisStatus.COMPLETED ||
-    input.thesisStatus === ThesisStatus.ARCHIVED ||
-    input.thesisStatus === ThesisStatus.CLOSED
-  ) {
+  if (thesisIsFinalized) {
     thesisCompletion = 100;
   } else if (input.thesisStatus === ThesisStatus.CORRECTIONS_APPROVED) {
     thesisCompletion = 90;
@@ -441,7 +438,9 @@ export function calculateStageCompletionPercentages(input: {
     },
     thesis: {
       totalSubmittedVersions: counts.thesis.totalSubmittedVersions,
-      approvedVersions: counts.thesis.approvedVersions,
+      approvedVersions: thesisIsFinalized
+        ? counts.thesis.totalSubmittedVersions
+        : counts.thesis.approvedVersions,
       completionPercentage:
         proposalCompletion < 100 || !ethicsGateComplete ? 0 : thesisCompletion,
     },
