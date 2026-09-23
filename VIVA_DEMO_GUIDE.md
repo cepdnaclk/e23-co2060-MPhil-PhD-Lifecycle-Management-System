@@ -199,8 +199,9 @@ Repeat Step 4.3 while logged in as every confirmed Examiner. A report from only 
 
 #### Step 5.5: Graduation & Archiving Verification (Administrator)
 1. Log in as **Administrator** at `/login`.
-2. Navigate to `/dashboard/admin`.
-3. Show candidate record: student `academicStatus` is updated to **`GRADUATED`**, thesis status is **`COMPLETED`**, and student candidate record is safely archived.
+2. Navigate to **Completion Records** at `/dashboard/admin/completions`.
+3. Before archiving, show that the candidate has the **`GRADUATED`** badge and record the archive reason.
+4. Archive the lifecycle record, refresh **Completion Records**, and show that the candidate remains in the list with both **`GRADUATED`** and **`ARCHIVED`** badges, plus the archive date and reason.
 
 ---
 

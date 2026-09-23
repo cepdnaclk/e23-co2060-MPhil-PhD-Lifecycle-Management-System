@@ -7,6 +7,9 @@ export default async function AdminCompletionsPage() {
 
   const students = await prisma.student.findMany({
     where: {
+      // Completion Records is the lifecycle ledger, so archived graduates
+      // must override the Prisma client's active-record default.
+      isArchived: { in: [false, true] },
       programmeCompletion: { isNot: null },
     },
     orderBy: { updatedAt: "desc" },
