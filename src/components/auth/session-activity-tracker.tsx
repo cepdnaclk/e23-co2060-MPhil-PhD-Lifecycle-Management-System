@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 import { signOutUser } from "@/lib/firebase/client";
 import { secureFetch } from "@/lib/security/client-request";
@@ -17,6 +18,7 @@ const ACTIVITY_EVENTS = [
 ] as const;
 
 export function SessionActivityTracker() {
+  const router = useRouter();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefreshRef = useRef(0);
 
@@ -52,7 +54,7 @@ export function SessionActivityTracker() {
 
       // Only force a redirect if the user is on a protected dashboard route
       if (window.location.pathname.startsWith("/dashboard")) {
-        window.location.assign("/login?reason=timeout");
+        router.replace("/login?reason=timeout");
       }
     };
 
@@ -104,7 +106,7 @@ export function SessionActivityTracker() {
         window.removeEventListener(eventName, handleActivity);
       }
     };
-  }, []);
+  }, [router]);
 
   return null;
 }
