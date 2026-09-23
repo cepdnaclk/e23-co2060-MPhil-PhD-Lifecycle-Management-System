@@ -1,53 +1,66 @@
+import type { Prisma } from "@prisma/client";
+
 import { CompletionLifecyclePanel } from "@/components/admin/completion-lifecycle-panel";
 import { getServerDashboardContext } from "@/lib/dashboard/server";
 import { prisma } from "@/lib/prisma/client";
 
+const completionRecordSelect = {
+  id: true,
+  programType: true,
+  studyMode: true,
+  updatedAt: true,
+  user: {
+    select: {
+      displayName: true,
+      email: true,
+    },
+  },
+  programmeCompletion: {
+    select: {
+      status: true,
+      hodApprovedAt: true,
+      hodComments: true,
+      completedAt: true,
+      thesis: { select: { title: true } },
+    },
+  },
+  graduationRecord: {
+    select: {
+      status: true,
+      graduationDate: true,
+      confirmationReference: true,
+    },
+  },
+  archiveRecord: {
+    select: {
+      status: true,
+      archivedAt: true,
+      reason: true,
+    },
+  },
+} satisfies Prisma.StudentSelect;
+
 export default async function AdminCompletionsPage() {
   await getServerDashboardContext("admin");
 
-  const students = await prisma.student.findMany({
-    where: {
-      // Completion Records is the lifecycle ledger, so archived graduates
-      // must override the Prisma client's active-record default.
-      isArchived: { in: [false, true] },
-      programmeCompletion: { isNot: null },
-    },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      programType: true,
-      studyMode: true,
-      user: {
-        select: {
-          displayName: true,
-          email: true,
-        },
+  // The shared Prisma client defaults Student lists to active records. Query
+  // both states explicitly so Completion Records remains a complete ledger.
+  const findCompletionRecords = (isArchived: boolean) =>
+    prisma.student.findMany({
+      where: {
+        isArchived,
+        programmeCompletion: { isNot: null },
       },
-      programmeCompletion: {
-        select: {
-          status: true,
-          hodApprovedAt: true,
-          hodComments: true,
-          completedAt: true,
-          thesis: { select: { title: true } },
-        },
-      },
-      graduationRecord: {
-        select: {
-          status: true,
-          graduationDate: true,
-          confirmationReference: true,
-        },
-      },
-      archiveRecord: {
-        select: {
-          status: true,
-          archivedAt: true,
-          reason: true,
-        },
-      },
-    },
-  });
+      orderBy: { updatedAt: "desc" },
+      select: completionRecordSelect,
+    });
+  const [activeStudents, archivedStudents] = await Promise.all([
+    findCompletionRecords(false),
+    findCompletionRecords(true),
+  ]);
+  const students = [...activeStudents, ...archivedStudents].sort(
+    (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+  );
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
