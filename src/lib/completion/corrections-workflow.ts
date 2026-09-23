@@ -754,7 +754,7 @@ export async function reviewCorrectionsBySupervisor(
               actionUrl: "/dashboard/examiner/corrections",
             })),
             ...hodUsers.map((hod) => ({
-              eventKey: `correction-order:${order.id}:version:${submission.versionNumber}:hod`,
+              eventKey: `correction-order:${order.id}:version:${submission.versionNumber}:hod:${hod.id}`,
               recipientId: hod.id,
               studentId: order.thesis.studentId,
               notificationEvent: "CORRECTIONS_REQUIRED" as const,
