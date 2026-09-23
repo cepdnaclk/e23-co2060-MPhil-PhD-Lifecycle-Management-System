@@ -191,6 +191,143 @@ describe("student progress route", () => {
     });
   });
 
+  it("keeps every stage complete after the student's lifecycle is archived", async () => {
+    vi.mocked(prisma.student.findUnique).mockImplementation((async (args: unknown) => {
+      const ethicsSelection = (args as {
+        select?: { ethicsApprovals?: { where?: unknown } };
+      }).select?.ethicsApprovals;
+
+      return {
+        id: "student-1",
+        userId: "user-student-1",
+        programType: "PHD",
+        academicStatus: "ARCHIVED",
+        enrollmentDate: new Date("2026-01-01T00:00:00.000Z"),
+        user: {
+          id: "user-student-1",
+          displayName: "Student One",
+          email: "student1@example.com",
+        },
+        researchProposals: [
+          {
+            id: "proposal-1",
+            title: "Archived Lifecycle Proposal",
+            status: ProposalStatus.APPROVED,
+            updatedAt: new Date("2026-04-01T00:00:00.000Z"),
+          },
+        ],
+        theses: [
+          {
+            id: "thesis-1",
+            title: "Archived Lifecycle Thesis",
+            status: ThesisStatus.ARCHIVED,
+            updatedAt: new Date("2026-09-01T00:00:00.000Z"),
+            corrections: [],
+            correctionOrders: [{ status: "COMPLETION_APPROVED" }],
+          },
+        ],
+        ethicsApprovals: ethicsSelection?.where
+          ? []
+          : [
+              {
+                id: "ethics-1",
+                updatedAt: new Date("2026-05-01T00:00:00.000Z"),
+              },
+            ],
+        programmeCompletion: {
+          status: "COMPLETED",
+          hodApprovedAt: new Date("2026-09-01T00:00:00.000Z"),
+          completedAt: new Date("2026-09-02T00:00:00.000Z"),
+        },
+        graduationRecord: {
+          status: "GRADUATED",
+          graduationDate: new Date("2026-09-10T00:00:00.000Z"),
+        },
+        archiveRecord: {
+          status: "ARCHIVED",
+          archivedAt: new Date("2026-09-20T00:00:00.000Z"),
+        },
+      } as never;
+    }) as never);
+    vi.mocked(prisma.document.findMany).mockResolvedValue([
+      {
+        id: "proposal-document-1",
+        documentType: "PROPOSAL",
+        version: 1,
+        isCurrentVersion: true,
+        createdAt: new Date("2026-04-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-04-01T00:00:00.000Z"),
+        researchProposal: { status: ProposalStatus.APPROVED },
+        progressReport: null,
+        thesis: null,
+        correctionDocument: null,
+      },
+      {
+        id: "progress-document-1",
+        documentType: "PROGRESS_REPORT",
+        version: 1,
+        isCurrentVersion: true,
+        createdAt: new Date("2026-06-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-06-01T00:00:00.000Z"),
+        researchProposal: null,
+        progressReport: { status: "APPROVED" },
+        thesis: null,
+        correctionDocument: null,
+      },
+      {
+        id: "thesis-document-1",
+        documentType: "THESIS",
+        version: 1,
+        isCurrentVersion: true,
+        createdAt: new Date("2026-08-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-09-01T00:00:00.000Z"),
+        researchProposal: null,
+        progressReport: null,
+        thesis: { status: ThesisStatus.ARCHIVED },
+        correctionDocument: null,
+      },
+      {
+        id: "correction-document-1",
+        documentType: "CORRECTION",
+        version: 1,
+        isCurrentVersion: true,
+        createdAt: new Date("2026-08-15T00:00:00.000Z"),
+        updatedAt: new Date("2026-09-01T00:00:00.000Z"),
+        researchProposal: null,
+        progressReport: null,
+        thesis: null,
+        correctionDocument: null,
+      },
+    ] as never);
+
+    const response = await GET(
+      new Request("http://localhost/api/students/student-1/progress", {
+        headers: { authorization: "Bearer STUDENT_ONE" },
+      }) as never,
+      { params: Promise.resolve({ id: "student-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      progress: {
+        stageProgress: {
+          proposal: { completionPercentage: 100 },
+          ethics: { completionPercentage: 100 },
+          dataCollection: { completionPercentage: 100 },
+          thesis: {
+            totalSubmittedVersions: 2,
+            approvedVersions: 2,
+            completionPercentage: 100,
+          },
+        },
+      },
+    });
+    const studentQuery = vi.mocked(prisma.student.findUnique).mock.calls[0]?.[0] as {
+      select?: { ethicsApprovals?: object };
+    };
+    expect(studentQuery.select?.ethicsApprovals).not.toHaveProperty("where");
+  });
+
   it("responds within 500ms for a student with many document versions", async () => {
     vi.mocked(prisma.student.findUnique).mockResolvedValue({
       id: "student-1",
