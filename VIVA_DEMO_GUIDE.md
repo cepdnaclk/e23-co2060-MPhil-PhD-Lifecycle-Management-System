@@ -110,14 +110,20 @@ Before starting the viva demonstration, ensure the application is initialized wi
 3. Highlight the **Department Progress Table**: demonstrate filtering by registration status, monitoring active candidate milestones, and checking overdue alert flags.
 
 #### Step 3.4: Thesis Readiness Certification (Supervisor)
-1. Log in as **Student** at `/login`, open **Thesis Submission**, and click **Request Thesis Readiness**.
-2. Log in as **Supervisor** at `/login` and open **Thesis Readiness**.
-3. Select the student request, verify all prerequisite criteria (approved proposal, ethics clearance, signed progress reports, and examination copy readiness), and click **Certify Thesis Readiness**.
+1. Log in as **Student** at `/login`, open **Thesis Submission** (`/dashboard/student/theses/submit`), and click **Request Thesis Readiness**. The request becomes `REQUESTED` and goes to the student's active primary Supervisor.
+2. Log in as that **primary Supervisor** at `/login` and open **Thesis Readiness** (`/dashboard/supervisor/readiness`).
+3. Locate the student request and verify all four checklist items: approved proposal, all fixed progress milestones complete, department ethics gate satisfied, and examination copy ready for submission.
+4. Tick all four checklist items, add optional notes, and click **Certify Thesis Readiness**. The request becomes `CERTIFIED` and is now available for HOD approval in Step 3.5. Any prerequisite marked **Not satisfied** must be resolved before certification.
+
+**Before Step 3.5:** A student request alone does not appear in the HOD's readiness approval queue. If the HOD page says **"No Supervisor-certified requests await HOD approval."** immediately after the student requests readiness, this is expected: complete the primary Supervisor certification above, then refresh the HOD page.
 
 #### Step 3.5: Thesis Readiness Approval (HOD)
 1. Log in as **Head of Department (HOD)** at `/login`.
 2. Navigate to `/dashboard/hod/examinations`.
-3. Select the readiness request and click **Approve Readiness for Examination** (`ReadinessDecision.HOD_APPROVED`).
+3. Under **Examination readiness**, locate the student request showing the certifying Supervisor, review the notes, and click **Approve for examination** (`ReadinessDecision.HOD_APPROVED`).
+4. Return to the Student account and proceed to thesis submission in Step 4.1.
+
+**Screen distinction:** The **Confirm** and **Decline** buttons under **Examiner confirmations** apply to examiner assignments for submitted theses. They do not approve the student's readiness request. The sequence is **Student request → primary Supervisor certification → HOD readiness approval → Student thesis submission**.
 
 ---
 
@@ -129,26 +135,43 @@ Before starting the viva demonstration, ensure the application is initialized wi
 3. Notice that the **Thesis Submission Portal** is now unlocked due to HOD readiness approval.
 4. Upload the Thesis PDF document version and click **Submit Thesis**.
 
-#### Step 4.2: Examiner Assignment & Viva Scheduling (Administrator)
+#### Step 4.2: Examiner Assignment, HOD Confirmation & Viva Scheduling (Administrator and HOD)
 1. Log in as **Administrator** at `/login`.
-2. Navigate to `/dashboard/admin`.
-3. Open **Thesis & Examiner Management**, select the submitted thesis, and assign external/internal **Examiners**.
-4. Open **Viva Scheduling**, set the **Defense Date**, **Time**, **Venue/Link**, assign panel members, and click **Schedule Viva**.
-5. Show automated event dispatch: open **Notification Logs** (`/dashboard/admin`) to show email alerts queued in the outbox.
+2. Navigate to **Examiner Assignments** (`/dashboard/admin/assignments/examiners`).
+3. Select the submitted thesis (for example, the thesis belonging to `sandun@gmail.com`), select an Examiner, and click **Add Assignment**. Repeat this for a second independent Examiner because the final HOD outcome requires at least two complete Examiner records. Each assignment is created with status `PENDING`, while the thesis remains `SUBMITTED`.
+4. Log in as **Head of Department (HOD)** and navigate to **Examination decisions** (`/dashboard/hod/examinations`).
+5. Under **Examiner confirmations**, locate the thesis and click **Confirm** for both Examiner assignments. The first accepted assignment changes the thesis status to `UNDER_EXAMINATION`; both Examiners must later submit their independent evidence before the final outcome.
+6. Log back in as **Administrator** and open **Schedule Vivas** (`/dashboard/admin/vivas/schedule`).
+7. Select the now-visible thesis, set the **Defense Date**, **Time**, and **Venue/Link**, then click **Schedule Viva**.
+8. Show automated event dispatch: open **Notification Logs** (`/dashboard/admin`) to show email alerts queued in the outbox.
 
-#### Step 4.3: Secure Thesis Review & Report Submission (Examiner)
+**If the thesis is missing from Schedule Vivas:** This page lists only theses with status `UNDER_EXAMINATION`. A newly submitted thesis or a thesis with a `PENDING` examiner assignment will not appear. Complete the HOD **Examiner confirmations → Confirm** action in Step 4.2.5, then refresh the Schedule Vivas page.
+
+#### Step 4.3: Secure Thesis Review, Independent Report & Viva Recommendation (Examiner)
 1. Log in as **Examiner** at `/login`.
-2. Navigate to `/dashboard/examiner`.
-3. Open the assigned thesis workspace.
+2. Navigate to **Assigned Vivas** (`/dashboard/examiner/vivas`).
+3. Locate the scheduled viva and review the candidate and thesis details.
 4. Click **Download Thesis PDF**: highlight security feature—the download button opens a **15-minute expiring signed Supabase URL**.
-5. Enter examination feedback, upload formal Examiner Report PDF, select recommendation (`MINOR_CORRECTIONS`), and submit.
+5. Under **Independent thesis report**, select the report recommendation (for example, `MINOR_CORRECTIONS`), enter a report of at least 20 characters, attach the formal Examiner Report PDF, and click **Submit Report**.
+6. After the report is marked **Submitted**, select the viva **Recommendation**, enter a rationale of at least 20 characters, and click **Submit Recommendation**. Review the confirmation dialog and confirm the submission.
 
-#### Step 4.4: Oral Defense & Viva Outcome Recording (Administrator / Chair)
-1. Log in as **Administrator** at `/login`.
-2. Navigate to `/dashboard/admin`.
-3. Open **Viva Management**, select the completed viva, and click **Record Viva Outcome**.
-4. Select outcome: **Pass with Minor Corrections** (`MINOR_CORRECTIONS`), enter panel remarks, and click **Finalize Outcome**.
-5. Show state engine transition: thesis status automatically transitions to `ThesisStatus.CORRECTIONS_REQUIRED`.
+**Required order:** The independent thesis report and viva recommendation are separate records. If the system displays **"Submit the independent thesis report before the viva recommendation,"** complete Step 4.3.5 first, refresh the page if needed, and then complete Step 4.3.6.
+
+Repeat Step 4.3 while logged in as every confirmed Examiner. A report from only one Examiner is insufficient when two or more assignments were confirmed. Existing reports created before formal PDF upload was required show **Attach formal report PDF**; attach the PDF before continuing.
+
+#### Step 4.4: Final Viva Outcome & Correction Order (HOD)
+1. Ensure at least two Examiners are confirmed and every confirmed Examiner has completed both actions in Step 4.3: the independent thesis report and the viva recommendation. The HOD cannot record the final outcome until at least two complete independent Examiner records exist.
+2. Log in as **Head of Department (HOD)** at `/login`.
+3. Navigate to **Examination decisions** (`/dashboard/hod/examinations`).
+4. Under **Viva outcomes**, locate the thesis and review each Examiner's formal report PDF, written independent report, report recommendation, viva recommendation, and rationale.
+5. Select **Minor Corrections** (`MINOR_CORRECTIONS`) and enter an outcome rationale of at least 10 characters.
+6. Click **Review HOD outcome**, verify the decision, and click **Record final outcome**. The HOD decision becomes the authoritative Department viva outcome.
+7. After the page refreshes, locate the thesis under **Order corrections**, enter the correction requirements (at least 20 characters), choose whether assigned Examiner review is required, and click **Issue correction order**. Examiner review is mandatory for major corrections.
+8. Show the state transition: issuing the correction order changes the thesis status to `ThesisStatus.CORRECTIONS_REQUIRED` and unlocks the Student Corrections Portal used in Step 5.1.
+
+**Role ownership:** Examiners submit independent recommendations, but the **HOD records the final viva outcome**. The Administrator schedules the viva and handles later administrative processing; the Administrator does not select the final academic outcome in the current system.
+
+**If Review HOD outcome is locked:** Read the missing-evidence list shown on the thesis card. Log in as each named Examiner and submit every missing item: the independent report, formal report PDF, and viva recommendation. The action unlocks only when at least two confirmed Examiner records are complete and no confirmed Examiner remains incomplete.
 
 ---
 

@@ -11,6 +11,11 @@ type ExaminerViva = {
   venue: string;
   outcome: string | null;
   recommendation: string | null;
+  assignment: {
+    id: string;
+    reportSubmitted: boolean;
+    reportDocument: { id: string; fileName: string } | null;
+  };
   thesis: {
     id: string;
     title: string;
@@ -50,6 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DecisionReviewDialog } from "@/components/ui/decision-review-dialog";
 import { WorkflowFeedback } from "@/components/ui/workflow-feedback";
@@ -60,6 +66,9 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
   const [downloadingThesisId, setDownloadingThesisId] = useState<string | null>(null);
   const [selectedOutcome, setSelectedOutcome] = useState<Record<string, string>>({});
   const [rationales, setRationales] = useState<Record<string, string>>({});
+  const [reportOutcomes, setReportOutcomes] = useState<Record<string, string>>({});
+  const [reportTexts, setReportTexts] = useState<Record<string, string>>({});
+  const [reportFiles, setReportFiles] = useState<Record<string, File | null>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [completedAt, setCompletedAt] = useState<Date | null>(null);
@@ -72,6 +81,172 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
     MAJOR_CORRECTIONS: "Major Corrections",
     FAIL: "Fail",
   };
+
+  async function uploadReportPdf(viva: ExaminerViva, reportFile: File) {
+    let uploadSessionId: string | null = null;
+    try {
+      const uploadUrlResponse = await secureFetch(
+        `/api/examiner-assignments/${viva.assignment.id}/report/upload-url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            idempotencyKey: crypto.randomUUID(),
+            files: [
+              {
+                fileName: reportFile.name,
+                mimeType: reportFile.type,
+                sizeBytes: reportFile.size,
+              },
+            ],
+          }),
+        },
+      );
+      const uploadPayload = (await uploadUrlResponse.json()) as {
+        error?: string;
+        uploadSessionId?: string;
+        uploads?: Array<{ signedUrl: string | null }>;
+      };
+      const signedUrl = uploadPayload.uploads?.[0]?.signedUrl;
+      if (!uploadUrlResponse.ok || !uploadPayload.uploadSessionId || !signedUrl) {
+        throw new Error(
+          uploadPayload.error ?? "Unable to prepare the examiner report upload.",
+        );
+      }
+      uploadSessionId = uploadPayload.uploadSessionId;
+      const uploadResponse = await secureFetch(signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": reportFile.type },
+        body: reportFile,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error("The examiner report PDF upload failed.");
+      }
+      return uploadSessionId;
+    } catch (error) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
+      throw error;
+    }
+  }
+
+  async function submitIndependentReport(viva: ExaminerViva) {
+    const recommendation = reportOutcomes[viva.id];
+    const reportText = reportTexts[viva.id]?.trim() ?? "";
+    const reportFile = reportFiles[viva.id];
+    if (!recommendation || reportText.length < 20) {
+      setError("Select a report recommendation and provide a report of at least 20 characters.");
+      return;
+    }
+    if (
+      !reportFile ||
+      reportFile.type !== "application/pdf" ||
+      !reportFile.name.toLowerCase().endsWith(".pdf")
+    ) {
+      setError("Select one PDF examiner report before submitting.");
+      return;
+    }
+    if (!viva.assignment.id) {
+      setError("No confirmed examiner assignment was found for this viva.");
+      return;
+    }
+
+    setBusyId(viva.id);
+    setMessage(null);
+    setError(null);
+    let uploadSessionId: string | null = null;
+
+    try {
+      uploadSessionId = await uploadReportPdf(viva, reportFile);
+
+      const response = await secureFetch(
+        `/api/examiner-assignments/${viva.assignment.id}/report`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ recommendation, reportText, uploadSessionId }),
+        },
+      );
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to submit the independent thesis report.");
+      }
+      setMessage("Independent thesis report submitted. You may now submit the viva recommendation.");
+      setCompletedAt(new Date());
+      setReportFiles((current) => ({ ...current, [viva.id]: null }));
+      router.refresh();
+    } catch (caught) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to submit the independent thesis report.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function attachPdfToExistingReport(viva: ExaminerViva) {
+    const reportFile = reportFiles[viva.id];
+    if (
+      !reportFile ||
+      reportFile.type !== "application/pdf" ||
+      !reportFile.name.toLowerCase().endsWith(".pdf")
+    ) {
+      setError("Select one PDF examiner report before attaching.");
+      return;
+    }
+    setBusyId(viva.id);
+    setMessage(null);
+    setError(null);
+    let uploadSessionId: string | null = null;
+    try {
+      uploadSessionId = await uploadReportPdf(viva, reportFile);
+      const response = await secureFetch(
+        `/api/examiner-assignments/${viva.assignment.id}/report/attachment`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ uploadSessionId }),
+        },
+      );
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to attach the examiner report PDF.");
+      }
+      setMessage("Formal examiner report PDF attached successfully.");
+      setCompletedAt(new Date());
+      setReportFiles((current) => ({ ...current, [viva.id]: null }));
+      router.refresh();
+    } catch (caught) {
+      if (uploadSessionId) {
+        await secureFetch(`/api/uploads/${uploadSessionId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      }
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to attach the examiner report PDF.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function recordRecommendation(vivaId: string) {
     const recommendation = selectedOutcome[vivaId];
@@ -140,7 +315,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Assigned Vivas</h2>
           <p className="text-muted-foreground mt-2">
-            Review thesis documents and submit your independent recommendation.
+            Review the thesis, submit the independent report, then record your viva recommendation.
           </p>
         </div>
       </div>
@@ -184,6 +359,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
           vivas.map((viva) => {
             const canRecord = viva.thesis.status === "UNDER_EXAMINATION";
             const isRecorded = Boolean(viva.recommendation);
+            const reportSubmitted = viva.assignment.reportSubmitted;
 
             return (
               <Card key={viva.id}>
@@ -224,6 +400,126 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                     </p>
                   </div>
 
+                  <div className="rounded-md border p-4 mb-6 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">Independent thesis report</p>
+                        <p className="text-sm text-muted-foreground">
+                          This report must be submitted before the viva recommendation.
+                        </p>
+                      </div>
+                      <Badge variant={reportSubmitted ? "default" : "secondary"}>
+                        {reportSubmitted ? "Submitted" : "Required"}
+                      </Badge>
+                    </div>
+
+                    {!reportSubmitted && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`report-recommendation-${viva.id}`}>
+                            Report recommendation
+                          </Label>
+                          <Select
+                            value={reportOutcomes[viva.id] ?? ""}
+                            onValueChange={(value) =>
+                              setReportOutcomes((current) => ({
+                                ...current,
+                                [viva.id]: value,
+                              }))
+                            }
+                            disabled={!canRecord}
+                          >
+                            <SelectTrigger id={`report-recommendation-${viva.id}`}>
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {outcomes.map((outcome) => (
+                                <SelectItem key={outcome} value={outcome}>
+                                  {outcomeLabels[outcome]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`report-text-${viva.id}`}>Report</Label>
+                          <Textarea
+                            id={`report-text-${viva.id}`}
+                            value={reportTexts[viva.id] ?? ""}
+                            onChange={(event) =>
+                              setReportTexts((current) => ({
+                                ...current,
+                                [viva.id]: event.target.value,
+                              }))
+                            }
+                            disabled={!canRecord}
+                            placeholder="Enter the independent thesis examination report (at least 20 characters)."
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`report-pdf-${viva.id}`}>Formal report PDF</Label>
+                          <Input
+                            id={`report-pdf-${viva.id}`}
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            disabled={!canRecord}
+                            onChange={(event) =>
+                              setReportFiles((current) => ({
+                                ...current,
+                                [viva.id]: event.target.files?.[0] ?? null,
+                              }))
+                            }
+                          />
+                        </div>
+                        <Button
+                          className="md:col-span-2 md:justify-self-end"
+                          disabled={
+                            !canRecord ||
+                            busyId === viva.id ||
+                            !reportOutcomes[viva.id] ||
+                            !reportFiles[viva.id] ||
+                            (reportTexts[viva.id]?.trim().length ?? 0) < 20
+                          }
+                          onClick={() => void submitIndependentReport(viva)}
+                        >
+                          {busyId === viva.id ? "Submitting..." : "Submit Report"}
+                        </Button>
+                      </div>
+                    )}
+                    {reportSubmitted && !viva.assignment.reportDocument && (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="flex-1 space-y-1.5">
+                          <Label htmlFor={`legacy-report-pdf-${viva.id}`}>
+                            Attach formal report PDF
+                          </Label>
+                          <Input
+                            id={`legacy-report-pdf-${viva.id}`}
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            onChange={(event) =>
+                              setReportFiles((current) => ({
+                                ...current,
+                                [viva.id]: event.target.files?.[0] ?? null,
+                              }))
+                            }
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          disabled={busyId === viva.id || !reportFiles[viva.id]}
+                          onClick={() => void attachPdfToExistingReport(viva)}
+                        >
+                          {busyId === viva.id ? "Attaching..." : "Attach PDF"}
+                        </Button>
+                      </div>
+                    )}
+                    {viva.assignment.reportDocument && (
+                      <p className="text-sm text-muted-foreground">
+                        Attached PDF: {viva.assignment.reportDocument.fileName}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                     <Button
                       variant="outline"
@@ -242,7 +538,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                           <Select
                             value={selectedOutcome[viva.id] ?? ""}
                             onValueChange={(val) => setSelectedOutcome(c => ({...c, [viva.id]: val}))}
-                            disabled={!canRecord}
+                            disabled={!canRecord || !reportSubmitted}
                           >
                             <SelectTrigger id={`recommendation-${viva.id}`} aria-describedby={!canRecord ? `recommendation-help-${viva.id}` : undefined}>
                               <SelectValue placeholder="Select..." />
@@ -268,7 +564,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                                 [viva.id]: event.target.value,
                               }))
                             }
-                            disabled={!canRecord}
+                            disabled={!canRecord || !reportSubmitted}
                             placeholder="Explain the basis for your recommendation."
                           />
                           <p id={`rationale-help-${viva.id}`} className="text-xs text-muted-foreground">Use at least 20 characters and explain the academic basis.</p>
@@ -276,6 +572,7 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                         <Button
                           disabled={
                             !canRecord ||
+                            !reportSubmitted ||
                             busyId === viva.id ||
                             !selectedOutcome[viva.id] ||
                             (rationales[viva.id]?.trim().length ?? 0) < 20
@@ -286,6 +583,11 @@ export function VivaWorkspacePanel({ vivas }: { vivas: ExaminerViva[] }) {
                           {busyId === viva.id ? "Submitting..." : "Submit Recommendation"}
                         </Button>
                         {!canRecord ? <p id={`recommendation-help-${viva.id}`} className="sr-only">A recommendation is available only while the thesis is under examination.</p> : null}
+                        {canRecord && !reportSubmitted ? (
+                          <p className="text-xs text-muted-foreground">
+                            Submit the independent thesis report above to unlock this action.
+                          </p>
+                        ) : null}
                       </div>
                     )}
                   </div>

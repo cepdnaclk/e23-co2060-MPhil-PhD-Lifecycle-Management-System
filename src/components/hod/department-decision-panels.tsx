@@ -147,7 +147,26 @@ export function HodExaminationDecisionPanel({
   correctionVivas,
 }: {
   assignments: Array<{ id: string; thesisTitle: string; examinerName: string }>;
-  vivas: Array<{ id: string; thesisTitle: string; recommendationCount: number }>;
+  vivas: Array<{
+    id: string;
+    thesisTitle: string;
+    recommendationCount: number;
+    examinerEvidence: Array<{
+      id: string;
+      examinerName: string;
+      report: {
+        recommendation: string;
+        reportText: string;
+        submittedAt: string;
+        document: { id: string; fileName: string } | null;
+      } | null;
+      vivaRecommendation: {
+        recommendation: string;
+        rationale: string;
+        submittedAt: string;
+      } | null;
+    }>;
+  }>;
   correctionVivas: Array<{
     id: string;
     thesisTitle: string;
@@ -164,10 +183,45 @@ export function HodExaminationDecisionPanel({
     {},
   );
   const [busy, setBusy] = useState<string | null>(null);
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [completedAt, setCompletedAt] = useState<Date | null>(null);
   const [pendingViva, setPendingViva] = useState<{ id: string; thesisTitle: string } | null>(null);
+  async function openExaminerReport(documentId: string) {
+    const reportWindow = window.open("about:blank", "_blank");
+    if (reportWindow) reportWindow.opener = null;
+    setDownloadingDocumentId(documentId);
+    setError(null);
+    try {
+      const response = await secureFetch(`/api/documents/${documentId}`, {
+        credentials: "include",
+      });
+      const payload = (await response.json()) as {
+        error?: string;
+        downloadUrl?: string;
+      };
+      if (!response.ok || !payload.downloadUrl) {
+        throw new Error(payload.error ?? "Unable to open the examiner report PDF.");
+      }
+      if (reportWindow) {
+        reportWindow.location.href = payload.downloadUrl;
+      } else {
+        window.location.assign(payload.downloadUrl);
+      }
+    } catch (caught) {
+      reportWindow?.close();
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to open the examiner report PDF.",
+      );
+    } finally {
+      setDownloadingDocumentId(null);
+    }
+  }
   async function act(path: string, body: unknown, key: string) {
     setBusy(key);
     setError(null);
@@ -226,25 +280,121 @@ export function HodExaminationDecisionPanel({
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Viva outcomes</h2>
-        {vivas.length === 0 ? <p className="text-muted-foreground">No vivas are ready for an outcome.</p> : vivas.map((viva) => (
+        {vivas.length === 0 ? <p className="text-muted-foreground">No vivas are ready for an outcome.</p> : vivas.map((viva) => {
+          const completeEvidenceCount = viva.examinerEvidence.filter(
+            (evidence) =>
+              Boolean(evidence.report?.document) &&
+              Boolean(evidence.vivaRecommendation),
+          ).length;
+          const isOutcomeReady =
+            viva.examinerEvidence.length >= 2 &&
+            completeEvidenceCount === viva.examinerEvidence.length;
+          const incompleteEvidence = viva.examinerEvidence.flatMap((evidence) => {
+            const missing = [
+              !evidence.report ? "independent report" : null,
+              evidence.report && !evidence.report.document ? "report PDF" : null,
+              !evidence.vivaRecommendation ? "viva recommendation" : null,
+            ].filter((item): item is string => Boolean(item));
+            return missing.length > 0
+              ? [`${evidence.examinerName}: ${missing.join(", ")}`]
+              : [];
+          });
+          return (
           <Card key={viva.id}><CardContent className="space-y-3 pt-6">
-            <div className="flex items-center justify-between"><p className="font-medium">{viva.thesisTitle}</p><Badge>{viva.recommendationCount} recommendations</Badge></div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-medium">{viva.thesisTitle}</p>
+              <Badge variant={isOutcomeReady ? "default" : "secondary"}>
+                {isOutcomeReady
+                  ? "Ready for HOD outcome"
+                  : `${completeEvidenceCount}/${Math.max(2, viva.examinerEvidence.length)} examiner records complete`}
+              </Badge>
+            </div>
+            {!isOutcomeReady && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                <p className="font-medium">The final outcome is locked.</p>
+                {viva.examinerEvidence.length < 2 && (
+                  <p>At least two confirmed Examiners are required; currently {viva.examinerEvidence.length}.</p>
+                )}
+                {incompleteEvidence.length > 0 && (
+                  <ul className="mt-1 list-disc pl-5">
+                    {incompleteEvidence.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div className="space-y-3 rounded-md border bg-muted/20 p-4">
+              <p className="text-sm font-semibold">Examiner evidence</p>
+              {viva.examinerEvidence.map((evidence) => (
+                <div key={evidence.id} className="space-y-3 rounded-md border bg-background p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">{evidence.examinerName}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {evidence.report && (
+                        <Badge variant="outline">
+                          Report: {evidence.report.recommendation.replaceAll("_", " ")}
+                        </Badge>
+                      )}
+                      {evidence.vivaRecommendation && (
+                        <Badge>
+                          Viva: {evidence.vivaRecommendation.recommendation.replaceAll("_", " ")}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {evidence.report ? (
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Independent report</p>
+                        <p className="whitespace-pre-wrap text-sm">{evidence.report.reportText}</p>
+                      </div>
+                      {evidence.report.document ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={downloadingDocumentId === evidence.report.document.id}
+                          onClick={() => void openExaminerReport(evidence.report!.document!.id)}
+                        >
+                          {downloadingDocumentId === evidence.report.document.id
+                            ? "Opening PDF..."
+                            : `Open PDF: ${evidence.report.document.fileName}`}
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No PDF is attached to this legacy report.</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Independent report pending.</p>
+                  )}
+                  {evidence.vivaRecommendation ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Viva rationale</p>
+                      <p className="whitespace-pre-wrap text-sm">{evidence.vivaRecommendation.rationale}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Viva recommendation pending.</p>
+                  )}
+                </div>
+              ))}
+            </div>
             <Label htmlFor={`viva-outcome-${viva.id}`}>Final outcome</Label>
             <select
               id={`viva-outcome-${viva.id}`}
               className="h-10 rounded-md border bg-background px-3"
               value={outcomes[viva.id] ?? ""}
+              disabled={!isOutcomeReady}
               onChange={(event) => setOutcomes((current) => ({ ...current, [viva.id]: event.target.value }))}
             >
               <option value="">Select outcome</option>
               {["PASS", "MINOR_CORRECTIONS", "MAJOR_CORRECTIONS", "FAIL"].map((outcome) => <option key={outcome}>{outcome}</option>)}
             </select>
             <Label htmlFor={`viva-outcome-reason-${viva.id}`}>Outcome rationale</Label>
-            <Textarea id={`viva-outcome-reason-${viva.id}`} aria-describedby={`viva-outcome-reason-help-${viva.id}`} value={reasons[viva.id] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [viva.id]: event.target.value }))} placeholder="Outcome reason (at least 10 characters)" />
+            <Textarea id={`viva-outcome-reason-${viva.id}`} aria-describedby={`viva-outcome-reason-help-${viva.id}`} value={reasons[viva.id] ?? ""} disabled={!isOutcomeReady} onChange={(event) => setReasons((current) => ({ ...current, [viva.id]: event.target.value }))} placeholder="Outcome reason (at least 10 characters)" />
             <p id={`viva-outcome-reason-help-${viva.id}`} className="text-xs text-muted-foreground">Provide at least 10 characters explaining how the evidence supports this outcome.</p>
-            <Button disabled={busy === viva.id || !outcomes[viva.id] || (reasons[viva.id]?.trim().length ?? 0) < 10} onClick={() => setPendingViva({ id: viva.id, thesisTitle: viva.thesisTitle })}>Review HOD outcome</Button>
+            <Button disabled={!isOutcomeReady || busy === viva.id || !outcomes[viva.id] || (reasons[viva.id]?.trim().length ?? 0) < 10} onClick={() => setPendingViva({ id: viva.id, thesisTitle: viva.thesisTitle })}>Review HOD outcome</Button>
           </CardContent></Card>
-        ))}
+          );
+        })}
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Order corrections</h2>

@@ -11,6 +11,7 @@ import { withAuth } from "@/lib/firebase/with-auth";
 const schema = z.object({
   recommendation: z.nativeEnum(ExaminerRecommendation),
   reportText: z.string().trim().min(20).max(30_000),
+  uploadSessionId: z.string().uuid(),
 });
 
 export const POST = withAuth<{ id: string }>(async (request: NextRequest, context) => {
