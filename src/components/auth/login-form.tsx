@@ -162,7 +162,6 @@ export function LoginForm() {
 
   return (
     <Card className="overflow-hidden border-border/90">
-      <div className="h-1 bg-primary" aria-hidden="true" />
       <CardContent className="p-6 sm:p-8">
         <div className="mb-8 flex flex-col items-center justify-center text-center">
           <Image
@@ -178,7 +177,7 @@ export function LoginForm() {
               University of Peradeniya
             </p>
             <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
-              Sign in to PGLMS
+              Sign in to PGSMS
             </h1>
             <p className="text-sm font-medium text-muted-foreground">
               Faculty of Engineering
@@ -250,17 +249,7 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="grid gap-3 pt-3 sm:grid-cols-[auto_1fr]">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/")}
-              disabled={isSubmitting}
-              className="h-11 px-6"
-            >
-              Back
-            </Button>
-
+          <div className="pt-3">
             <Button
               type="submit"
               disabled={isSubmitting || !isHydrated}

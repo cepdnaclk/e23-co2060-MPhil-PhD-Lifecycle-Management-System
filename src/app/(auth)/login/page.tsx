@@ -1,21 +1,32 @@
 import { Suspense } from "react";
+
 import { LoginForm } from "@/components/auth/login-form";
+import { LoginNavigation } from "@/components/layout/login-navigation";
+
+import styles from "./login-page.module.css";
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-background px-4 py-8 sm:px-6">
-      <div className="absolute inset-x-0 top-0 h-1 bg-primary" aria-hidden="true" />
-      <div className="w-full max-w-md">
-        <Suspense
-          fallback={
-            <div className="rounded-md border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-              Loading sign-in form...
-            </div>
-          }
-        >
-          <LoginForm />
-        </Suspense>
-      </div>
-    </main>
+    <div className={styles.page}>
+      <LoginNavigation />
+
+      <main className={styles.main}>
+        <section className={styles.formSection} aria-label="Sign in">
+          <div className={styles.formWrap}>
+            <Suspense
+              fallback={(
+                <div className={styles.formFallback}>Loading sign-in form...</div>
+              )}
+            >
+              <LoginForm />
+            </Suspense>
+          </div>
+        </section>
+      </main>
+
+      <footer className={styles.siteFooter}>
+        <p>© 2026 University of Peradeniya. All rights reserved.</p>
+      </footer>
+    </div>
   );
 }

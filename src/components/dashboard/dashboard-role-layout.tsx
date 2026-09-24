@@ -100,7 +100,7 @@ export function DashboardRoleLayout({
             />
             <div className="min-w-0 leading-tight">
               <p className="font-semibold tracking-[-0.02em] text-sidebar-foreground">
-                PGLMS
+                PGSMS
               </p>
               <p className="truncate text-xs text-sidebar-foreground/75">
                 {heading}

@@ -1,6 +1,6 @@
-# PGLMS CI, Dependency, and Migration Gates
+# PGSMS CI, Dependency, and Migration Gates
 
-**Document ID:** PGLMS-OPS-002  
+**Document ID:** PGSMS-OPS-002
 **Applies from:** WP-02 working-tree checkpoint, 25 July 2026  
 **Owner:** Repository maintainers; project owner/deployer approval remains required  
 **Purpose:** Define the repeatable quality, dependency, browser, database, and deployment controls introduced by WP-02.

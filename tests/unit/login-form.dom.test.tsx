@@ -56,6 +56,8 @@ describe("LoginForm", () => {
       expect(form).toHaveAttribute("data-hydrated", "true");
       expect(screen.getByTestId("login-submit")).toBeEnabled();
     });
+
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
   });
 
   it("redirects to the matching dashboard after a successful login", async () => {

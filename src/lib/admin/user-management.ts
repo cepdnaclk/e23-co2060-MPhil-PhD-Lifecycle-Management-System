@@ -61,7 +61,7 @@ export class AdminUserManagementError extends Error {
 function assertAdminManagedRole(role: string): asserts role is AdminManagedRole {
   if (!ADMIN_MANAGED_ROLES.includes(role as AdminManagedRole)) {
     throw new AdminUserManagementError(
-      "Only Department PGLMS roles can be created here.",
+      "Only Department PGSMS roles can be created here.",
       400,
     );
   }

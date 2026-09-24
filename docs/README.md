@@ -2,16 +2,16 @@
 layout: home
 permalink: index.html
 repository-name: e23-co2060-MPhil-PhD-Lifecycle-Management-System
-title: Postgraduate Lifecycle Management System (PGLMS)
+title: Postgraduate Student Management System (PGSMS)
 ---
 
-# Postgraduate Lifecycle Management System
+# Postgraduate Student Management System
 
-The Postgraduate Lifecycle Management System (PGLMS) supports the MPhil and PhD academic lifecycle at the Faculty of Engineering, University of Peradeniya. It provides role-based workflows for applications, admissions, supervision, progress monitoring, thesis examination, and programme completion.
+The Postgraduate Student Management System (PGSMS) supports MPhil and PhD students at the Faculty of Engineering, University of Peradeniya. It provides role-based workflows for applications, admissions, supervision, progress monitoring, thesis examination, and programme completion.
 
 ## Overview
 
-PGLMS consolidates processes that would otherwise rely on paper forms, spreadsheets, and email. The system maintains a consistent record of decisions, submissions, assignments, and supporting documents throughout a candidate's programme.
+PGSMS consolidates processes that would otherwise rely on paper forms, spreadsheets, and email. The system maintains a consistent record of decisions, submissions, assignments, and supporting documents throughout a candidate's programme.
 
 The platform covers:
 
@@ -41,35 +41,35 @@ The platform covers:
 
 The public landing page introduces the system and provides access to applications and authentication.
 
-![PGLMS landing page](./assets/images/screenshots/landing_page.png)
+![PGSMS landing page](./assets/images/screenshots/landing_page.png)
 
 ### Authentication
 
 Firebase Authentication provides identity verification, while server-side authorization restricts access according to the user's assigned role.
 
-![PGLMS login page](./assets/images/screenshots/login.png)
+![PGSMS login page](./assets/images/screenshots/login.png)
 
 ### Application portal
 
 Prospective candidates can complete a structured application and upload the required supporting documents.
 
-![PGLMS application portal](./assets/images/screenshots/application.png)
+![PGSMS application portal](./assets/images/screenshots/application.png)
 
 ### Administration dashboard
 
 The administration dashboard summarizes active candidates, pending decisions, registrations, and examination activity.
 
-![PGLMS administration dashboard](./assets/images/screenshots/admin_dashboard.png)
+![PGSMS administration dashboard](./assets/images/screenshots/admin_dashboard.png)
 
 ### User management
 
 Authorized administrators can provision accounts, assign roles, and maintain user records.
 
-![PGLMS user management interface](./assets/images/screenshots/mng_usrs.png)
+![PGSMS user management interface](./assets/images/screenshots/mng_usrs.png)
 
 ## Architecture
 
-PGLMS is implemented as a full-stack Next.js application. Client and server components communicate with validated route handlers, which integrate with the system's authentication, database, storage, email, and monitoring services.
+PGSMS is implemented as a full-stack Next.js application. Client and server components communicate with validated route handlers, which integrate with the system's authentication, database, storage, email, and monitoring services.
 
 | Area | Technology |
 |---|---|

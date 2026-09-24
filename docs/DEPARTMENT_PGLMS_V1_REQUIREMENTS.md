@@ -1,4 +1,4 @@
-# Department PGLMS Version 1 Requirements
+# Department PGSMS Version 1 Requirements
 
 **Status:** Approved implementation baseline  
 **Scope owner:** Department of Computer Engineering  
@@ -7,7 +7,7 @@
 
 ## Product boundary
 
-Department PGLMS Version 1 supports only:
+Department PGSMS Version 1 supports only:
 
 - M.Phil. and Ph.D. research programmes;
 - full-time and part-time study modes;

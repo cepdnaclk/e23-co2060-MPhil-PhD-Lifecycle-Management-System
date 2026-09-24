@@ -27,3 +27,27 @@ test("public application page has no serious or critical accessibility violation
 
   expect(blockingViolations).toEqual([]);
 });
+
+test("login page exposes its public shell and remains accessible", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+
+  const navigation = page.getByRole("navigation", { name: "Login page navigation" });
+
+  await expect(navigation).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/");
+  await expect(navigation.getByRole("link", { name: "Apply now" })).toHaveAttribute("href", "/apply");
+  await expect(page.getByTestId("login-form")).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("© 2026 University of Peradeniya");
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  const blockingViolations = results.violations.filter(
+    (violation) =>
+      violation.impact === "serious" || violation.impact === "critical",
+  );
+
+  expect(blockingViolations).toEqual([]);
+});

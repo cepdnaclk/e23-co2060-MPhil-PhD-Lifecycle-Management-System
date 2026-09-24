@@ -1,4 +1,4 @@
-# Department PGLMS Version 1 Permission Matrix
+# Department PGSMS Version 1 Permission Matrix
 
 `OWN` means the authenticated Student's record. `ASSIGNED` means an active,
 exact relationship. `DEPT` means Department-wide read scope. `OPERATE` means an

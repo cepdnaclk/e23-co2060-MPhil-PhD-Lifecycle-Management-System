@@ -407,7 +407,7 @@ export async function recordHodAdmissionDecision(
               payload: {
                 email: {
                   to: application.applicantEmail,
-                  subject: "PGLMS proposal revision requested",
+                  subject: "PGSMS proposal revision requested",
                   text: `Hello ${application.applicantName},\n\nThe Department requested a proposal revision:\n${input.reason}\n\nSubmit the protected revision here: ${revisionUrl}`,
                   html: `<p>Hello ${escapeHtml(application.applicantName)},</p><p>The Department requested a proposal revision.</p><p>${escapeHtml(input.reason)}</p><p><a href="${escapeHtml(revisionUrl)}">Submit the protected revision</a></p>`,
                 },

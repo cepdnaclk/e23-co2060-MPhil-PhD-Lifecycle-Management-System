@@ -1,6 +1,6 @@
-# PGLMS Master System Audit, Workflow Reference, and Progress Register
+# PGSMS Master System Audit, Workflow Reference, and Progress Register
 
-**Document ID:** PGLMS-MASTER-001  
+**Document ID:** PGSMS-MASTER-001
 **Implementation baseline version:** 1.0  
 **Report revision:** 1.6<br>
 **Audit date:** 26 July 2026
@@ -52,7 +52,7 @@
 
 ## 1. Executive summary
 
-PGLMS contains most of the major records and lifecycle stages needed to manage a postgraduate candidate: public application, admission, registration, supervisor assignment, proposal submission, ethics-document submission, progress reports, thesis submission, examiner assignment, viva scheduling, corrections, and graduation/final archive. Four authenticated roles—Student, Supervisor, Examiner, and Administrator—have role-scoped APIs and dashboards. A searchable document repository, email delivery log, in-app notifications, admin reports APIs, test suite, and Sentry integration are also present.
+PGSMS contains most of the major records and stages needed to manage a postgraduate student: public application, admission, registration, supervisor assignment, proposal submission, ethics-document submission, progress reports, thesis submission, examiner assignment, viva scheduling, corrections, and graduation/final archive. Four authenticated roles—Student, Supervisor, Examiner, and Administrator—have role-scoped APIs and dashboards. A searchable document repository, email delivery log, in-app notifications, admin reports APIs, test suite, and Sentry integration are also present.
 
 The current version is **not yet a dependable end-to-end lifecycle implementation**. Several features are structurally present but are not usable as complete workflows. The highest-impact findings are:
 
@@ -138,7 +138,7 @@ The audit did not have production data, a live Firebase project, live Supabase b
 
 ## 3. System purpose and lifecycle scope
 
-PGLMS is a postgraduate lifecycle management web application intended to centralize the journey from prospective applicant to final thesis archive. Despite the repository name and product branding, the implementation accepts four programme types: MPhil, PhD, MSc, and MEng (`prisma/schema.prisma:17-22`).
+PGSMS is a postgraduate student management web application intended to centralize the journey from prospective applicant to final thesis archive. Despite the repository name and product branding, the implementation accepts four programme types: MPhil, PhD, MSc, and MEng (`prisma/schema.prisma:17-22`).
 
 The implemented lifecycle is:
 
@@ -1069,7 +1069,7 @@ Material weaknesses include the public claims endpoint, claim/database drift, re
 | Low | 2 |
 | **Total** | **40** |
 
-Direct affected packages included `next`, `nodemailer`, `firebase`, `firebase-admin`, `@sentry/nextjs`, `postcss`, and the installed Playwright package. The count includes transitive dependencies and does not prove each advisory is reachable through PGLMS, but it requires a controlled upgrade and reachability/regression review before production use.
+Direct affected packages included `next`, `nodemailer`, `firebase`, `firebase-admin`, `@sentry/nextjs`, `postcss`, and the installed Playwright package. The count includes transitive dependencies and does not prove each advisory is reachable through PGSMS, but it requires a controlled upgrade and reachability/regression review before production use.
 
 ### 13.5 Production-readiness checklist
 
@@ -1331,7 +1331,7 @@ This is the final and authoritative risk section for the baseline. Priorities ar
 - **Severity/Priority:** Critical / P0
 - **Location:** `src/app/api/auth/claims/route.ts:6-30`; `src/lib/firebase/claims.ts:20-31`
 - **Evidence:** The public POST parses `userId`, `firebaseUid`, and any supported role, then calls Firebase Admin to set the custom claim and updates the target local user’s Firebase UID and role. No authentication, Administrator check, target validation, or anti-self-promotion control is called.
-- **Impact:** Any network caller can promote an account to Administrator, relink a local user to an attacker-controlled Firebase identity, or alter another role. This compromises all PGLMS data and actions.
+- **Impact:** Any network caller can promote an account to Administrator, relink a local user to an attacker-controlled Firebase identity, or alter another role. This compromises all PGSMS data and actions.
 - **Fix:** Remove the route if it is a development helper. Otherwise require an already-authenticated Administrator, verify the target identity, restrict allowed transitions, prevent last-admin/self-dangerous changes, revoke target sessions, write an immutable audit record, and require a recent privileged re-authentication.
 - **Mitigation:** Block the route at the edge immediately while the code fix is prepared; inspect Firebase claims and local role/link changes for unauthorized activity.
 - **False-positive notes:** None visible in repository. Protection at an external gateway could reduce reachability but does not make the application safe; verify deployed routing urgently.
@@ -1789,7 +1789,7 @@ The following is a **planning evidence baseline**, not yet an approved replaceme
 
 #### Published workflow differences that materially affect the redesign
 
-| Area | Published University/CERPS evidence | Consequence for PGLMS planning |
+| Area | Published University/CERPS evidence | Consequence for PGSMS planning |
 |---|---|---|
 | Product scope | The Computer Engineering page advertises MPhil/PhD; Faculty regulations also cover PGDip, MEng, Masters, MScEng, and MSc. | Decide Department-only MPhil/PhD versus Faculty-wide product before changing programme enums, labels, durations, or dashboards. |
 | Application and proposal | Research applications are year-round and include the proposal and supervisor consent; at least one Supervisor is a permanent Faculty academic. The official form includes two proposal reviewers, HOD resource recommendation, Director/CERPS observation, FHDC decision, and later approvals/ratification. See [application procedure](https://cerps.pdn.ac.lk/application-procedure/) and [research-degree application form](https://cerps.pdn.ac.lk/wp-content/uploads/2025/07/Application-Form-for-Registration-for-Research-Degree-Programmes.pdf). | The current separate post-admission proposal milestone is not the published default. Either move proposal/supervisor consent into application or record an approved Department deviation. Add the institutional decision chain instead of collapsing it into one Administrator. |
@@ -1801,7 +1801,7 @@ The following is a **planning evidence baseline**, not yet an approved replaceme
 
 #### Decisions that require Department/Faculty confirmation
 
-1. Is PGLMS strictly for Computer Engineering MPhil/PhD, or intended to support the wider Faculty programme set?
+1. Is PGSMS strictly for Computer Engineering MPhil/PhD, or intended to support the wider Faculty programme set?
 2. Must proposal and Supervisor consent be part of the initial application, or has the Department approved a post-admission proposal stage?
 3. Which functions require distinct scoped positions: applicant, Student, Supervisor, proposal reviewer, HOD/nominee, Postgraduate Coordinator, Director/CERPS, Assistant Registrar, FHDC, Faculty Board, Senate, annual review panel, Board of Examiners, and ERC-FoE?
 4. For MPhil/PhD, must the external Examiner be outside the University (current regulations) or merely outside the Faculty (one CERPS web page)?

@@ -33,7 +33,7 @@ describe("sendEmail", () => {
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "mailer@example.com";
     process.env.SMTP_PASS = "secret";
-    process.env.SMTP_FROM = "PGLMS <mailer@example.com>";
+    process.env.SMTP_FROM = "PGSMS <mailer@example.com>";
   });
 
   it("sends email with the correct recipient and subject", async () => {

@@ -1,0 +1,16 @@
+.ribbons {
+  display: grid;
+  width: 100%;
+}
+
+.ribbon {
+  height: 0.25rem;
+}
+
+.gold {
+  background: #ffb606;
+}
+
+.maroon {
+  background: #721c24;
+}

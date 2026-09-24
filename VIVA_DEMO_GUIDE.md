@@ -1,6 +1,6 @@
-# Postgraduate Research Lifecycle System: Viva Demonstration Guide
+# Postgraduate Student Management System: Viva Demonstration Guide
 
-This guide provides a step-by-step demonstration walkthrough for presenting the **Postgraduate Research Lifecycle Management System** during an academic viva or evaluation panel. 
+This guide provides a step-by-step demonstration walkthrough for presenting the **Postgraduate Student Management System (PGSMS)** during an academic viva or evaluation panel.
 
 It covers the complete student lifecycle from public admissions to degree completion across all **five user roles** (`Student`, `Supervisor`, `Examiner`, `Head of Department / HOD`, and `Administrator`).
 
