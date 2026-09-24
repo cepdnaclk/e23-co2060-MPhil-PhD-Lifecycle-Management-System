@@ -6,8 +6,8 @@ import { defineConfig } from "vitest/config";
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  esbuild: {
-    jsx: "automatic",
+  oxc: {
+    jsx: { runtime: "automatic" },
   },
   resolve: {
     alias: {
@@ -19,5 +19,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     exclude: ["tests/e2e/**", "node_modules/**", ".next/**"],
+    maxWorkers: 4,
+    testTimeout: 10_000,
   },
 });

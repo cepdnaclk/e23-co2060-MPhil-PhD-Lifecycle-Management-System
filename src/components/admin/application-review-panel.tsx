@@ -46,7 +46,7 @@ type ReviewerOption = {
   id: string;
   displayName: string;
   email: string;
-  role: "SUPERVISOR" | "EXAMINER";
+  role: "EXAMINER";
   isActive: boolean;
 };
 
@@ -68,22 +68,18 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
   useEffect(() => {
     async function fetchDetails() {
       try {
-        const [res, supervisorsResponse, examinersResponse] = await Promise.all([
+        const [res, examinersResponse] = await Promise.all([
           secureFetch(`/api/applications/${applicationId}`),
-          secureFetch("/api/admin/users?role=SUPERVISOR"),
           secureFetch("/api/admin/users?role=EXAMINER"),
         ]);
         if (!res.ok) throw new Error("Failed to load application details");
         const data = await res.json();
         setApplication(data.application);
-        const supervisorPayload = supervisorsResponse.ok
-          ? ((await supervisorsResponse.json()) as { users: ReviewerOption[] })
-          : { users: [] };
         const examinerPayload = examinersResponse.ok
           ? ((await examinersResponse.json()) as { users: ReviewerOption[] })
           : { users: [] };
         setReviewers(
-          [...supervisorPayload.users, ...examinerPayload.users].filter(
+          examinerPayload.users.filter(
             (reviewer) => reviewer.isActive,
           ),
         );

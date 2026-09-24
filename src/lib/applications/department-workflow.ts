@@ -145,13 +145,9 @@ export async function assignProposalReviewer(
       );
     }
 
-    if (
-      !reviewer?.isActive ||
-      (reviewer.role !== UserRole.SUPERVISOR &&
-        reviewer.role !== UserRole.EXAMINER)
-    ) {
+    if (!reviewer?.isActive || reviewer.role !== UserRole.EXAMINER) {
       throw new DepartmentApplicationError(
-        "Reviewer must be an active Supervisor or Examiner.",
+        "Reviewer must be an active Examiner.",
         400,
       );
     }
@@ -211,6 +207,13 @@ export async function submitAssignedProposalReview(
   },
   auth: AuthenticatedUserContext,
 ) {
+  if (auth.role !== UserRole.EXAMINER) {
+    throw new DepartmentApplicationError(
+      "Only the assigned Examiner can submit a proposal review.",
+      403,
+    );
+  }
+
   return prisma.$transaction(async (tx) => {
     const assignment = await tx.proposalReviewerAssignment.findUnique({
       where: { id: assignmentId },
@@ -308,7 +311,11 @@ export async function recordHodAdmissionDecision(
           where: {
             proposalVersion: { isCurrent: true },
           },
-          select: { status: true },
+          select: {
+            status: true,
+            reviewer: { select: { role: true } },
+            review: { select: { id: true } },
+          },
         },
       },
     });
@@ -331,7 +338,35 @@ export async function recordHodAdmissionDecision(
       );
     }
 
-    // Review validation removed as admissions only require supervisor consent
+    if (application.proposalReviewerAssignments.length === 0) {
+      throw new DepartmentApplicationError(
+        "At least one completed Examiner proposal review is required.",
+        409,
+      );
+    }
+
+    if (
+      application.proposalReviewerAssignments.some(
+        (assignment) => assignment.reviewer.role !== UserRole.EXAMINER,
+      )
+    ) {
+      throw new DepartmentApplicationError(
+        "All proposal reviews must be assigned to Examiners.",
+        409,
+      );
+    }
+
+    if (
+      application.proposalReviewerAssignments.some(
+        (assignment) =>
+          assignment.status !== AssignmentStatus.COMPLETED || !assignment.review,
+      )
+    ) {
+      throw new DepartmentApplicationError(
+        "All current proposal reviews must be completed before a Department decision.",
+        409,
+      );
+    }
 
     const updated = await tx.application.update({
       where: { id: application.id },

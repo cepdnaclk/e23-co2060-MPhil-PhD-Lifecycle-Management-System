@@ -126,17 +126,14 @@ async function deliverClaimedMessage(message: OutboxMessage) {
   }
 
   if (payload.email) {
-    if (!message.recipientId || !message.notificationEvent) {
-      throw new Error(
-        "Email outbox messages require a recipient and notification event.",
-      );
-    }
-
-    const result = await sendEmail({
-      ...payload.email,
-      recipientUserId: message.recipientId,
-      event: message.notificationEvent,
-    });
+    const result =
+      message.recipientId && message.notificationEvent
+        ? await sendEmail({
+            ...payload.email,
+            recipientUserId: message.recipientId,
+            event: message.notificationEvent,
+          })
+        : await sendEmail(payload.email);
 
     if (!result.success) {
       throw new Error(result.error ?? "Email delivery failed.");

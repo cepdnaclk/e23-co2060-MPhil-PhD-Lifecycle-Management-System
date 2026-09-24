@@ -29,6 +29,7 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 import { prisma } from "@/lib/prisma/client";
+import { sendEmail } from "@/lib/email";
 import {
   enqueueOutboxMessage,
   processOutboxBatch,
@@ -121,6 +122,44 @@ describe("transactional outbox", () => {
         data: expect.objectContaining({ status: OutboxStatus.DELIVERED }),
       }),
     );
+  });
+
+  it("delivers a guest email without requiring an internal user recipient", async () => {
+    vi.mocked(prisma.outboxMessage.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as never)
+      .mockResolvedValueOnce({ count: 1 } as never);
+    vi.mocked(prisma.outboxMessage.findMany).mockResolvedValue([
+      { id: "outbox-guest" },
+    ] as never);
+    vi.mocked(prisma.outboxMessage.findUnique).mockResolvedValue(
+      outboxMessage({
+        id: "outbox-guest",
+        eventKey: "application:app-1:revision-request:email",
+        payload: {
+          email: {
+            to: "applicant@example.com",
+            subject: "Proposal revision requested",
+            html: "<p>Please revise your proposal.</p>",
+            text: "Please revise your proposal.",
+          },
+        },
+      }) as never,
+    );
+    vi.mocked(sendEmail).mockResolvedValue({
+      success: true,
+      messageId: "guest-message-1",
+    });
+
+    const result = await processOutboxBatch({ workerId: "worker-1" });
+
+    expect(result).toMatchObject({ claimed: 1, delivered: 1, failed: 0 });
+    expect(sendEmail).toHaveBeenCalledWith({
+      to: "applicant@example.com",
+      subject: "Proposal revision requested",
+      html: "<p>Please revise your proposal.</p>",
+      text: "Please revise your proposal.",
+    });
+    expect(prisma.notification.upsert).not.toHaveBeenCalled();
   });
 
   it("dead-letters a malformed delivery after its final attempt", async () => {

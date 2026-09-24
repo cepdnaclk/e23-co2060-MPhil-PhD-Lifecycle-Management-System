@@ -1,7 +1,6 @@
-import { AssignmentStatus, SupervisorConsentStatus } from "@prisma/client";
+import { SupervisorConsentStatus } from "@prisma/client";
 
 import {
-  AssignedProposalReviewPanel,
   ProposedSupervisorConsentPanel,
   StudentResearchProposalsPanel,
 } from "@/components/applications/assigned-proposal-work";
@@ -17,7 +16,7 @@ export default async function SupervisorApplicationsPage() {
     select: { id: true },
   });
 
-  const [applications, assignments, studentProposals] = await Promise.all([
+  const [applications, studentProposals] = await Promise.all([
     prisma.application.findMany({
       where: {
         proposedSupervisorUserId: auth.userId,
@@ -29,17 +28,6 @@ export default async function SupervisorApplicationsPage() {
         applicantName: true,
         proposalTitle: true,
         proposalAbstract: true,
-      },
-    }),
-    prisma.proposalReviewerAssignment.findMany({
-      where: { reviewerUserId: auth.userId, status: AssignmentStatus.PENDING },
-      orderBy: { assignedAt: "asc" },
-      select: {
-        id: true,
-        application: { select: { applicantName: true } },
-        proposalVersion: {
-          select: { title: true, abstract: true, versionNumber: true },
-        },
       },
     }),
     // Proposals submitted by currently-assigned students
@@ -79,14 +67,10 @@ export default async function SupervisorApplicationsPage() {
       <section className="space-y-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Application work</h2>
-          <p className="mt-2 text-muted-foreground">Proposed-supervisor consent and explicitly assigned proposal reviews.</p>
+          <p className="mt-2 text-muted-foreground">Record consent for applicants who named you as their proposed supervisor.</p>
         </div>
         <h3 className="text-xl font-semibold">Consent requests</h3>
         <ProposedSupervisorConsentPanel applications={applications} />
-      </section>
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Assigned reviews</h2>
-        <AssignedProposalReviewPanel assignments={assignments.map((assignment) => ({ id: assignment.id, applicantName: assignment.application.applicantName, ...assignment.proposalVersion }))} />
       </section>
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Student research proposals</h2>
