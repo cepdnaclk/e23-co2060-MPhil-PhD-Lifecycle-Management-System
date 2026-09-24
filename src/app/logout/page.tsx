@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader } from "@/components/ui/loader";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { secureFetch } from "@/lib/security/client-request";
 
 export default function LogoutPage() {
@@ -26,14 +26,5 @@ export default function LogoutPage() {
     void performLogout();
   }, [router]);
 
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <div className="text-center space-y-6 flex flex-col items-center">
-        <Loader />
-        <p className="text-2xl font-medium text-muted-foreground">
-          Signing you out...
-        </p>
-      </div>
-    </div>
-  );
+  return <LoadingScreen message="Signing you out…" />;
 }
