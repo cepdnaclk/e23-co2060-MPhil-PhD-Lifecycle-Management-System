@@ -2,6 +2,7 @@ import { CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { PublicPageShell } from "@/components/layout/public-page-shell";
+import { Button } from "@/components/ui/button";
 
 export default async function ApplicationSuccessPage({
   searchParams,
@@ -19,20 +20,25 @@ export default async function ApplicationSuccessPage({
 
   return (
     <PublicPageShell primaryHref="/login" primaryLabel="Sign in">
-      <main className="flex flex-1 items-center justify-center bg-background p-4 py-12">
-        <div className="w-full max-w-2xl rounded-xl border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
-          <CheckCircle2 className="h-12 w-12 text-primary" aria-hidden="true" />
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-foreground">
-            Application submitted
-          </h1>
-          <p className="mt-2 max-w-xl text-muted-foreground">
-            Your application and supporting documents were received for postgraduate admissions
-            review.
-          </p>
+      <main className="flex flex-1 items-center justify-center bg-background px-4 py-8 sm:py-12">
+        <div className="w-full max-w-2xl overflow-hidden rounded-xl border border-border/90 bg-card p-6 text-card-foreground sm:p-8">
+          <header className="border-b border-border pb-6">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
+            </span>
+            <p className="mt-6 text-sm font-semibold text-primary">Postgraduate application</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-foreground">
+              Application submitted
+            </h1>
+            <p className="mt-3 max-w-xl leading-6 text-muted-foreground">
+              Your application and supporting documents were received for postgraduate admissions
+              review.
+            </p>
+          </header>
 
           <section
             aria-labelledby="receipt-heading"
-            className="mt-6 rounded-lg border bg-muted/30 p-4"
+            className="mt-6 rounded-lg border border-border bg-muted/30 p-4"
           >
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
@@ -48,8 +54,10 @@ export default async function ApplicationSuccessPage({
                 {receiptTime ? (
                   <p className="mt-1 text-sm text-muted-foreground">Received {receiptTime}</p>
                 ) : null}
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Keep this reference for any follow-up about your submission.
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {reference
+                    ? "Keep this reference for any follow-up about your submission."
+                    : "Your submission was received successfully."}
                 </p>
               </div>
             </div>
@@ -62,29 +70,41 @@ export default async function ApplicationSuccessPage({
                 What happens next
               </h2>
             </div>
-            <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
-              <li>
-                <span className="font-medium text-foreground">1. Supervisor consent:</span> the
-                proposed supervisor is asked to review the request.
+            <ol className="mt-4 space-y-4 text-sm text-muted-foreground">
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                  1
+                </span>
+                <p className="pt-0.5 leading-5">
+                  <span className="font-semibold text-foreground">Supervisor consent:</span> the
+                  proposed supervisor is asked to review the request.
+                </p>
               </li>
-              <li>
-                <span className="font-medium text-foreground">2. Department review:</span> eligible
-                applications move through academic review.
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                  2
+                </span>
+                <p className="pt-0.5 leading-5">
+                  <span className="font-semibold text-foreground">Department review:</span> eligible
+                  applications move through academic review.
+                </p>
               </li>
-              <li>
-                <span className="font-medium text-foreground">3. Decision:</span> the Department
-                records the application outcome before any admission is executed.
+              <li className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                  3
+                </span>
+                <p className="pt-0.5 leading-5">
+                  <span className="font-semibold text-foreground">Decision:</span> the Department
+                  records the application outcome before any admission is executed.
+                </p>
               </li>
             </ol>
           </section>
 
           <div className="mt-8">
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              Return to home
-            </Link>
+            <Button asChild size="lg">
+              <Link href="/">Return to home</Link>
+            </Button>
           </div>
         </div>
       </main>
