@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { 
-  LogOut, 
+import {
+  LogOut,
   Bell,
   LayoutDashboard,
   FileText,
@@ -25,7 +25,9 @@ import {
 } from "lucide-react";
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
+import { BrandRibbons } from "@/components/layout/brand-ribbons";
 import { Header } from "@/components/layout/header";
+import { SimpleSiteFooter } from "@/components/layout/simple-site-footer";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
@@ -99,9 +101,7 @@ export function DashboardRoleLayout({
               priority
             />
             <div className="min-w-0 leading-tight">
-              <p className="font-semibold tracking-[-0.02em] text-sidebar-foreground">
-                PGSMS
-              </p>
+              <p className="font-semibold tracking-[-0.02em] text-sidebar-foreground">PGSMS</p>
               <p className="truncate text-xs text-sidebar-foreground/75">
                 {heading}
               </p>
@@ -174,28 +174,32 @@ export function DashboardRoleLayout({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset
-        id="dashboard-content"
-        tabIndex={-1}
-        className="overflow-hidden bg-background"
-      >
-        <Header fixed className="border-b border-border/80 bg-background/95">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger variant="outline" className="h-9 w-9" />
-            <Separator orientation="vertical" className="mx-2 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-semibold tracking-[-0.01em] sm:text-base">
-              {pageHeading}
-            </h1>
-          </div>
-          <div className="ml-auto flex items-center">
-            <ProfileDropdown role={role} />
-          </div>
-        </Header>
-        <div className="mx-auto w-full max-w-[94rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <SidebarInset className="overflow-hidden bg-background">
+        <div className="sticky top-0 z-50">
+          <Header className="border-b border-border/80 bg-background/95">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger variant="outline" className="h-9 w-9" />
+              <Separator orientation="vertical" className="mx-2 h-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-sm font-semibold tracking-[-0.01em] sm:text-base">
+                {pageHeading}
+              </h1>
+            </div>
+            <div className="ml-auto flex items-center">
+              <ProfileDropdown role={role} />
+            </div>
+          </Header>
+          <BrandRibbons placement="header" />
+        </div>
+        <div
+          id="dashboard-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[94rem] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+        >
           {children}
         </div>
+        <SimpleSiteFooter className="mt-auto" />
       </SidebarInset>
     </SidebarProvider>
   );

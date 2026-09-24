@@ -235,6 +235,10 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-loader-ring] {
+    animation: none !important;
+  }
+
   [data-dashboard-shell] *,
   [data-dashboard-shell] *::before,
   [data-dashboard-shell] *::after {

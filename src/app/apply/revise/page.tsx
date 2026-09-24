@@ -1,4 +1,5 @@
 import { ProposalRevisionForm } from "@/components/applications/proposal-revision-form";
+import { PublicPageShell } from "@/components/layout/public-page-shell";
 
 export default async function ProposalRevisionPage({
   searchParams,
@@ -11,11 +12,13 @@ export default async function ProposalRevisionPage({
   const params = await searchParams;
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-12">
-      <ProposalRevisionForm
-        applicationId={params.applicationId ?? ""}
-        revisionToken={params.token ?? ""}
-      />
-    </main>
+    <PublicPageShell primaryHref="/login" primaryLabel="Sign in">
+      <main className="flex-1 bg-muted/20 px-4 py-12">
+        <ProposalRevisionForm
+          applicationId={params.applicationId ?? ""}
+          revisionToken={params.token ?? ""}
+        />
+      </main>
+    </PublicPageShell>
   );
 }
