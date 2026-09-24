@@ -30,9 +30,12 @@
   position: fixed;
   inset: 0 0 auto;
   z-index: 50;
-  border-bottom: 1px solid rgba(17, 19, 24, 0.08);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(18px) saturate(130%);
+}
+
+.homeMain {
+  padding-top: 5rem;
 }
 
 .navbar {
@@ -780,6 +783,10 @@
 
   .brand small {
     display: none;
+  }
+
+  .homeMain {
+    padding-top: 4.6rem;
   }
 
   .programmeSection,

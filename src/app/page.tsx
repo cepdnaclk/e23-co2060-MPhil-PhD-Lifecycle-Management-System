@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { LandingBackRedirect } from "@/components/layout/landing-back-redirect";
+import { BrandRibbons } from "@/components/layout/brand-ribbons";
 import { HomeNavigation } from "@/components/layout/home-navigation";
 import { HomeScrollToTop } from "@/components/layout/home-scroll-to-top";
 import DotField from "@/components/ui/dot-field";
@@ -52,7 +53,7 @@ export default function HomePage() {
 
       <HomeNavigation />
 
-      <main id="main-content">
+      <main id="main-content" className={styles.homeMain}>
         <section className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-white px-5 py-20 text-black sm:px-6 sm:py-24">
           <div className="absolute inset-0">
             <div className="absolute inset-0 opacity-90">
@@ -243,6 +244,7 @@ export default function HomePage() {
       </main>
 
       <footer className={styles.siteFooter}>
+        <BrandRibbons placement="footer" />
         <div className={styles.footerGrid}>
           <div className={styles.footerIdentity}>
             <Image src={logoImage} alt="University of Peradeniya" width={72} height={72} />

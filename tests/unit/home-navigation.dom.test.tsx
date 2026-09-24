@@ -74,4 +74,14 @@ describe("HomeNavigation", () => {
       "false",
     );
   });
+
+  it("places the gold and maroon ribbons below the navigation", () => {
+    renderNavigation();
+
+    expect(
+      Array.from(document.querySelectorAll('[data-brand-ribbons="header"] [data-ribbon-color]')).map(
+        (ribbon) => ribbon.getAttribute("data-ribbon-color"),
+      ),
+    ).toEqual(["gold", "maroon"]);
+  });
 });

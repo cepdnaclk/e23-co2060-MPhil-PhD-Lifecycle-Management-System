@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 import styles from "@/app/home-page.module.css";
+import { BrandRibbons } from "@/components/layout/brand-ribbons";
 import logoImage from "../../../images/logo.png";
 
 export function HomeNavigation() {
@@ -77,6 +78,7 @@ export function HomeNavigation() {
           ) : null}
         </div>
       </nav>
+      <BrandRibbons placement="header" />
     </header>
   );
 }
