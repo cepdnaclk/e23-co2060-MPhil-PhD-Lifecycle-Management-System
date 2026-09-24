@@ -1,4 +1,4 @@
-import { AssignmentStatus, DepartmentDecision } from "@prisma/client";
+import { DepartmentDecision } from "@prisma/client";
 
 import { HodApplicationDecisionPanel } from "@/components/hod/department-decision-panels";
 import { getServerDashboardContext } from "@/lib/dashboard/server";
@@ -18,23 +18,25 @@ export default async function HodApplicationsPage() {
       supervisorConsentStatus: true,
       proposalReviewerAssignments: {
         where: {
-          status: AssignmentStatus.COMPLETED,
           proposalVersion: { isCurrent: true },
         },
-        select: { id: true },
+        select: { id: true, status: true },
       },
     },
   });
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h2 className="text-3xl font-bold tracking-tight">Admission decisions</h2><p className="mt-2 text-muted-foreground">Decide only after supervisor consent is recorded.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Admission decisions</h2><p className="mt-2 text-muted-foreground">Decide after supervisor consent and all assigned Examiner reviews are complete.</p></div>
       <HodApplicationDecisionPanel applications={applications.map((application) => ({
         ...application,
         programType: application.programType,
         studyMode: application.studyMode,
         supervisorConsentStatus: application.supervisorConsentStatus,
-        completedReviews: application.proposalReviewerAssignments.length,
+        completedReviews: application.proposalReviewerAssignments.filter(
+          (assignment) => assignment.status === "COMPLETED",
+        ).length,
+        totalReviews: application.proposalReviewerAssignments.length,
       }))} />
     </div>
   );

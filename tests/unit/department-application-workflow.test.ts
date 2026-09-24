@@ -13,6 +13,7 @@ vi.mock("@/lib/prisma/client", () => ({
 }));
 
 import {
+  assignProposalReviewer,
   recordHodAdmissionDecision,
   recordProposedSupervisorConsent,
   submitAssignedProposalReview,
@@ -24,6 +25,20 @@ const supervisorAuth = {
   firebaseUid: "firebase-supervisor-1",
   userId: "supervisor-user-1",
   role: UserRole.SUPERVISOR,
+} as const;
+
+const examinerAuth = {
+  uid: "firebase-examiner-1",
+  firebaseUid: "firebase-examiner-1",
+  userId: "reviewer-user-2",
+  role: UserRole.EXAMINER,
+} as const;
+
+const hodAuth = {
+  uid: "firebase-hod",
+  firebaseUid: "firebase-hod",
+  userId: "hod-user-1",
+  role: UserRole.HOD,
 } as const;
 
 describe("Department application workflow boundaries", () => {
@@ -77,7 +92,7 @@ describe("Department application workflow boundaries", () => {
           decision: DepartmentDecision.APPROVED,
           comments: "The proposal is suitable for Department approval.",
         },
-        supervisorAuth,
+        examinerAuth,
       ),
     ).rejects.toMatchObject({
       status: 403,
@@ -105,16 +120,164 @@ describe("Department application workflow boundaries", () => {
           decision: DepartmentDecision.APPROVED,
           reason: "The application satisfies all Department requirements.",
         },
-        {
-          uid: "firebase-hod",
-          firebaseUid: "firebase-hod",
-          userId: "hod-user-1",
-          role: UserRole.HOD,
-        },
+        hodAuth,
       ),
     ).rejects.toMatchObject({
       status: 409,
       message: "Supervisor consent is incomplete.",
+    });
+  });
+
+  it("allows only active Examiners to be assigned as proposal reviewers", async () => {
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        application: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "application-1",
+            supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
+            proposalVersions: [{ id: "version-1", title: "Proposal" }],
+          }),
+        },
+        user: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "supervisor-user-1",
+            role: UserRole.SUPERVISOR,
+            isActive: true,
+          }),
+        },
+      } as never),
+    );
+
+    await expect(
+      assignProposalReviewer("application-1", "supervisor-user-1", {
+        uid: "firebase-admin",
+        firebaseUid: "firebase-admin",
+        userId: "admin-user-1",
+        role: UserRole.ADMINISTRATOR,
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: "Reviewer must be an active Examiner.",
+    });
+  });
+
+  it("requires at least one current Examiner proposal review before an HOD decision", async () => {
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        application: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "application-1",
+            departmentDecision: DepartmentDecision.PENDING,
+            supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
+            proposalReviewerAssignments: [],
+          }),
+        },
+      } as never),
+    );
+
+    await expect(
+      recordHodAdmissionDecision(
+        "application-1",
+        {
+          decision: DepartmentDecision.APPROVED,
+          reason: "The application satisfies all Department requirements.",
+        },
+        hodAuth,
+      ),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: "At least one completed Examiner proposal review is required.",
+    });
+  });
+
+  it("requires every current Examiner proposal review to be completed", async () => {
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        application: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "application-1",
+            departmentDecision: DepartmentDecision.PENDING,
+            supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
+            proposalReviewerAssignments: [
+              {
+                status: AssignmentStatus.PENDING,
+                reviewer: { role: UserRole.EXAMINER },
+                review: null,
+              },
+            ],
+          }),
+        },
+      } as never),
+    );
+
+    await expect(
+      recordHodAdmissionDecision(
+        "application-1",
+        {
+          decision: DepartmentDecision.REJECTED,
+          reason: "The proposal review must be completed before this decision.",
+        },
+        hodAuth,
+      ),
+    ).rejects.toMatchObject({
+      status: 409,
+      message:
+        "All current proposal reviews must be completed before a Department decision.",
+    });
+  });
+
+  it("queues a deliverable guest email when completed reviews request a revision", async () => {
+    const createOutbox = vi.fn().mockResolvedValue({ id: "outbox-1" });
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
+      callback({
+        application: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: "application-1",
+            applicantName: "Applicant One",
+            applicantEmail: "applicant@example.com",
+            departmentDecision: DepartmentDecision.PENDING,
+            supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
+            proposalReviewerAssignments: [
+              {
+                status: AssignmentStatus.COMPLETED,
+                reviewer: { role: UserRole.EXAMINER },
+                review: { id: "review-1" },
+              },
+            ],
+          }),
+          update: vi.fn().mockResolvedValue({
+            id: "application-1",
+            departmentDecision: DepartmentDecision.REVISION_REQUIRED,
+          }),
+        },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
+        outboxMessage: { create: createOutbox },
+      } as never),
+    );
+
+    await recordHodAdmissionDecision(
+      "application-1",
+      {
+        decision: DepartmentDecision.REVISION_REQUIRED,
+        reason: "Please revise the research methodology and resubmit the proposal.",
+      },
+      hodAuth,
+    );
+
+    expect(createOutbox).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        recipientId: null,
+        notificationEvent: null,
+        payload: {
+          email: expect.objectContaining({
+            to: "applicant@example.com",
+            subject: "PGLMS proposal revision requested",
+          }),
+        },
+      }),
     });
   });
 });

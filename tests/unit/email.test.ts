@@ -99,6 +99,29 @@ describe("sendEmail", () => {
     expect(result.error).toBe("SMTP unavailable");
   });
 
+  it("sends guest email without writing a user-scoped NotificationLog", async () => {
+    const sendMail = vi.fn().mockResolvedValue({ messageId: "guest-message-1" });
+    vi.mocked(nodemailer.createTransport).mockReturnValue({
+      sendMail,
+    } as never);
+
+    const result = await sendEmail({
+      to: "applicant@example.com",
+      subject: "Proposal revision requested",
+      html: "<p>Please revise your proposal.</p>",
+      text: "Please revise your proposal.",
+    });
+
+    expect(sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "applicant@example.com",
+        subject: "Proposal revision requested",
+      }),
+    );
+    expect(prisma.notificationLog.create).not.toHaveBeenCalled();
+    expect(result).toEqual({ success: true, messageId: "guest-message-1" });
+  });
+
   it("writes FAILED to NotificationLog when SMTP configuration is missing", async () => {
     delete process.env.SMTP_HOST;
     vi.mocked(prisma.notificationLog.create).mockResolvedValue({} as never);

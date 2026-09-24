@@ -39,4 +39,4 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, contex
     }
     return NextResponse.json({ error: "Unable to submit review." }, { status: 500 });
   }
-}, [UserRole.SUPERVISOR, UserRole.EXAMINER]);
+}, [UserRole.EXAMINER]);

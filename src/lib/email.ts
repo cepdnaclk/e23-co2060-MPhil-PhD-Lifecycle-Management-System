@@ -12,14 +12,24 @@ export type EmailTemplate = {
   text: string;
 };
 
-export type SendEmailInput = {
+type EmailMessage = {
   to: string;
   subject: string;
   html: string;
   text: string;
-  recipientUserId: string;
-  event: NotificationEvent;
 };
+
+export type SendEmailInput = EmailMessage &
+  (
+    | {
+        recipientUserId: string;
+        event: NotificationEvent;
+      }
+    | {
+        recipientUserId?: never;
+        event?: never;
+      }
+  );
 
 export type SendEmailResult = {
   success: boolean;
@@ -151,6 +161,12 @@ async function writeNotificationLog(
   deliveryStatus: NotificationDeliveryStatus,
   failureReason?: string,
 ) {
+  // Guest recipients are durably tracked by the outbox message and its delivery
+  // attempts. NotificationLog is intentionally user-scoped in the data model.
+  if (!input.recipientUserId || !input.event) {
+    return;
+  }
+
   try {
     await prisma.notificationLog.create({
       data: {

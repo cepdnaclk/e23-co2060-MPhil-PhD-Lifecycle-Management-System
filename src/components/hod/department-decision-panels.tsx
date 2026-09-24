@@ -33,6 +33,7 @@ export function HodApplicationDecisionPanel({
     proposalTitle: string | null;
     supervisorConsentStatus: string;
     completedReviews: number;
+    totalReviews: number;
   }>;
 }) {
   const router = useRouter();
@@ -96,7 +97,11 @@ export function HodApplicationDecisionPanel({
         }}
       />
       {applications.length === 0 ? <p className="text-muted-foreground">No applications await a decision.</p> : applications.map((application) => {
-        const ready = application.supervisorConsentStatus === "CONSENTED";
+        const reviewsReady =
+          application.totalReviews > 0 &&
+          application.completedReviews === application.totalReviews;
+        const ready =
+          application.supervisorConsentStatus === "CONSENTED" && reviewsReady;
         return (
           <Card key={application.id}>
             <CardHeader>
@@ -105,6 +110,9 @@ export function HodApplicationDecisionPanel({
                 <Badge variant="secondary">{application.programType} {application.studyMode.replaceAll("_", " ")}</Badge>
                 <Badge variant={ready ? "default" : "secondary"}>
                   {application.supervisorConsentStatus}
+                </Badge>
+                <Badge variant={reviewsReady ? "default" : "secondary"}>
+                  Reviews {application.completedReviews}/{application.totalReviews}
                 </Badge>
               </div>
             </CardHeader>
@@ -132,7 +140,15 @@ export function HodApplicationDecisionPanel({
                   </Button>
                 ))}
               </div>
-              {!ready ? <p id={`application-decision-help-${application.id}`} className="text-xs text-muted-foreground">Supervisor consent is required before a decision can be recorded.</p> : null}
+              {!ready ? (
+                <p id={`application-decision-help-${application.id}`} className="text-xs text-muted-foreground">
+                  {application.supervisorConsentStatus !== "CONSENTED"
+                    ? "Supervisor consent is required before a decision can be recorded."
+                    : application.totalReviews === 0
+                      ? "Assign at least one Examiner proposal review before recording a decision."
+                      : "All assigned Examiner proposal reviews must be completed before recording a decision."}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         );

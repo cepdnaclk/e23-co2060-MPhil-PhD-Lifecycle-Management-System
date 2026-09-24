@@ -8,7 +8,10 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { HodExaminationDecisionPanel } from "@/components/hod/department-decision-panels";
+import {
+  HodApplicationDecisionPanel,
+  HodExaminationDecisionPanel,
+} from "@/components/hod/department-decision-panels";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -63,5 +66,34 @@ describe("HodExaminationDecisionPanel", () => {
       screen.getByText("At least two confirmed Examiners are required; currently 1."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Review HOD outcome" })).toBeDisabled();
+  });
+});
+
+describe("HodApplicationDecisionPanel", () => {
+  it("keeps decisions disabled until at least one assigned review is complete", () => {
+    render(
+      <HodApplicationDecisionPanel
+        applications={[
+          {
+            id: "application-1",
+            applicantName: "Applicant One",
+            programType: "MPHIL",
+            studyMode: "FULL_TIME",
+            proposalTitle: "Reliable Research Systems",
+            supervisorConsentStatus: "CONSENTED",
+            completedReviews: 0,
+            totalReviews: 0,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Reviews 0/0")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Assign at least one Examiner proposal review before recording a decision.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "APPROVED" })).toBeDisabled();
   });
 });
