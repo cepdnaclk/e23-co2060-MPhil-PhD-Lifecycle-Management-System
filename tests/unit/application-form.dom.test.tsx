@@ -6,7 +6,7 @@ import "@testing-library/jest-dom/vitest";
 
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const push = vi.fn();
@@ -122,6 +122,48 @@ describe("ApplicationForm", () => {
     expect(await screen.findByText(/Draft saved/)).toBeInTheDocument();
   });
 
+  it("uses Back only for moving between application steps", async () => {
+    const user = userEvent.setup();
+    fetchMock
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          draftId: "d8e54622-7149-49e8-95d8-37d2d6206db5",
+          draftToken: "a".repeat(43),
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ supervisors: [] }));
+
+    render(<ApplicationForm />);
+
+    await screen.findByText("Protected draft ready");
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Application steps" })).toHaveAttribute(
+      "data-step-layout",
+      "vertical",
+    );
+    expect(
+      screen
+        .getByRole("button", {
+          name: "Research step locked until previous sections are completed",
+        })
+        .querySelector("[data-step-lock]"),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Full name"), {
+      target: { value: "Jane Doe" },
+    });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "jane@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Phone"), {
+      target: { value: "+94771234567" },
+    });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Research" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+
   it("lets applicants jump back and forth with the step boxes after reaching review", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(
@@ -182,6 +224,13 @@ describe("ApplicationForm", () => {
         screen.getByRole("heading", { level: 2, name: "Applicant" }),
       ).toBeInTheDocument();
     });
+
+    for (const label of ["Research", "Documents", "Review"]) {
+      const unlockedStep = screen.getByRole("button", { name: `Go to ${label} step` });
+      expect(within(unlockedStep).getByText("Unlocked")).toBeInTheDocument();
+      expect(unlockedStep.querySelector("[data-step-unlock]")).toBeInTheDocument();
+      expect(unlockedStep.querySelector("[data-step-lock]")).not.toBeInTheDocument();
+    }
 
     await user.click(screen.getByRole("button", { name: "Go to Review step" }));
 
