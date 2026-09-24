@@ -1,4 +1,4 @@
-# Department PGLMS Version 1 Workflow Report
+# Department PGSMS Version 1 Workflow Report
 
 Updated from the implemented repository state on 26 July 2026. This document
 supersedes the former renewable-registration, review-panel, routine

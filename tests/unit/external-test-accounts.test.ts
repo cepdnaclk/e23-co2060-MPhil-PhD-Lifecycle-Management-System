@@ -13,7 +13,7 @@ describe("external E2E credential parsing", () => {
   it("parses one representative account per Department V1 role", () => {
     const accounts = parseExternalTestAccounts(
       [
-        "PGLMS TEST ACCOUNTS",
+        "PGSMS TEST ACCOUNTS",
         "Shared password: synthetic-test-value",
         ...representativeAccounts,
       ].join("\n"),

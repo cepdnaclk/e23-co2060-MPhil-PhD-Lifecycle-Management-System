@@ -11,6 +11,7 @@ import {
 
 import { LandingBackRedirect } from "@/components/layout/landing-back-redirect";
 import { HomeNavigation } from "@/components/layout/home-navigation";
+import { HomeScrollToTop } from "@/components/layout/home-scroll-to-top";
 import DotField from "@/components/ui/dot-field";
 import styles from "./home-page.module.css";
 import logoImage from "../../images/logo.png";
@@ -34,7 +35,7 @@ const researchAreas = [
   "Wearable Computing and Brain–Computer Interfacing",
 ] as const;
 
-const lifecycleSteps = [
+const studentJourneySteps = [
   ["Apply", "Submit your research interest and supporting documents."],
   ["Review", "Move through supervisor consent and departmental review."],
   ["Research", "Keep proposals, ethics, and progress records together."],
@@ -90,7 +91,7 @@ export default function HomePage() {
               />
             </div>
             <h1 className={`${montserrat.className} relative -top-4 mx-auto max-w-5xl text-balance text-center text-[2.1rem] font-normal leading-[1.1] tracking-[-0.06em] text-[#111318] sm:-top-5 sm:text-[3.7rem] lg:-top-6 lg:text-[4.8rem]`}>
-              Postgraduate Management Platform
+              Postgraduate Student Management System
             </h1>
 
             <Link
@@ -145,11 +146,11 @@ export default function HomePage() {
                 <span />
                 <span />
                 <span />
-                <p>pglms / application</p>
+                <p>pgsms / application</p>
               </div>
               <Image
                 src={applicationImage}
-                alt="The PGLMS research programme application form"
+                alt="The PGSMS research programme application form"
                 sizes="(max-width: 900px) 92vw, 54vw"
               />
               <figcaption>
@@ -186,18 +187,18 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="lifecycle" className={styles.lifecycleSection}>
-          <div className={styles.lifecycleGrid}>
+        <section id="student-journey" className={styles.studentJourneySection}>
+          <div className={styles.studentJourneyGrid}>
             <figure className={`${styles.productFrame} ${styles.dashboardFrame} ${styles.slideFromLeft}`}>
               <div className={styles.browserBar} aria-hidden="true">
                 <span />
                 <span />
                 <span />
-                <p>pglms / lifecycle</p>
+                <p>pgsms / student journey</p>
               </div>
               <Image
                 src={dashboardImage}
-                alt="PGLMS department dashboard showing postgraduate lifecycle work"
+                alt="PGSMS department dashboard showing postgraduate student management work"
                 sizes="(max-width: 900px) 92vw, 55vw"
               />
               <figcaption>
@@ -205,11 +206,11 @@ export default function HomePage() {
               </figcaption>
             </figure>
 
-            <div className={`${styles.lifecycleCopy} ${styles.slideFromRight}`}>
-              <p className={styles.sectionKicker}>One connected lifecycle</p>
+            <div className={`${styles.studentJourneyCopy} ${styles.slideFromRight}`}>
+              <p className={styles.sectionKicker}>One connected student journey</p>
               <h2>Every milestone has a place.</h2>
               <ol>
-                {lifecycleSteps.map(([title, description]) => (
+                {studentJourneySteps.map(([title, description]) => (
                   <li key={title}>
                     <strong>{title}</strong>
                     <span>{description}</span>
@@ -246,7 +247,7 @@ export default function HomePage() {
           <div className={styles.footerIdentity}>
             <Image src={logoImage} alt="University of Peradeniya" width={72} height={72} />
             <div>
-              <strong>Postgraduate Lifecycle Management System</strong>
+              <strong>Postgraduate Student Management System</strong>
               <p>Department of Computer Engineering</p>
               <p>Faculty of Engineering, University of Peradeniya</p>
             </div>
@@ -292,7 +293,7 @@ export default function HomePage() {
 
         <div className={styles.footerBase}>
           <p>© 2026 University of Peradeniya. All rights reserved.</p>
-          <a href="#main-content">Back to top</a>
+          <HomeScrollToTop />
         </div>
       </footer>
     </div>

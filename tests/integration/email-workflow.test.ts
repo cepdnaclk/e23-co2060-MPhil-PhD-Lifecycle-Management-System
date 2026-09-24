@@ -31,7 +31,7 @@ describe("email workflow integration", () => {
     process.env.SMTP_PORT = "587";
     process.env.SMTP_USER = "mailer@example.com";
     process.env.SMTP_PASS = "secret";
-    process.env.SMTP_FROM = "PGLMS <mailer@example.com>";
+    process.env.SMTP_FROM = "PGSMS <mailer@example.com>";
   });
 
   it("creates a NotificationLog entry automatically for a proposal status workflow", async () => {

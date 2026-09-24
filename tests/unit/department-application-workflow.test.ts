@@ -274,7 +274,7 @@ describe("Department application workflow boundaries", () => {
         payload: {
           email: expect.objectContaining({
             to: "applicant@example.com",
-            subject: "PGLMS proposal revision requested",
+            subject: "PGSMS proposal revision requested",
           }),
         },
       }),

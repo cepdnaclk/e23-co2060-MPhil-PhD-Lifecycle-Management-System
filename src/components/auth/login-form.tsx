@@ -178,7 +178,7 @@ export function LoginForm() {
               University of Peradeniya
             </p>
             <h1 className="text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
-              Sign in to PGLMS
+              Sign in to PGSMS
             </h1>
             <p className="text-sm font-medium text-muted-foreground">
               Faculty of Engineering

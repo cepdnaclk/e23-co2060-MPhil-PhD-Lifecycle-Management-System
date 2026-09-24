@@ -35,18 +35,18 @@ export function HomeNavigation() {
   return (
     <header className={styles.siteHeader}>
       <nav className={styles.navbar} aria-label="Primary navigation">
-        <Link className={styles.brand} href="/" aria-label="PGLMS home">
+        <Link className={styles.brand} href="/" aria-label="PGSMS home">
           <Image src={logoImage} alt="" width={42} height={42} priority />
           <span>
-            <strong>PGLMS</strong>
+            <strong>PGSMS</strong>
             <small>Computer Engineering</small>
           </span>
         </Link>
 
         <div className={styles.desktopNavigation}>
-          <a href="#programmes">Programmes</a>
-          <a href="#research">Research</a>
-          <a href="#lifecycle">Lifecycle</a>
+          <a href="#programmes" onClick={navigateToSection}>Programmes</a>
+          <a href="#research" onClick={navigateToSection}>Research</a>
+          <a href="#student-journey" onClick={navigateToSection}>Student Journey</a>
           <Link href="/apply">Apply</Link>
         </div>
 
@@ -70,7 +70,7 @@ export function HomeNavigation() {
             <div id="home-mobile-navigation" className={styles.mobileNavigationPanel}>
               <a href="#programmes" onClick={navigateToSection}>Programmes</a>
               <a href="#research" onClick={navigateToSection}>Research</a>
-              <a href="#lifecycle" onClick={navigateToSection}>Lifecycle</a>
+              <a href="#student-journey" onClick={navigateToSection}>Student journey</a>
               <Link href="/apply">Apply now</Link>
               <Link href="/login">Sign in</Link>
             </div>

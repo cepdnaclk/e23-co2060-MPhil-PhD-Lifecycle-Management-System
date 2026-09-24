@@ -117,23 +117,24 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid #111111;
+  border: 2px solid #111111;
   border-radius: 999px;
   background: #111111;
   color: #ffffff;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.11);
   isolation: isolate;
   text-decoration: none;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 .signInButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
+  background: #ffffff;
+  color: #111111;
 }
 
 .signInButton:active {
-  transform: translateY(0);
+  background: #111111;
+  color: #ffffff;
 }
 
 .signInButtonLabel {
@@ -195,7 +196,7 @@
 }
 
 .programmeSection,
-.lifecycleSection {
+.studentJourneySection {
   padding: clamp(6rem, 10vw, 10rem) max(1.25rem, calc((100vw - 82rem) / 2));
   scroll-margin-top: 5rem;
 }
@@ -239,7 +240,7 @@
 
 .sectionIntro h2,
 .researchCopy h2,
-.lifecycleCopy h2,
+.studentJourneyCopy h2,
 .closingSection h2 {
   margin: 0;
   max-width: 14ch;
@@ -251,7 +252,7 @@
 }
 
 .programmeGrid,
-.lifecycleGrid {
+.studentJourneyGrid {
   display: grid;
   width: min(100%, 82rem);
   margin-inline: auto;
@@ -431,11 +432,11 @@
   padding-left: 1.5rem;
 }
 
-.lifecycleSection {
+.studentJourneySection {
   background: #ece9e3;
 }
 
-.lifecycleGrid {
+.studentJourneyGrid {
   grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
 }
 
@@ -443,42 +444,42 @@
   box-shadow: 0 38px 100px rgba(55, 37, 39, 0.18);
 }
 
-.lifecycleCopy h2 {
+.studentJourneyCopy h2 {
   max-width: 9ch;
   font-size: clamp(2.7rem, 5vw, 5rem);
 }
 
-.lifecycleCopy ol {
+.studentJourneyCopy ol {
   margin: 2.5rem 0 0;
   padding: 0;
   list-style: none;
-  counter-reset: lifecycle;
+  counter-reset: journey-step;
 }
 
-.lifecycleCopy li {
+.studentJourneyCopy li {
   display: grid;
   grid-template-columns: 2.2rem 1fr;
   gap: 0 0.75rem;
   border-top: 1px solid rgba(17, 19, 24, 0.18);
   padding: 1.1rem 0;
-  counter-increment: lifecycle;
+  counter-increment: journey-step;
 }
 
-.lifecycleCopy li::before {
+.studentJourneyCopy li::before {
   grid-row: 1 / span 2;
   color: var(--home-wine);
-  content: counter(lifecycle, decimal-leading-zero);
+  content: counter(journey-step, decimal-leading-zero);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.08em;
 }
 
-.lifecycleCopy li strong {
+.studentJourneyCopy li strong {
   font-size: 0.96rem;
   font-weight: 600;
 }
 
-.lifecycleCopy li span {
+.studentJourneyCopy li span {
   margin-top: 0.3rem;
   color: #5e5b5c;
   font-size: 0.78rem;
@@ -716,7 +717,7 @@
   .sectionIntro,
   .programmeGrid,
   .researchCanvas,
-  .lifecycleGrid {
+  .studentJourneyGrid {
     grid-template-columns: 1fr;
   }
 
@@ -736,7 +737,7 @@
   }
 
   .programmeGrid,
-  .lifecycleGrid {
+  .studentJourneyGrid {
     gap: 3.5rem;
   }
 
@@ -749,11 +750,11 @@
   }
 
   .researchCopy h2,
-  .lifecycleCopy h2 {
+  .studentJourneyCopy h2 {
     max-width: 13ch;
   }
 
-  .lifecycleCopy {
+  .studentJourneyCopy {
     grid-row: 1;
   }
 
@@ -783,7 +784,7 @@
 
   .programmeSection,
   .researchSection,
-  .lifecycleSection {
+  .studentJourneySection {
     padding-top: 5.5rem;
     padding-bottom: 5.5rem;
   }
@@ -794,7 +795,7 @@
 
   .sectionIntro h2,
   .researchCopy h2,
-  .lifecycleCopy h2 {
+  .studentJourneyCopy h2 {
     font-size: clamp(2.25rem, 12vw, 3.3rem);
   }
 

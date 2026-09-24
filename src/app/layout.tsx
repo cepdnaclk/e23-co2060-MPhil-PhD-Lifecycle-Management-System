@@ -9,8 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "PGLMS",
-  description: "MPhil and PhD postgraduate management system",
+  title: "PGSMS",
+  description: "Postgraduate Student Management System for MPhil and PhD programmes",
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",

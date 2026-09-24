@@ -1,4 +1,4 @@
-# Department PGLMS Version 1 Implementation Register
+# Department PGSMS Version 1 Implementation Register
 
 ## Baseline
 

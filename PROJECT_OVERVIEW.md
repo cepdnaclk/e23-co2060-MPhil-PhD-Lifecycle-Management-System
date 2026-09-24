@@ -2,7 +2,7 @@
 
 ## 1. What This Project Is
 
-This repository contains a **Postgraduate Lifecycle Management System** for managing the full MPhil/PhD journey in one platform.
+This repository contains a **Postgraduate Student Management System (PGSMS)** for managing MPhil and PhD students in one platform.
 
 It brings together the major academic and administrative workflows involved in postgraduate research:
 

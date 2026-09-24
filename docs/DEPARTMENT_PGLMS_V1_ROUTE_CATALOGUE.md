@@ -1,4 +1,4 @@
-# Department PGLMS Version 1 Route Catalogue
+# Department PGSMS Version 1 Route Catalogue
 
 Updated from the active repository surface on 26 July 2026. Common
 authentication/session, notification, upload-session, document-repository, and

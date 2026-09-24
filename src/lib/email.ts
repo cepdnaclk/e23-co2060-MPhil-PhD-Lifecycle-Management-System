@@ -313,13 +313,13 @@ export function buildWelcomeAccountTemplate(input: {
   const text = [
     `Dear ${input.recipientName},`,
     "",
-    `An account has been created for you in the Postgraduate Lifecycle Management System as a ${input.roleLabel}.`,
+    `An account has been created for you in the Postgraduate Student Management System as a ${input.roleLabel}.`,
     `Set your password: ${accountSetupUrl}`,
     "This one-time Firebase link expires automatically. If it has expired or was already used, request a new password-reset link.",
   ].join("\n");
   const html = emailHtml`
     <p>Dear ${input.recipientName},</p>
-    <p>An account has been created for you in the Postgraduate Lifecycle Management System as a <strong>${input.roleLabel}</strong>.</p>
+    <p>An account has been created for you in the Postgraduate Student Management System as a <strong>${input.roleLabel}</strong>.</p>
     <p><a href="${accountSetupUrl}">Set your password and activate access</a></p>
     <p>This one-time Firebase link expires automatically. If it has expired or was already used, request a new password-reset link.</p>
   `;
@@ -393,13 +393,13 @@ export function buildSupervisorAssignmentTemplate(input: {
     "",
     `You have been assigned as ${input.assignmentRoleLabel.toLowerCase()} for ${input.studentName}.`,
     `Assigned by: ${input.assignedByName}`,
-    "Please sign in to the Postgraduate Lifecycle Management System to review the student record.",
+    "Please sign in to the Postgraduate Student Management System to review the student record.",
   ].join("\n");
   const html = emailHtml`
     <p>Dear ${input.supervisorName},</p>
     <p>You have been assigned as <strong>${input.assignmentRoleLabel.toLowerCase()}</strong> for <strong>${input.studentName}</strong>.</p>
     <p><strong>Assigned by:</strong> ${input.assignedByName}</p>
-    <p>Please sign in to the Postgraduate Lifecycle Management System to review the student record.</p>
+    <p>Please sign in to the Postgraduate Student Management System to review the student record.</p>
   `;
 
   return { subject, html, text };
@@ -758,12 +758,12 @@ export function buildThesisArchivedTemplate(input: {
   const text = [
     `Dear ${input.studentName},`,
     "",
-    `Your thesis titled "${input.thesisTitle}" has been successfully archived in the Postgraduate Lifecycle Management System.`,
+    `Your thesis titled "${input.thesisTitle}" has been successfully archived in the Postgraduate Student Management System.`,
     "No further action is required. Congratulations on completing your programme.",
   ].join("\n");
   const html = emailHtml`
     <p>Dear ${input.studentName},</p>
-    <p>Your thesis titled <strong>${input.thesisTitle}</strong> has been successfully archived in the Postgraduate Lifecycle Management System.</p>
+    <p>Your thesis titled <strong>${input.thesisTitle}</strong> has been successfully archived in the Postgraduate Student Management System.</p>
     <p>No further action is required. Congratulations on completing your programme.</p>
   `;
 
