@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "databaseName": "replace-with-target-database-name",
+  "schemaName": "public",
+  "targetFingerprint": "replace-with-guard-reported-target-fingerprint",
+  "approvedBy": "replace-with-approver-name",
+  "approvedAt": "2026-09-25T00:00:00.000Z",
+  "expiresAt": "2026-09-26T00:00:00.000Z",
+  "backupId": "replace-with-verified-backup-id",
+  "rehearsalEvidence": "replace-with-reviewed-evidence-reference",
+  "migrations": [
+    {
+      "name": "replace-with-exact-pending-migration-name",
+      "sha256": "replace-with-migration-policy-sha256"
+    }
+  ]
+}
