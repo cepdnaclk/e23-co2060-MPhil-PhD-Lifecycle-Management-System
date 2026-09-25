@@ -257,8 +257,8 @@ export default function HomePage() {
 
           <div className={styles.footerColumn}>
             <h2>Explore</h2>
-            <a href="#programmes">Research programmes</a>
-            <a href="#research">Research areas</a>
+            <a href="https://www.ce.pdn.ac.lk/courses/postgraduate/">Research programmes</a>
+            <a href="https://www.ce.pdn.ac.lk/courses/postgraduate/">Research areas</a>
             <Link href="/apply">Apply online</Link>
             <Link href="/login">Staff and student sign in</Link>
           </div>

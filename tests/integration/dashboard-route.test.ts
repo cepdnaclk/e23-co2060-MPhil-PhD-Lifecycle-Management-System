@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { UserRole } from "@prisma/client";
 
 vi.mock("@/lib/firebase/auth", () => ({
   authenticateBearerRequest: vi.fn(),
@@ -129,5 +130,70 @@ describe("GET /api/dashboard/[role]/summary", () => {
         roleLabel: "Administrator",
       }),
     });
+  });
+
+  it("allows the HOD to refresh the HOD dashboard summary", async () => {
+    const hodAuth = {
+      uid: "firebase-hod-1",
+      userId: "user-hod-1",
+      firebaseUid: "firebase-hod-1",
+      email: "hod@example.com",
+      role: UserRole.HOD,
+    };
+    vi.mocked(authenticateBearerRequest).mockResolvedValue(hodAuth as never);
+    vi.mocked(getDashboardSummaryForUser).mockResolvedValue({
+      role: "hod",
+      roleLabel: "HOD",
+      title: "Department overview",
+      subtitle: "Review pending decisions.",
+      attentionItems: [],
+      cards: [],
+      quickActions: [],
+      lastUpdatedIso: "2026-09-26T00:00:00.000Z",
+    } as never);
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/hod/summary", {
+        headers: { cookie: "pglms_session=session-token" },
+      }) as never,
+      { params: Promise.resolve({ role: "hod" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(authenticateBearerRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      expect.arrayContaining([UserRole.HOD]),
+    );
+    expect(getDashboardSummaryForUser).toHaveBeenCalledWith(hodAuth, "hod");
+  });
+
+  it("still blocks a HOD from requesting another role's summary", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue({
+      uid: "firebase-hod-1",
+      userId: "user-hod-1",
+      firebaseUid: "firebase-hod-1",
+      email: "hod@example.com",
+      role: UserRole.HOD,
+    } as never);
+    vi.mocked(getDashboardSummaryForUser).mockRejectedValue(
+      new DashboardAccessError("Forbidden.", 403),
+    );
+
+    const response = await GET(
+      new Request("http://localhost/api/dashboard/admin/summary", {
+        headers: { cookie: "pglms_session=session-token" },
+      }) as never,
+      { params: Promise.resolve({ role: "admin" }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(authenticateBearerRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      expect.arrayContaining([UserRole.HOD]),
+    );
+    expect(getDashboardSummaryForUser).toHaveBeenCalledWith(
+      expect.objectContaining({ role: UserRole.HOD }),
+      "admin",
+    );
   });
 });
