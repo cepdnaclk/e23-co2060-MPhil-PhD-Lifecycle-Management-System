@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 
 import {
   ApplicationSubmissionError,
-  createApplicationUploadUrl,
+  verifyApplicationDocument,
 } from "@/lib/applications/submission";
 import { createServerErrorResponse } from "@/lib/http/errors";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const uploadTarget = await createApplicationUploadUrl(body);
+    const uploadedDocument = await verifyApplicationDocument(body);
 
-    return NextResponse.json(uploadTarget, { status: 201 });
+    return NextResponse.json(uploadedDocument);
   } catch (error) {
     if (error instanceof ApplicationSubmissionError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
 
     return createServerErrorResponse({
       error,
-      message: "Unable to prepare the document upload.",
-      route: "/api/applications/upload-url",
+      message: "Unable to verify the uploaded document.",
+      route: "/api/applications/upload/verify",
       method: "POST",
     });
   }

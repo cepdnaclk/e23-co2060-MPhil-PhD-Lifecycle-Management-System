@@ -335,6 +335,7 @@ Key configuration categories in `.env`:
 * **Database & Storage:** `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`
 * **Firebase Auth:** `NEXT_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
 * **Email & Session:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SESSION_COOKIE_NAME`
+* **Document Safety:** `MALWARE_SCANNER_URL`, `MALWARE_SCANNER_TOKEN`, `PUBLIC_RATE_LIMIT_SECRET`
 * **Monitoring:** `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`
 
 For a Vercel deployment backed by Supabase, `DATABASE_URL` must use the
@@ -348,6 +349,12 @@ postgresql://USER:PASSWORD@HOST:6543/postgres?sslmode=require&pgbouncer=true&con
 
 Keep database credentials in Vercel environment variables; never commit the
 completed connection string.
+
+Public application documents are uploaded directly from the browser to a
+short-lived Supabase signed URL and then verified by the application server.
+Production fails closed before issuing an upload URL when the authenticated
+HTTPS malware scanner is not configured. `FILE_SCAN_MODE=structural` is for
+local development and tests only; it is intentionally ignored in production.
 
 ---
 

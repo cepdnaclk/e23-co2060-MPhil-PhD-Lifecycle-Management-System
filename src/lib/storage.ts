@@ -300,27 +300,6 @@ export async function generateUploadSignedUrl(
   return data.signedUrl;
 }
 
-export async function uploadBufferToStorage(
-  path: string,
-  buffer: Buffer,
-  contentType: string,
-): Promise<void> {
-  const normalizedPath = normalizeStoragePath(path);
-  const supabase = getSupabaseClient();
-  const bucketName = getSupabaseBucketName();
-
-  const { error } = await supabase.storage
-    .from(bucketName)
-    .upload(normalizedPath, buffer, {
-      contentType,
-      upsert: false,
-    });
-
-  if (error) {
-    throw new StorageAccessError(`Failed to upload buffer: ${error.message}`, 400);
-  }
-}
-
 export async function downloadStorageObject(path: string): Promise<Buffer> {
   const normalizedPath = normalizeStoragePath(path);
   const supabase = getSupabaseClient();

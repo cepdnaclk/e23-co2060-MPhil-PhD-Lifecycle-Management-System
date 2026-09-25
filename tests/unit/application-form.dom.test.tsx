@@ -183,14 +183,22 @@ describe("ApplicationForm", () => {
         ],
       }),
     );
-    fetchMock.mockResolvedValueOnce(
-      createJsonResponse({
-        storagePath: "applications/application-1/proposal.pdf",
-        fileName: "proposal.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: 4096,
-      }),
-    );
+    fetchMock
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          storagePath: "applications/application-1/staged/file-1/proposal.pdf",
+          signedUrl: "https://storage.example.test/upload?token=signed",
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ path: "proposal.pdf" }))
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          storagePath: "applications/application-1/staged/file-1/proposal.pdf",
+          fileName: "proposal.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 4096,
+        }),
+      );
 
     const { container } = render(<ApplicationForm />);
 
@@ -207,6 +215,21 @@ describe("ApplicationForm", () => {
     await waitFor(() => {
       expect(screen.getByText("proposal.pdf")).toBeInTheDocument();
     });
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/applications/upload-url",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "https://storage.example.test/upload?token=signed",
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      5,
+      "/api/applications/upload/verify",
+      expect.objectContaining({ method: "POST" }),
+    );
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => {
@@ -263,7 +286,14 @@ describe("ApplicationForm", () => {
       )
       .mockResolvedValueOnce(
         createJsonResponse({
-          storagePath: "applications/application-1/proposal.pdf",
+          storagePath: "applications/application-1/staged/file-1/proposal.pdf",
+          signedUrl: "https://storage.example.test/upload?token=signed",
+        }),
+      )
+      .mockResolvedValueOnce(createJsonResponse({ path: "proposal.pdf" }))
+      .mockResolvedValueOnce(
+        createJsonResponse({
+          storagePath: "applications/application-1/staged/file-1/proposal.pdf",
           fileName: "proposal.pdf",
           mimeType: "application/pdf",
           sizeBytes: 4096,
@@ -300,7 +330,7 @@ describe("ApplicationForm", () => {
 
     expect(fileInput).not.toBeDisabled();
     expect(global.fetch).toHaveBeenNthCalledWith(
-      4,
+      6,
       "/api/applications/upload",
       expect.objectContaining({
         method: "DELETE",
