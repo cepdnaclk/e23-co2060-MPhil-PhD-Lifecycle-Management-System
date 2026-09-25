@@ -106,10 +106,18 @@ export const applicationUploadRequestSchema = z.object({
   fileSizeBytes: z.number().int().positive().max(APPLICATION_ATTACHMENT_MAX_SIZE_BYTES),
 });
 
+export const applicationUploadVerificationRequestSchema =
+  applicationDraftRequestSchema.extend({
+    storagePath: sanitizedString.min(1, "A storage path is required."),
+  });
+
 export type ApplicationSubmissionInput = z.infer<typeof applicationSubmissionSchema>;
 export type ApplicationDraftValues = z.infer<typeof applicationDraftValuesSchema>;
 export type ApplicationDraftSaveInput = z.infer<typeof applicationDraftSaveSchema>;
 export type ApplicationUploadRequest = z.infer<typeof applicationUploadRequestSchema>;
+export type ApplicationUploadVerificationRequest = z.infer<
+  typeof applicationUploadVerificationRequestSchema
+>;
 export type ApplicationDocumentDeleteRequest = z.infer<
   typeof applicationDocumentDeleteRequestSchema
 >;
