@@ -75,7 +75,14 @@ function makeSignedRequest(input?: {
   });
 }
 
-describe("POST /api/cron/maintenance", () => {
+function makeVercelRequest(secret = CRON_SECRET) {
+  return new Request(ROUTE_URL, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${secret}` },
+  });
+}
+
+describe("/api/cron/maintenance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("CRON_SECRET", CRON_SECRET);
@@ -86,11 +93,7 @@ describe("POST /api/cron/maintenance", () => {
     vi.mocked(markOverdueProgressMilestones).mockResolvedValue(4);
   });
 
-  it("does not export a state-changing GET handler", () => {
-    expect("GET" in cronRoute).toBe(false);
-  });
-
-  it("fails closed without a securely configured server secret", async () => {
+  it("fails the signed POST closed without a securely configured server secret", async () => {
     vi.stubEnv("CRON_SECRET", "");
 
     const response = await cronRoute.POST(makeSignedRequest());
@@ -182,6 +185,41 @@ describe("POST /api/cron/maintenance", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts Vercel's bearer-authenticated GET request", async () => {
+    const expectedRunKey = new Date().toISOString().slice(0, 10);
+
+    const response = await cronRoute.GET(makeVercelRequest());
+
+    expect(response.status).toBe(200);
+    expect(prisma.maintenanceRun.create).toHaveBeenCalledWith({
+      data: {
+        jobName: "department-maintenance",
+        runKey: expectedRunKey,
+        status: MaintenanceRunStatus.RUNNING,
+      },
+      select: { id: true },
+    });
+    expect(markOverdueProgressMilestones).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a Vercel GET with a missing or incorrect bearer token", async () => {
+    const missing = await cronRoute.GET(new Request(ROUTE_URL));
+    const incorrect = await cronRoute.GET(makeVercelRequest("x".repeat(48)));
+
+    expect(missing.status).toBe(401);
+    expect(incorrect.status).toBe(401);
+    expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
+  });
+
+  it("fails the Vercel GET closed when CRON_SECRET is not secure", async () => {
+    vi.stubEnv("CRON_SECRET", "short");
+
+    const response = await cronRoute.GET(makeVercelRequest("short"));
+
+    expect(response.status).toBe(503);
     expect(prisma.maintenanceRun.create).not.toHaveBeenCalled();
   });
 });
