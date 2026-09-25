@@ -18,6 +18,12 @@ env:
   CI: "true"
   NEXT_TELEMETRY_DISABLED: "1"
   NODE_VERSION: "24.15.0"
+  NEXT_PUBLIC_FIREBASE_API_KEY: ci-firebase-api-key
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: pgsms-ci.firebaseapp.com
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: pgsms-ci
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: pgsms-ci.firebasestorage.app
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789"
+  NEXT_PUBLIC_FIREBASE_APP_ID: 1:123456789:web:abcdef
 
 jobs:
   quality:
@@ -73,7 +79,22 @@ jobs:
       - name: Production build
         run: npm run build
         env:
+          PGLMS_VALIDATE_SERVER_ENV: "true"
+          APP_BASE_URL: https://pgsms-ci.example.test
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/pglms_ci?schema=public
+          FIREBASE_PROJECT_ID: pgsms-ci
+          FIREBASE_CLIENT_EMAIL: firebase-admin@pgsms-ci.example.test
+          FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nci-only\\n-----END PRIVATE KEY-----"
+          SUPABASE_URL: https://pgsms-ci.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key-value
+          SUPABASE_STORAGE_BUCKET: documents
+          SMTP_HOST: smtp.example.test
+          SMTP_PORT: "587"
+          SMTP_USER: ci-smtp-user
+          SMTP_PASS: ci-smtp-password
+          SMTP_FROM: "PGSMS CI <pgsms-ci@example.test>"
+          PUBLIC_RATE_LIMIT_SECRET: ci-public-rate-limit-secret-value
+          CRON_SECRET: ci-cron-secret-value-at-least-32-characters
 
   database:
     name: Database migrations

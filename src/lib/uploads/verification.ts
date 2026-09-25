@@ -245,6 +245,12 @@ function getMalwareScannerConfig() {
   return { url: url.toString(), token };
 }
 
+export function assertUploadVerificationConfigured() {
+  if (process.env.NODE_ENV === "production") {
+    getMalwareScannerConfig();
+  }
+}
+
 async function readScannerResponse(response: Response) {
   const declaredLength = Number(response.headers.get("content-length"));
   if (

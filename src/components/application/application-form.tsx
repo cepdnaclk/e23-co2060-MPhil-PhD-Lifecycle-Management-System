@@ -7,6 +7,7 @@ import { z } from "zod";
 import { CheckCircle2, LockKeyhole, LockKeyholeOpen } from "lucide-react";
 
 import {
+  APPLICATION_ATTACHMENT_MAX_SIZE_BYTES,
   applicationProgramTypes,
   applicationStudyModes,
   applicationSubmissionSchema,
@@ -32,6 +33,41 @@ type UploadedSupportingDocument = {
   mimeType: string;
   sizeBytes: number;
 };
+
+type ApplicationDocumentMimeType =
+  | "application/pdf"
+  | "application/zip"
+  | "application/x-zip-compressed";
+
+async function readJsonPayload<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return {} as T;
+  }
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
+function getApplicationDocumentMimeType(
+  file: File,
+): ApplicationDocumentMimeType | null {
+  if (file.type === "application/pdf") return "application/pdf";
+  if (
+    file.type === "application/zip" ||
+    file.type === "application/x-zip-compressed"
+  ) {
+    return file.type;
+  }
+
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith(".pdf")) return "application/pdf";
+  if (lowerName.endsWith(".zip")) return "application/zip";
+  return null;
+}
 
 const stepLabels = ["Applicant", "Research", "Documents", "Review"] as const;
 const DRAFT_SESSION_KEY = "pglms.application-draft.v1";
@@ -393,42 +429,108 @@ export function ApplicationForm() {
       const uploadedDocuments: UploadedSupportingDocument[] = [];
 
       for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append("draftId", draftId);
-        formData.append("draftToken", draftToken);
-        formData.append("file", file);
-
-        const uploadResponse = await fetch("/api/applications/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const uploadPayload = (await uploadResponse.json()) as {
-          error?: string;
-          storagePath?: string;
-          fileName?: string;
-          mimeType?: string;
-          sizeBytes?: number;
-        };
-
-        if (
-          !uploadResponse.ok ||
-          !uploadPayload.storagePath ||
-          !uploadPayload.fileName ||
-          !uploadPayload.mimeType ||
-          typeof uploadPayload.sizeBytes !== "number"
-        ) {
-          throw new Error(
-            uploadPayload.error ?? "Unable to upload the selected document.",
-          );
+        const contentType = getApplicationDocumentMimeType(file);
+        if (!contentType) {
+          throw new Error("Only PDF or ZIP documents are allowed.");
+        }
+        if (file.size <= 0) {
+          throw new Error("The selected document is empty.");
+        }
+        if (file.size > APPLICATION_ATTACHMENT_MAX_SIZE_BYTES) {
+          throw new Error("File exceeds the 10MB upload limit.");
         }
 
-        uploadedDocuments.push({
-          fileName: uploadPayload.fileName,
-          storagePath: uploadPayload.storagePath,
-          mimeType: uploadPayload.mimeType,
-          sizeBytes: uploadPayload.sizeBytes,
-        });
+        let storagePath: string | null = null;
+        try {
+          const targetResponse = await fetch("/api/applications/upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              draftId,
+              draftToken,
+              fileName: file.name,
+              contentType,
+              fileSizeBytes: file.size,
+            }),
+          });
+          const targetPayload = await readJsonPayload<{
+            error?: string;
+            storagePath?: string;
+            signedUrl?: string;
+          }>(targetResponse);
+
+          if (
+            !targetResponse.ok ||
+            !targetPayload.storagePath ||
+            !targetPayload.signedUrl
+          ) {
+            throw new Error(
+              targetPayload.error ??
+                "Unable to prepare the selected document upload.",
+            );
+          }
+          storagePath = targetPayload.storagePath;
+
+          const storageFormData = new FormData();
+          storageFormData.append("cacheControl", "3600");
+          storageFormData.append("", file);
+          const storageResponse = await fetch(targetPayload.signedUrl, {
+            method: "PUT",
+            headers: { "x-upsert": "false" },
+            body: storageFormData,
+          });
+          if (!storageResponse.ok) {
+            throw new Error(
+              "The storage service could not accept the selected document.",
+            );
+          }
+
+          const uploadResponse = await fetch("/api/applications/upload/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ draftId, draftToken, storagePath }),
+          });
+          const uploadPayload = await readJsonPayload<{
+            error?: string;
+            storagePath?: string;
+            fileName?: string;
+            mimeType?: string;
+            sizeBytes?: number;
+          }>(uploadResponse);
+
+          if (
+            !uploadResponse.ok ||
+            !uploadPayload.storagePath ||
+            !uploadPayload.fileName ||
+            !uploadPayload.mimeType ||
+            typeof uploadPayload.sizeBytes !== "number"
+          ) {
+            throw new Error(
+              uploadPayload.error ?? "Unable to verify the selected document.",
+            );
+          }
+
+          uploadedDocuments.push({
+            fileName: uploadPayload.fileName,
+            storagePath: uploadPayload.storagePath,
+            mimeType: uploadPayload.mimeType,
+            sizeBytes: uploadPayload.sizeBytes,
+          });
+        } catch (error) {
+          if (storagePath) {
+            try {
+              await fetch("/api/applications/upload", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ draftId, draftToken, storagePath }),
+              });
+            } catch {
+              // The server also cleans verification failures. A later draft
+              // cleanup handles a storage request that failed before verification.
+            }
+          }
+          throw error;
+        }
       }
 
       setDocuments((current) => [

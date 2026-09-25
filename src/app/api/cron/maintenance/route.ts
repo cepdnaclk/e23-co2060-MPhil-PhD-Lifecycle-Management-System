@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 import { MaintenanceRunStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -33,9 +33,23 @@ function buildSignaturePayload(timestamp: string, runKey: string) {
   return `${timestamp}\n${runKey}\nPOST\n${ROUTE_PATH}`;
 }
 
-function authorizeCronRequest(request: Request): CronAuthorizationResult {
+function securelyMatches(left: string, right: string) {
+  const leftDigest = createHash("sha256").update(left, "utf8").digest();
+  const rightDigest = createHash("sha256").update(right, "utf8").digest();
+  return timingSafeEqual(leftDigest, rightDigest);
+}
+
+function readCronSecret(): string | null {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret || Buffer.byteLength(secret, "utf8") < MINIMUM_CRON_SECRET_BYTES) {
+    return null;
+  }
+  return secret;
+}
+
+function authorizeSignedPostRequest(request: Request): CronAuthorizationResult {
+  const secret = readCronSecret();
+  if (!secret) {
     return {
       authorized: false,
       message: "Cron authentication is not configured securely.",
@@ -85,6 +99,27 @@ function authorizeCronRequest(request: Request): CronAuthorizationResult {
   return { authorized: true, runKey };
 }
 
+function authorizeVercelCronRequest(request: Request): CronAuthorizationResult {
+  const secret = readCronSecret();
+  if (!secret) {
+    return {
+      authorized: false,
+      message: "Cron authentication is not configured securely.",
+      status: 503,
+    };
+  }
+
+  const providedAuthorization = request.headers.get("authorization") ?? "";
+  if (!securelyMatches(providedAuthorization, `Bearer ${secret}`)) {
+    return { authorized: false, message: "Invalid cron credentials.", status: 401 };
+  }
+
+  return {
+    authorized: true,
+    runKey: new Date().toISOString().slice(0, 10),
+  };
+}
+
 function isUniqueConstraintViolation(error: unknown) {
   return (
     typeof error === "object" &&
@@ -94,18 +129,13 @@ function isUniqueConstraintViolation(error: unknown) {
   );
 }
 
-export async function POST(request: Request) {
-  const authorization = authorizeCronRequest(request);
-  if (!authorization.authorized) {
-    return jsonError(authorization.message, authorization.status);
-  }
-
+async function executeMaintenance(runKey: string, method: "GET" | "POST") {
   let run: { id: string };
   try {
     run = await prisma.maintenanceRun.create({
       data: {
         jobName: JOB_NAME,
-        runKey: authorization.runKey,
+        runKey,
         status: MaintenanceRunStatus.RUNNING,
       },
       select: { id: true },
@@ -118,7 +148,7 @@ export async function POST(request: Request) {
       error,
       message: "Unable to claim the maintenance run.",
       route: ROUTE_PATH,
-      method: "POST",
+      method,
     });
   }
 
@@ -145,7 +175,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { ok: true, runKey: authorization.runKey, ...result },
+      { ok: true, runKey, ...result },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -163,7 +193,7 @@ export async function POST(request: Request) {
         error: updateError,
         message: "Unable to record the failed maintenance run.",
         route: ROUTE_PATH,
-        method: "POST",
+        method,
         metadata: { runId: run.id },
       });
     }
@@ -172,8 +202,24 @@ export async function POST(request: Request) {
       error,
       message: "Maintenance execution failed.",
       route: ROUTE_PATH,
-      method: "POST",
+      method,
       metadata: { runId: run.id },
     });
   }
+}
+
+export async function POST(request: Request) {
+  const authorization = authorizeSignedPostRequest(request);
+  if (!authorization.authorized) {
+    return jsonError(authorization.message, authorization.status);
+  }
+  return executeMaintenance(authorization.runKey, "POST");
+}
+
+export async function GET(request: Request) {
+  const authorization = authorizeVercelCronRequest(request);
+  if (!authorization.authorized) {
+    return jsonError(authorization.message, authorization.status);
+  }
+  return executeMaintenance(authorization.runKey, "GET");
 }
