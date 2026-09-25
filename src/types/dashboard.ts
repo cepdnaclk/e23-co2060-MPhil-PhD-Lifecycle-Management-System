@@ -33,11 +33,35 @@ export type DashboardQuickAction = {
   href: string;
 };
 
+export type DashboardAttentionItem = {
+  id: string;
+  title: string;
+  description: string;
+  value: string;
+  href: string;
+  tone: DashboardStatusTone;
+};
+
+export type DashboardJourneyStep = {
+  id: string;
+  label: string;
+  state: "complete" | "current" | "upcoming";
+};
+
+export type DashboardJourney = {
+  title: string;
+  description: string;
+  currentStage: string;
+  steps: DashboardJourneyStep[];
+};
+
 export type DashboardSummary = {
   role: DashboardRole;
   roleLabel: string;
   title: string;
   subtitle: string;
+  attentionItems: DashboardAttentionItem[];
+  journey?: DashboardJourney;
   cards: DashboardKpiCard[];
   quickActions: DashboardQuickAction[];
   lastUpdatedIso: string;

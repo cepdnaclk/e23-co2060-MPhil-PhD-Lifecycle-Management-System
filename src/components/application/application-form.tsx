@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { z } from "zod";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, LockKeyhole, LockKeyholeOpen } from "lucide-react";
 
 import {
   applicationProgramTypes,
@@ -93,7 +93,6 @@ export function ApplicationForm() {
     "initializing" | "saved" | "saving" | "unsaved" | "error"
   >("initializing");
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [draftExpiresAt, setDraftExpiresAt] = useState<string | null>(null);
   const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
   const [documents, setDocuments] = useState<UploadedSupportingDocument[]>([]);
   const [supervisors, setSupervisors] = useState<
@@ -143,7 +142,6 @@ export function ApplicationForm() {
               if (!active) return;
               setDraftId(capability.draftId);
               setDraftToken(capability.draftToken);
-              setDraftExpiresAt(payload.expiresAt ?? null);
               if (payload.draft) {
                 setFormValues(payload.draft.values);
                 setStep(payload.draft.currentStep);
@@ -184,7 +182,6 @@ export function ApplicationForm() {
       );
       setDraftId(payload.draftId);
       setDraftToken(payload.draftToken);
-      setDraftExpiresAt(payload.expiresAt ?? null);
       lastSavedSnapshotRef.current = JSON.stringify({
         values: INITIAL_FORM_VALUES,
         currentStep: 0,
@@ -247,7 +244,6 @@ export function ApplicationForm() {
           lastSavedSnapshotRef.current = snapshot;
           if (latestSnapshotRef.current === snapshot) {
             setSavedAt(payload.savedAt);
-            setDraftExpiresAt(payload.expiresAt ?? null);
             setSaveStatus("saved");
           }
         })
@@ -620,98 +616,130 @@ export function ApplicationForm() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-4 pt-6 md:p-8 max-w-5xl mx-auto w-full">
-      <section className="border-b border-gray-300 pb-5">
-        <p className="text-sm font-semibold uppercase tracking-[0.26em] text-muted-foreground">
-          Postgraduate Admissions
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Apply for your research programme
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Complete the public application form, upload supporting PDF/ZIP documents, and
-          submit your research interest for review.
-        </p>
-        <div role="status" aria-live="polite" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          <span className="font-medium text-foreground">
-            {saveStatus === "initializing"
-              ? "Preparing protected draft..."
-              : saveStatus === "saving"
-                ? "Saving changes..."
-                : saveStatus === "unsaved"
-                  ? "Changes waiting to save"
-                  : saveStatus === "error"
-                    ? "Draft save interrupted"
-                    : savedAt
-                      ? `Draft saved ${new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                      : "Protected draft ready"}
-          </span>
-          <span className="text-muted-foreground">
-            {saveStatus === "error"
-              ? "Keep this page open; saving will retry after your next change."
-              : draftExpiresAt
-                ? `Recoverable in this browser session until ${new Date(draftExpiresAt).toLocaleString()}.`
-                : "Your typed answers will be saved with this protected session."}
-          </span>
-        </div>
-      </section>
-
-      {/* Step Navigator */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {stepLabels.map((label, index) => {
-          const isCurrent = index === step;
-          const isCompleted = index < step;
-          const isStepAccessible = index <= furthestStep;
-
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => goToStep(index)}
-              disabled={!isStepAccessible || isNavigationBusy}
-              aria-current={isCurrent ? "step" : undefined}
-              aria-label={
-                isStepAccessible
-                  ? `Go to ${label} step`
-                  : `${label} step locked until previous sections are completed`
-              }
-              className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
-                isCurrent
-                  ? "border-primary bg-primary/5 font-semibold text-primary"
-                  : isCompleted
-                    ? "border-blue-400 bg-blue-50 text-blue-800"
-                    : "border-border/50 bg-transparent text-muted-foreground"
-              } ${
-                isStepAccessible
-                  ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/70"
-                  : "cursor-not-allowed opacity-60"
-              }`}
-            >
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                Step {index + 1}
-              </p>
-              <p className="mt-1.5 font-semibold text-foreground">{label}</p>
-              <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-                {isCurrent
-                  ? "Current step"
+    <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="grid items-start gap-6 lg:grid-cols-[14rem_minmax(0,44rem)] lg:justify-center lg:gap-10">
+        <aside className="lg:sticky lg:top-28" aria-label="Application progress">
+          <p className="mb-3 text-sm font-semibold text-foreground">Application steps</p>
+          <nav className="grid gap-2" aria-label="Application steps" data-step-layout="vertical">
+            {stepLabels.map((label, index) => {
+              const isCurrent = index === step;
+              const isCompleted = index < step;
+              const isStepAccessible = index <= furthestStep;
+              const stepStatus = isCurrent
+                ? "Current"
+                : isCompleted
+                  ? "Complete"
                   : isStepAccessible
-                    ? "Click to open"
-                    : "Locked"}
-              </p>
-            </button>
-          );
-        })}
-      </section>
+                    ? "Unlocked"
+                    : "Locked";
 
-      <form className="space-y-5 pt-1" onSubmit={handleSubmit}>
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Current step
-          </p>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            {currentStepLabel}
-          </h2>
-        </div>
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => goToStep(index)}
+                  disabled={!isStepAccessible || isNavigationBusy}
+                  aria-current={isCurrent ? "step" : undefined}
+                  aria-label={
+                    isStepAccessible
+                      ? `Go to ${label} step`
+                      : `${label} step locked until previous sections are completed`
+                  }
+                  className={`group flex min-h-16 items-center gap-3 rounded-xl border px-3 py-3 text-left transition-[background-color,border-color,color,transform] duration-200 ${
+                    isCurrent
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : isCompleted
+                        ? "border-primary/30 bg-primary/5 text-foreground"
+                        : "border-border bg-card text-muted-foreground"
+                  } ${
+                    isStepAccessible
+                      ? "cursor-pointer hover:translate-x-1 hover:border-primary/70"
+                      : "cursor-not-allowed opacity-55"
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${
+                      isCurrent
+                        ? "border-primary-foreground/40 bg-primary-foreground/10"
+                        : "border-border bg-background text-foreground"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {isCompleted ? <CheckCircle2 className="h-4 w-4 text-primary" /> : index + 1}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{label}</span>
+                    <span
+                      className={`mt-0.5 flex items-center gap-1 text-xs ${
+                        isCurrent ? "text-primary-foreground/75" : "text-muted-foreground"
+                      }`}
+                    >
+                      {stepStatus}
+                      {isStepAccessible && !isCurrent && !isCompleted ? (
+                        <LockKeyholeOpen
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                          data-step-unlock
+                        />
+                      ) : null}
+                      {!isStepAccessible ? (
+                        <LockKeyhole
+                          className="h-3 w-3"
+                          aria-hidden="true"
+                          data-step-lock
+                        />
+                      ) : null}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <Card className="overflow-hidden border-border/90">
+          <CardContent className="p-6 sm:p-8">
+            <header className="border-b border-border pb-6">
+              <p className="text-sm font-semibold text-primary">Postgraduate application</p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
+                Apply to PGSMS
+              </h1>
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-4 flex items-center gap-2 text-sm text-muted-foreground"
+              >
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${
+                    saveStatus === "error" ? "bg-destructive" : "bg-primary"
+                  }`}
+                  aria-hidden="true"
+                />
+                <span>
+                  {saveStatus === "initializing"
+                    ? "Preparing protected draft…"
+                    : saveStatus === "saving"
+                      ? "Saving changes…"
+                      : saveStatus === "unsaved"
+                        ? "Changes waiting to save"
+                        : saveStatus === "error"
+                          ? "Draft save interrupted. Your next change will retry."
+                          : savedAt
+                            ? `Draft saved ${new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                            : "Protected draft ready"}
+                </span>
+              </div>
+            </header>
+
+            <form className="mt-7 space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Step {step + 1} of {stepLabels.length}
+                </p>
+                <h2 className="text-2xl font-semibold tracking-[-0.02em] text-foreground">
+                  {currentStepLabel}
+                </h2>
+              </div>
 
         {errorMessage && (
           <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive-foreground">
@@ -1072,7 +1100,7 @@ export function ApplicationForm() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p id="application-navigation-status" className="sr-only" aria-live="polite">
             {isNavigationBusy
               ? isSubmitting
@@ -1082,20 +1110,26 @@ export function ApplicationForm() {
                   : "The protected draft is being prepared."
               : ""}
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={previousStep}
-            disabled={isNavigationBusy}
-            aria-describedby={isNavigationBusy ? "application-navigation-status" : undefined}
-          >
-            Back
-          </Button>
+          {step > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={previousStep}
+              disabled={isNavigationBusy}
+              aria-describedby={isNavigationBusy ? "application-navigation-status" : undefined}
+            >
+              Back
+            </Button>
+          ) : (
+            <span aria-hidden="true" />
+          )}
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:ml-auto sm:flex-row">
             {step < stepLabels.length - 1 ? (
               <Button
                 type="button"
+                size="lg"
                 onClick={nextStep}
                 disabled={isNavigationBusy}
                 aria-describedby={isNavigationBusy ? "application-navigation-status" : undefined}
@@ -1105,6 +1139,7 @@ export function ApplicationForm() {
             ) : (
               <Button
                 type="submit"
+                size="lg"
                 disabled={isSubmitting || !isReviewConfirmed}
                 aria-describedby={!isReviewConfirmed ? "submission-confirmation-help" : undefined}
               >
@@ -1118,7 +1153,10 @@ export function ApplicationForm() {
             Confirm that you reviewed the application before submission becomes available.
           </p>
         ) : null}
-      </form>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ vi.mock("@/lib/firebase/auth", () => ({
 
 vi.mock("@/lib/prisma/client", () => ({
   prisma: {
+    $transaction: vi.fn(async (queries: Array<Promise<unknown>>) => Promise.all(queries)),
     progressReport: {
       findMany: vi.fn(),
       count: vi.fn(),
@@ -180,5 +181,6 @@ describe("admin progress monitoring routes", () => {
         value: "3",
       }),
     );
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 });

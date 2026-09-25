@@ -12,6 +12,8 @@ import { prisma } from "@/lib/prisma/client";
 import type { AuthenticatedUserContext } from "@/types/auth";
 import {
   mapAppRoleToDashboardRole,
+  type DashboardAttentionItem,
+  type DashboardJourney,
   type DashboardKpiCard,
   type DashboardQuickAction,
   type DashboardRole,
@@ -47,6 +49,78 @@ function buildCard(
   };
 }
 
+function buildAttentionItem(
+  id: string,
+  title: string,
+  value: number,
+  description: string,
+  href: string,
+  tone: DashboardStatusTone,
+): DashboardAttentionItem {
+  return {
+    id,
+    title,
+    value: value.toString(),
+    description,
+    href,
+    tone,
+  };
+}
+
+function buildStudentJourney({
+  academicStatus,
+  activeRegistrations,
+  activeProposalReviews,
+  activeEthicsApprovals,
+  openThesisMilestones,
+}: {
+  academicStatus: AcademicStatus;
+  activeRegistrations: number;
+  activeProposalReviews: number;
+  activeEthicsApprovals: number;
+  openThesisMilestones: number;
+}): DashboardJourney {
+  const labels = [
+    "Registration",
+    "Proposal",
+    "Ethics",
+    "Research progress",
+    "Thesis",
+    "Completion",
+  ];
+
+  let currentIndex = 0;
+
+  if (academicStatus === AcademicStatus.GRADUATED) {
+    currentIndex = labels.length - 1;
+  } else if (openThesisMilestones > 0) {
+    currentIndex = 4;
+  } else if (activeEthicsApprovals > 0) {
+    currentIndex = 3;
+  } else if (activeProposalReviews > 0 || activeRegistrations > 0) {
+    currentIndex = 1;
+  }
+
+  return {
+    title: "Your programme journey",
+    currentStage: labels[currentIndex],
+    description:
+      academicStatus === AcademicStatus.GRADUATED
+        ? "Your programme record is marked as completed."
+        : `Your current recorded stage is ${labels[currentIndex].toLowerCase()}.`,
+    steps: labels.map((label, index) => ({
+      id: label.toLowerCase().replaceAll(" ", "-"),
+      label,
+      state:
+        academicStatus === AcademicStatus.GRADUATED || index < currentIndex
+          ? "complete"
+          : index === currentIndex
+            ? "current"
+            : "upcoming",
+    })),
+  };
+}
+
 function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
   switch (role) {
     case "student":
@@ -58,34 +132,16 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/student/progress-reports",
         },
         {
-          id: "view-progress-reports",
-          label: "View Progress History",
-          description: "Review submitted reports and released feedback.",
-          href: "/dashboard/student/progress-reports",
-        },
-        {
           id: "view-proposal-status",
           label: "View Proposal Status",
           description: "Check your current proposal status.",
           href: "/dashboard/student/proposals",
         },
         {
-          id: "submit-ethics-approval",
-          label: "Submit Ethics Approval",
-          description: "Upload ethics clearance after proposal approval.",
-          href: "/dashboard/student/ethics",
-        },
-        {
           id: "manage-thesis-documents",
           label: "Request Thesis Readiness",
           description: "Verify prerequisites and request Supervisor certification.",
           href: "/dashboard/student/theses/submit",
-        },
-        {
-          id: "upload-thesis-corrections",
-          label: "Upload Thesis Corrections",
-          description: "Submit corrected thesis files.",
-          href: "/dashboard/student/theses/corrections",
         },
       ];
     case "supervisor":
@@ -97,16 +153,10 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/supervisor/proposals/evaluate",
         },
         {
-          id: "sign-progress-reports",
-          label: "Monitor Progress Reports",
-          description: "View progress reports submitted by assigned students.",
-          href: "/dashboard/supervisor/progress-reports",
-        },
-        {
           id: "open-student-roster",
           label: "Student Roster",
           description: "Review assigned students and their progress.",
-          href: "/dashboard/supervisor",
+          href: "/dashboard/supervisor/students",
         },
         {
           id: "certify-corrections",
@@ -124,12 +174,6 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
           href: "/dashboard/examiner/vivas",
         },
         {
-          id: "check-viva-schedule",
-          label: "Check Viva Schedule",
-          description: "Review upcoming vivas.",
-          href: "/dashboard/examiner/vivas",
-        },
-        {
           id: "track-corrections",
           label: "Track Corrections",
           description: "Review corrections that need follow-up.",
@@ -139,52 +183,22 @@ function getQuickActions(role: DashboardRole): DashboardQuickAction[] {
     case "admin":
       return [
         {
-          id: "manage-users",
-          label: "Manage Users",
-          description: "Review and update user accounts.",
-          href: "/dashboard/admin/users",
-        },
-        {
           id: "review-applications",
           label: "Review Applications",
           description: "Review submitted applications.",
           href: "/dashboard/admin/applications",
         },
         {
-          id: "approve-proposals",
-          label: "Review & Approve Proposals",
-          description: "Review examiner feedback and finalize proposals.",
-          href: "/dashboard/admin/proposals/evaluate",
-        },
-        {
-          id: "review-ethics-approvals",
-          label: "View Ethics Documents",
-          description: "Open submitted ethics document packages.",
-          href: "/dashboard/admin/ethics",
-        },
-        {
-          id: "manage-assignments",
-          label: "Manage Assignments",
-          description: "Assign supervisors and examiners.",
-          href: "/dashboard/admin/assignments/examiners",
-        },
-        {
-          id: "schedule-vivas",
-          label: "Schedule Vivas",
-          description: "Set viva dates and venues.",
-          href: "/dashboard/admin/vivas/schedule",
-        },
-        {
-          id: "finalize-theses",
-          label: "Monitor Thesis Corrections",
-          description: "Monitor ordered correction versions and decisions.",
-          href: "/dashboard/admin/theses",
+          id: "review-department-progress",
+          label: "Review Department Progress",
+          description: "Follow overdue reports and students under review.",
+          href: "/dashboard/admin/progress",
         },
         {
           id: "audit-notifications",
-          label: "Audit Notifications",
-          description: "Review failed notification deliveries.",
-          href: "/dashboard/admin",
+          label: "Recover Notifications",
+          description: "Inspect and retry failed notification deliveries.",
+          href: "/dashboard/admin/outbox",
         },
       ];
     case "hod":
@@ -239,6 +253,7 @@ async function buildStudentSummary(
       roleLabel: "Student",
       title: "Student Overview",
       subtitle: "Dashboard data will appear once your student profile is active.",
+      attentionItems: [],
       cards: [],
       quickActions: getQuickActions("student"),
       lastUpdatedIso: new Date().toISOString(),
@@ -251,7 +266,7 @@ async function buildStudentSummary(
     activeEthicsApprovals,
     overdueReports,
     openThesisMilestones,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.registration.count({
       where: {
         studentId: student.id,
@@ -298,7 +313,52 @@ async function buildStudentSummary(
     role: "student",
     roleLabel: "Student",
     title: "Student Overview",
-    subtitle: "Track submissions, milestones, and follow-ups.",
+    subtitle: "See where you are now and what should happen next.",
+    attentionItems: [
+      ...(overdueReports > 0
+        ? [
+            buildAttentionItem(
+              "student-overdue-reports",
+              "Overdue progress reports",
+              overdueReports,
+              "Submit or correct these reports to keep your record up to date.",
+              "/dashboard/student/progress-reports",
+              "danger",
+            ),
+          ]
+        : []),
+      ...(activeProposalReviews > 0
+        ? [
+            buildAttentionItem(
+              "student-proposal-review",
+              "Proposal review in progress",
+              activeProposalReviews,
+              "Follow the review status and respond if a revision is requested.",
+              "/dashboard/student/proposals",
+              "info",
+            ),
+          ]
+        : []),
+      ...(openThesisMilestones > 0
+        ? [
+            buildAttentionItem(
+              "student-thesis-work",
+              "Active thesis milestones",
+              openThesisMilestones,
+              "Continue the thesis work currently moving through review.",
+              "/dashboard/student/theses/submit",
+              "warning",
+            ),
+          ]
+        : []),
+    ],
+    journey: buildStudentJourney({
+      academicStatus: student.academicStatus,
+      activeRegistrations,
+      activeProposalReviews,
+      activeEthicsApprovals,
+      openThesisMilestones,
+    }),
     cards: [
       buildCard(
         "student-active-registrations",
@@ -360,6 +420,7 @@ async function buildSupervisorSummary(
       roleLabel: "Supervisor",
       title: "Supervisor Overview",
       subtitle: "Dashboard data will appear once you have active assignments.",
+      attentionItems: [],
       cards: [],
       quickActions: getQuickActions("supervisor"),
       lastUpdatedIso: new Date().toISOString(),
@@ -372,7 +433,7 @@ async function buildSupervisorSummary(
     submittedProgressReports,
     graduatedStudents,
   ] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.supervisorAssignment.count({
         where: { supervisorId: supervisor.id },
       }),
@@ -418,7 +479,33 @@ async function buildSupervisorSummary(
     role: "supervisor",
     roleLabel: "Supervisor",
     title: "Supervisor Overview",
-    subtitle: "Monitor assigned students, submissions, and graduation status.",
+    subtitle: "Keep student supervision and active academic work moving.",
+    attentionItems: [
+      ...(monitoredProposals > 0
+        ? [
+            buildAttentionItem(
+              "supervisor-proposals",
+              "Proposals under review",
+              monitoredProposals,
+              "Check the proposal work currently active across your students.",
+              "/dashboard/supervisor/proposals/evaluate",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(submittedProgressReports > 0
+        ? [
+            buildAttentionItem(
+              "supervisor-progress-reports",
+              "Progress reports available",
+              submittedProgressReports,
+              "Review the reports submitted by your assigned students.",
+              "/dashboard/supervisor/progress-reports",
+              "info",
+            ),
+          ]
+        : []),
+    ],
     cards: [
       buildCard(
         "supervisor-assigned-students",
@@ -472,6 +559,7 @@ async function buildExaminerSummary(
       roleLabel: "Examiner",
       title: "Examiner Overview",
       subtitle: "Dashboard data will appear once you have active examination assignments.",
+      attentionItems: [],
       cards: [],
       quickActions: getQuickActions("examiner"),
       lastUpdatedIso: new Date().toISOString(),
@@ -479,7 +567,7 @@ async function buildExaminerSummary(
   }
 
   const [assignedTheses, scheduledVivas, pendingCorrections, activeExaminations] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.thesisExaminerAssignment.count({
         where: { examinerId: examiner.id },
       }),
@@ -542,7 +630,33 @@ async function buildExaminerSummary(
     role: "examiner",
     roleLabel: "Examiner",
     title: "Examiner Overview",
-    subtitle: "Track assigned theses, vivas, and corrections.",
+    subtitle: "Stay focused on active examinations, vivas, and corrections.",
+    attentionItems: [
+      ...(pendingCorrections > 0
+        ? [
+            buildAttentionItem(
+              "examiner-pending-corrections",
+              "Corrections need review",
+              pendingCorrections,
+              "Review the Supervisor-certified correction submissions awaiting you.",
+              "/dashboard/examiner/corrections",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(scheduledVivas > 0
+        ? [
+            buildAttentionItem(
+              "examiner-scheduled-vivas",
+              "Scheduled vivas",
+              scheduledVivas,
+              "Open your examination workspace and review the viva schedule.",
+              "/dashboard/examiner/vivas",
+              "info",
+            ),
+          ]
+        : []),
+    ],
     cards: [
       buildCard(
         "examiner-assigned-theses",
@@ -583,6 +697,8 @@ async function buildExaminerSummary(
 }
 
 async function buildAdminSummary(): Promise<DashboardSummary> {
+  // Keep the metrics on one pooled connection. Parallel count queries can
+  // exhaust a small serverless database pool before the dashboard renders.
   const [
     activeStaffAccounts,
     pendingApplications,
@@ -592,7 +708,7 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
     overdueProgressReports,
     studentsUnderReview,
   ] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.user.count({
         where: {
           role: {
@@ -650,7 +766,57 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
     role: "admin",
     roleLabel: "Administrator",
     title: "Admin Overview",
-    subtitle: "Track applications, accounts, theses, and delivery issues.",
+    subtitle: "Prioritize operational issues and keep department workflows moving.",
+    attentionItems: [
+      ...(failedNotifications > 0
+        ? [
+            buildAttentionItem(
+              "admin-notification-failures",
+              "Notification delivery failures",
+              failedNotifications,
+              "Inspect failed deliveries and recover messages that still need to be sent.",
+              "/dashboard/admin/outbox",
+              "danger",
+            ),
+          ]
+        : []),
+      ...(studentsUnderReview > 0
+        ? [
+            buildAttentionItem(
+              "admin-students-under-review",
+              "Students require academic review",
+              studentsUnderReview,
+              "Open department progress and follow up on flagged student records.",
+              "/dashboard/admin/progress",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(overdueProgressReports > 0
+        ? [
+            buildAttentionItem(
+              "admin-overdue-reports",
+              "Progress reports are overdue",
+              overdueProgressReports,
+              "Review overdue reporting records and coordinate the required follow-up.",
+              "/dashboard/admin/progress",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(pendingApplications > 0
+        ? [
+            buildAttentionItem(
+              "admin-pending-applications",
+              "Applications await review",
+              pendingApplications,
+              "Continue processing submitted applications and review work.",
+              "/dashboard/admin/applications",
+              "info",
+            ),
+          ]
+        : []),
+    ],
     cards: [
       buildCard(
         "admin-staff-accounts",
@@ -721,7 +887,7 @@ async function buildHodSummary(): Promise<DashboardSummary> {
     pendingExaminerConfirmations,
     orderedCorrections,
     pendingCompletions,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.application.count({
       where: {
         isArchived: false,
@@ -757,7 +923,57 @@ async function buildHodSummary(): Promise<DashboardSummary> {
     roleLabel: "Head of Department",
     title: "Department Decisions",
     subtitle:
-      "Review the decision gates reserved for the Head of Department.",
+      "Prioritize the decisions that move students through each academic gate.",
+    attentionItems: [
+      ...(pendingAdmissionDecisions > 0
+        ? [
+            buildAttentionItem(
+              "hod-admission-decisions",
+              "Admission decisions required",
+              pendingAdmissionDecisions,
+              "Review complete applications and record the department decision.",
+              "/dashboard/hod/applications",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(pendingReadiness > 0
+        ? [
+            buildAttentionItem(
+              "hod-readiness-decisions",
+              "Readiness reviews pending",
+              pendingReadiness,
+              "Review thesis readiness records awaiting department action.",
+              "/dashboard/hod/examinations",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(pendingExaminerConfirmations > 0
+        ? [
+            buildAttentionItem(
+              "hod-examiner-confirmations",
+              "Examiner confirmations pending",
+              pendingExaminerConfirmations,
+              "Confirm the proposed examiner assignments for active theses.",
+              "/dashboard/hod/examinations",
+              "warning",
+            ),
+          ]
+        : []),
+      ...(pendingCompletions > 0
+        ? [
+            buildAttentionItem(
+              "hod-completion-approvals",
+              "Completion approvals required",
+              pendingCompletions,
+              "Review eligible programme completions and record the final decision.",
+              "/dashboard/hod/completions",
+              "warning",
+            ),
+          ]
+        : []),
+    ],
     cards: [
       buildCard(
         "hod-admissions",

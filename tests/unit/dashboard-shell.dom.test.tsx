@@ -5,8 +5,12 @@
 import "@testing-library/jest-dom/vitest";
 
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+const { toggleSidebarMock } = vi.hoisted(() => ({
+  toggleSidebarMock: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard/student/proposals",
@@ -36,6 +40,13 @@ vi.mock("@/components/ui/sidebar", () => {
     const { isActive: _isActive, tooltip: _tooltip, ...buttonProps } = props;
     return asChild ? children : <button {...buttonProps}>{children}</button>;
   };
+  const Provider = ({
+    defaultOpen,
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement> & { defaultOpen?: boolean }) => (
+    <div data-default-open={String(defaultOpen)} {...props}>{children}</div>
+  );
 
   return {
     Sidebar: Container,
@@ -49,10 +60,18 @@ vi.mock("@/components/ui/sidebar", () => {
     SidebarMenu: Container,
     SidebarMenuButton: Button,
     SidebarMenuItem: Container,
-    SidebarProvider: Container,
-    SidebarTrigger: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-      <button aria-label="Toggle sidebar" {...props} />
+    SidebarProvider: Provider,
+    SidebarTrigger: ({
+      icon,
+      ...props
+    }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon?: React.ReactNode }) => (
+      <button aria-label="Toggle sidebar" {...props}>{icon}</button>
     ),
+    useSidebar: () => ({
+      isMobile: false,
+      state: "expanded",
+      toggleSidebar: toggleSidebarMock,
+    }),
   };
 });
 
@@ -70,9 +89,12 @@ describe("DashboardRoleLayout", () => {
     const content = document.querySelector("#dashboard-content");
 
     expect(shell).toBeInTheDocument();
+    expect(shell).toHaveAttribute("data-default-open", "false");
     expect(content).toHaveAttribute("tabindex", "-1");
     expect(within(content as HTMLElement).getByText("Student workspace")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Proposals" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Proposals" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notifications" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Skip to dashboard content" })).toHaveAttribute(
       "href",
       "#dashboard-content",
@@ -85,5 +107,15 @@ describe("DashboardRoleLayout", () => {
     expect(document.querySelector('[data-brand-ribbons="footer"]')).not.toBeInTheDocument();
     expect(document.querySelector("[data-simple-site-footer]")).toBeInTheDocument();
     expect(document.querySelector('[data-profile-role="student"]')).toBeInTheDocument();
+    expect(document.querySelector("[data-dashboard-sidebar-scrim]")).toBeInTheDocument();
+    const sidebarScrim = screen.getByRole("button", {
+      name: "Collapse dashboard navigation",
+    });
+    expect(sidebarScrim).toBeEnabled();
+    fireEvent.click(sidebarScrim);
+    expect(toggleSidebarMock).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("[data-scroll-aware-header]")).toContainElement(
+      document.querySelector('[data-brand-ribbons="header"]'),
+    );
   });
 });

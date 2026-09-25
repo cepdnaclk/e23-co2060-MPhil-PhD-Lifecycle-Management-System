@@ -1,15 +1,10 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { secureFetch } from "@/lib/security/client-request";
@@ -114,24 +109,37 @@ export function ProposalRevisionForm({
   }
 
   return (
-    <Card className="mx-auto max-w-3xl">
-      <CardHeader>
-        <CardTitle>Revise application proposal</CardTitle>
-        <CardDescription>
+    <Card className="mx-auto max-w-2xl overflow-hidden border-border/90">
+      <CardHeader className="space-y-0 border-b border-border p-6 sm:p-8">
+        <p className="text-sm font-semibold text-primary">Postgraduate application</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
+          Revise application proposal
+        </h1>
+        <CardDescription className="mt-3 max-w-xl leading-6">
           This protected link can submit one replacement proposal version and
           cannot be reused.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6 sm:p-8">
         {message && (
-          <div className="mb-4 rounded-md border bg-muted/40 p-3 text-sm" role="status">
-            {message}
+          <div
+            className={`mb-6 flex items-start gap-3 rounded-lg border p-4 text-sm ${
+              completed
+                ? "border-primary/25 bg-primary/5 text-foreground"
+                : "border-border bg-muted/40 text-foreground"
+            }`}
+            role="status"
+          >
+            {completed ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            ) : null}
+            <p className="leading-6">{message}</p>
           </div>
         )}
         {!completed && (
-          <form className="space-y-4" onSubmit={submit}>
+          <form className="space-y-5" onSubmit={submit}>
             <div className="space-y-2">
-              <label htmlFor="revision-title" className="text-sm font-medium">
+              <label htmlFor="revision-title" className="text-sm font-semibold">
                 Revised proposal title
               </label>
               <Input
@@ -141,10 +149,11 @@ export function ProposalRevisionForm({
                 maxLength={500}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="revision-abstract" className="text-sm font-medium">
+              <label htmlFor="revision-abstract" className="text-sm font-semibold">
                 Revised abstract
               </label>
               <Textarea
@@ -155,10 +164,11 @@ export function ProposalRevisionForm({
                 rows={10}
                 value={abstract}
                 onChange={(event) => setAbstract(event.target.value)}
+                className="min-h-52"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="revision-summary" className="text-sm font-medium">
+              <label htmlFor="revision-summary" className="text-sm font-semibold">
                 Summary of changes
               </label>
               <Textarea
@@ -168,12 +178,14 @@ export function ProposalRevisionForm({
                 maxLength={2_000}
                 value={changeSummary}
                 onChange={(event) => setChangeSummary(event.target.value)}
+                className="min-h-32"
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="revision-files" className="text-sm font-medium">
-                Revised proposal files (1–10 PDF or ZIP files)
+              <label htmlFor="revision-files" className="text-sm font-semibold">
+                Revised proposal files
               </label>
+              <p className="text-xs text-muted-foreground">Upload 1–10 PDF or ZIP files.</p>
               <Input
                 id="revision-files"
                 required
@@ -181,20 +193,24 @@ export function ProposalRevisionForm({
                 type="file"
                 accept="application/pdf,application/zip,application/x-zip-compressed,.pdf,.zip"
                 onChange={selectFiles}
+                className="h-auto min-h-11 py-1.5"
               />
             </div>
-            <Button
-              type="submit"
-              disabled={
-                isSubmitting ||
-                files.length === 0 ||
-                title.trim().length < 5 ||
-                abstract.trim().length < 20 ||
-                changeSummary.trim().length < 5
-              }
-            >
-              {isSubmitting ? "Submitting protected version…" : "Submit revision"}
-            </Button>
+            <div className="flex justify-end border-t border-border pt-6">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={
+                  isSubmitting ||
+                  files.length === 0 ||
+                  title.trim().length < 5 ||
+                  abstract.trim().length < 20 ||
+                  changeSummary.trim().length < 5
+                }
+              >
+                {isSubmitting ? "Submitting protected version…" : "Submit revision"}
+              </Button>
+            </div>
           </form>
         )}
       </CardContent>

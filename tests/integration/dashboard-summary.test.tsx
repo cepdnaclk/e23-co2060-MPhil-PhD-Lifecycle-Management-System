@@ -22,6 +22,7 @@ const fallbackSummary: DashboardSummary = {
   roleLabel: "Student",
   title: "Your research journey at a glance",
   subtitle: "Track activity",
+  attentionItems: [],
   cards: [
     {
       id: "card-1",
