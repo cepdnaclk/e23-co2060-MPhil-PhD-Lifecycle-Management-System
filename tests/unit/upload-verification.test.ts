@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { MalwareScanStatus } from "@prisma/client";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +9,7 @@ vi.mock("@/lib/storage", () => ({
 
 import { downloadStorageObject } from "@/lib/storage";
 import {
+  assertUploadVerificationConfigured,
   UploadVerificationError,
   verifyStagedUploadFile,
 } from "@/lib/uploads/verification";
@@ -71,6 +73,7 @@ describe("staged upload byte verification", () => {
       mimeType: "application/pdf",
       sizeBytes: bytes.length,
       checksumSha256: createHash("sha256").update(bytes).digest("hex"),
+      malwareScanStatus: MalwareScanStatus.PENDING,
     });
   });
 
@@ -117,6 +120,37 @@ describe("staged upload byte verification", () => {
     ).rejects.toThrow(/malware scanning is required/i);
   });
 
+  it("allows an explicit demo bypass while retaining structural checks and a pending scan status", async () => {
+    const bytes = Buffer.from("%PDF-1.7\nverified content", "utf8");
+    vi.mocked(downloadStorageObject).mockResolvedValue(bytes);
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("MALWARE_SCANNER_URL", "");
+    vi.stubEnv("MALWARE_SCANNER_TOKEN", "");
+    vi.stubEnv("ALLOW_UNSCANNED_UPLOADS", "true");
+
+    expect(() => assertUploadVerificationConfigured()).not.toThrow();
+
+    await expect(
+      verifyStagedUploadFile(stagedFile({ expectedSizeBytes: bytes.length })),
+    ).resolves.toMatchObject({ malwareScanStatus: MalwareScanStatus.PENDING });
+
+    vi.mocked(downloadStorageObject).mockResolvedValue(Buffer.from("not a PDF"));
+    await expect(
+      verifyStagedUploadFile(stagedFile({ expectedSizeBytes: 9 })),
+    ).rejects.toThrow(/allowed PDF or ZIP document/i);
+  });
+
+  it("does not bypass a partially configured scanner", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ALLOW_UNSCANNED_UPLOADS", "true");
+    vi.stubEnv("MALWARE_SCANNER_URL", "https://scanner.example.test/scan");
+    vi.stubEnv("MALWARE_SCANNER_TOKEN", "");
+
+    expect(() => assertUploadVerificationConfigured()).toThrow(
+      /requires MALWARE_SCANNER_TOKEN/i,
+    );
+  });
+
   it("accepts a clean response from an authenticated HTTPS scanner", async () => {
     const bytes = Buffer.from("%PDF-1.7\nverified content", "utf8");
     vi.mocked(downloadStorageObject).mockResolvedValue(bytes);
@@ -138,7 +172,10 @@ describe("staged upload byte verification", () => {
       verifyStagedUploadFile(
         stagedFile({ expectedSizeBytes: bytes.length }),
       ),
-    ).resolves.toMatchObject({ fileName: "proposal.pdf" });
+    ).resolves.toMatchObject({
+      fileName: "proposal.pdf",
+      malwareScanStatus: MalwareScanStatus.CLEAN,
+    });
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://scanner.example.test/scan",

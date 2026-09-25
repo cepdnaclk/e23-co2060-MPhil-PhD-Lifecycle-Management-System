@@ -127,6 +127,7 @@ describe("proposal staged workflow", () => {
             mimeType: "application/pdf",
             sizeBytes: 100,
             checksumSha256: "a".repeat(64),
+            malwareScanStatus: "PENDING",
           },
           {
             id: "staged-2",
@@ -136,6 +137,7 @@ describe("proposal staged workflow", () => {
             mimeType: "application/zip",
             sizeBytes: 200,
             checksumSha256: "b".repeat(64),
+            malwareScanStatus: "PENDING",
           },
         ],
       },

@@ -119,6 +119,7 @@ describe("application proposal revision capability", () => {
       mimeType: "application/pdf",
       sizeBytes: 2_048,
       checksumSha256: "b".repeat(64),
+      malwareScanStatus: "PENDING",
     });
 
     const versionCreate = vi.fn().mockImplementation(({ data }) => ({

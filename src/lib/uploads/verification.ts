@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { StagedUploadFile } from "@prisma/client";
+import { MalwareScanStatus, type StagedUploadFile } from "@prisma/client";
 
 import { downloadStorageObject } from "@/lib/storage";
 
@@ -246,9 +246,22 @@ function getMalwareScannerConfig() {
 }
 
 export function assertUploadVerificationConfigured() {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !isUnscannedUploadMode()) {
     getMalwareScannerConfig();
   }
+}
+
+function isUnscannedUploadMode() {
+  const scannerConfigured = Boolean(
+    process.env.MALWARE_SCANNER_URL?.trim() ||
+      process.env.MALWARE_SCANNER_TOKEN?.trim(),
+  );
+
+  if (process.env.NODE_ENV === "production") {
+    return process.env.ALLOW_UNSCANNED_UPLOADS === "true" && !scannerConfigured;
+  }
+
+  return process.env.FILE_SCAN_MODE === "structural" || !scannerConfigured;
 }
 
 async function readScannerResponse(response: Response) {
@@ -305,14 +318,9 @@ async function readScannerResponse(response: Response) {
 async function assertMalwareScanClean(
   buffer: Buffer,
   input: { fileName: string; checksumSha256: string },
-) {
-  const scannerUrl = process.env.MALWARE_SCANNER_URL?.trim();
-  const structuralOnly =
-    process.env.NODE_ENV !== "production" &&
-    (process.env.FILE_SCAN_MODE === "structural" || !scannerUrl);
-
-  if (structuralOnly) {
-    return;
+): Promise<MalwareScanStatus> {
+  if (isUnscannedUploadMode()) {
+    return MalwareScanStatus.PENDING;
   }
 
   const scanner = getMalwareScannerConfig();
@@ -355,6 +363,8 @@ async function assertMalwareScanClean(
       "The uploaded file failed the malware safety check.",
     );
   }
+
+  return MalwareScanStatus.CLEAN;
 }
 
 export type VerifiedUploadFile = {
@@ -365,6 +375,7 @@ export type VerifiedUploadFile = {
   mimeType: "application/pdf" | "application/zip";
   sizeBytes: number;
   checksumSha256: string;
+  malwareScanStatus: MalwareScanStatus;
 };
 
 export async function verifyStagedUploadFile(
@@ -409,7 +420,7 @@ export async function verifyStagedUploadFile(
     assertSafeZip(buffer);
   }
 
-  await assertMalwareScanClean(buffer, {
+  const malwareScanStatus = await assertMalwareScanClean(buffer, {
     fileName: file.fileName,
     checksumSha256,
   });
@@ -422,6 +433,7 @@ export async function verifyStagedUploadFile(
     mimeType: actualMimeType,
     sizeBytes: buffer.length,
     checksumSha256,
+    malwareScanStatus,
   };
 }
 

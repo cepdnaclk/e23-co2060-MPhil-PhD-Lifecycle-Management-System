@@ -52,7 +52,10 @@ SMTP validation remain separate release gates.
 ### Malware-scanner contract
 
 Production document finalization requires `MALWARE_SCANNER_URL` and
-`MALWARE_SCANNER_TOKEN`. The scanner endpoint must use HTTPS, accept the raw
+`MALWARE_SCANNER_TOKEN`, except during an explicitly enabled synthetic-data
+demonstration with `ALLOW_UNSCANNED_UPLOADS=true`. Bypassed files retain a
+`PENDING` malware scan status and require later scanning or quarantine. The
+scanner endpoint must use HTTPS, accept the raw
 file bytes in a `POST` request, and return a bounded JSON response containing
 the boolean decision `{ "clean": true }` for an accepted file. Requests include
 `X-File-Name`, `X-Content-SHA256`, and a bearer token. Timeouts, connection
