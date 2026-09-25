@@ -65,7 +65,7 @@ The administration dashboard summarizes active candidates, pending decisions, re
 
 Authorized administrators can provision accounts, assign roles, and maintain user records.
 
-![PGSMS user management interface](./assets/images/screenshots/mng_usrs.png)
+![PGSMS user management interface](./assets/images/screenshots/mng_usr.png)
 
 ## Architecture
 
