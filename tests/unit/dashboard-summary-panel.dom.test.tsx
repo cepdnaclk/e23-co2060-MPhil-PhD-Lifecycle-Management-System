@@ -18,6 +18,7 @@ describe("DashboardSummaryPanel", () => {
       roleLabel: "Student",
       title: "Student dashboard",
       subtitle: "No data yet",
+      attentionItems: [],
       cards: [],
       quickActions: [],
       lastUpdatedIso: new Date().toISOString(),
@@ -35,6 +36,16 @@ describe("DashboardSummaryPanel", () => {
       roleLabel: "Supervisor",
       title: "Supervision overview",
       subtitle: "Track pending work",
+      attentionItems: [
+        {
+          id: "unsigned-reports",
+          title: "Reports need review",
+          description: "Review submitted reports.",
+          value: "1",
+          href: "/dashboard/supervisor/progress-reports/sign",
+          tone: "warning",
+        },
+      ],
       cards: [
         {
           id: "unsigned-reports",
@@ -61,5 +72,7 @@ describe("DashboardSummaryPanel", () => {
     expect(
       screen.getByRole("link", { name: /Monitor Progress Reports/ }),
     ).toHaveAttribute("href", "/dashboard/supervisor/progress-reports/sign");
+    expect(screen.getByText("Needs your attention")).toBeInTheDocument();
+    expect(screen.getAllByText("Reports need review")).toHaveLength(2);
   });
 });

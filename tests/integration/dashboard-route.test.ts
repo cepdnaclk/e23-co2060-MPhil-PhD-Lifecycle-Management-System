@@ -97,6 +97,7 @@ describe("GET /api/dashboard/[role]/summary", () => {
       roleLabel: "Administrator",
       title: "Operational control centre",
       subtitle: "Monitor core operations.",
+      attentionItems: [],
       cards: [],
       quickActions: [],
       lastUpdatedIso: "2026-04-30T10:00:00.000Z",
