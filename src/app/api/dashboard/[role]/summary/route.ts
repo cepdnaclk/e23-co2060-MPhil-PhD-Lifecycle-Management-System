@@ -1,3 +1,4 @@
+import { UserRole } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { AuthError, authenticateBearerRequest } from "@/lib/firebase/auth";
@@ -27,10 +28,11 @@ export async function GET(
 
   try {
     const auth = await authenticateBearerRequest(request, [
-      "STUDENT",
-      "SUPERVISOR",
-      "EXAMINER",
-      "ADMINISTRATOR",
+      UserRole.STUDENT,
+      UserRole.SUPERVISOR,
+      UserRole.EXAMINER,
+      UserRole.ADMINISTRATOR,
+      UserRole.HOD,
     ]);
     const summary = await getDashboardSummaryForUser(auth, requestedRole);
 

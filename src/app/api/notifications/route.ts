@@ -46,6 +46,7 @@ export const GET = withAuth(
     UserRole.SUPERVISOR,
     UserRole.EXAMINER,
     UserRole.ADMINISTRATOR,
+    UserRole.HOD,
   ],
 );
 
@@ -76,5 +77,6 @@ export const PATCH = withAuth(
     UserRole.SUPERVISOR,
     UserRole.EXAMINER,
     UserRole.ADMINISTRATOR,
+    UserRole.HOD,
   ],
 );

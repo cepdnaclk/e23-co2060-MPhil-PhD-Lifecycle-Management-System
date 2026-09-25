@@ -79,6 +79,14 @@ const supervisorAuth = {
   email: "supervisor@example.com",
 };
 
+const hodAuth = {
+  uid: "firebase-hod-1",
+  userId: "user-hod-1",
+  firebaseUid: "firebase-hod-1",
+  role: UserRole.HOD,
+  email: "hod@example.com",
+};
+
 describe("GET /api/notifications - in-app display", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,6 +114,21 @@ describe("GET /api/notifications - in-app display", () => {
       }),
     );
   });
+
+  it("allows HOD notifications and scopes them to the HOD", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue(hodAuth as never);
+
+    const response = await GET(makeRequest());
+
+    expect(response.status).toBe(200);
+    expect(authenticateBearerRequest).toHaveBeenCalledWith(
+      expect.any(NextRequest),
+      expect.arrayContaining([UserRole.HOD]),
+    );
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { recipientId: hodAuth.userId } }),
+    );
+  });
 });
 
 describe("PATCH /api/notifications - bulk mark as read", () => {
@@ -124,6 +147,21 @@ describe("PATCH /api/notifications - bulk mark as read", () => {
         where: { recipientId: supervisorAuth.userId, isRead: false },
         data: { isRead: true },
       }),
+    );
+  });
+
+  it("allows the HOD to mark their notifications as read", async () => {
+    vi.mocked(authenticateBearerRequest).mockResolvedValue(hodAuth as never);
+
+    const response = await PATCH(makeRequest("PATCH"));
+
+    expect(response.status).toBe(200);
+    expect(authenticateBearerRequest).toHaveBeenCalledWith(
+      expect.any(NextRequest),
+      expect.arrayContaining([UserRole.HOD]),
+    );
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { recipientId: hodAuth.userId, isRead: false } }),
     );
   });
 });
