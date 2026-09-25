@@ -1,17 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { secureFetch } from "@/lib/security/client-request";
@@ -32,6 +28,8 @@ const ROLE_LABELS: Record<DashboardRole, string> = {
 
 export function ProfileDropdown({ role }: { role: DashboardRole }) {
   const [identity, setIdentity] = useState<ProfileIdentity | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -61,20 +59,44 @@ export function ProfileDropdown({ role }: { role: DashboardRole }) {
     [displayName],
   );
 
+  function openMenu() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setIsOpen(true);
+  }
+
+  function scheduleClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setIsOpen(false), 140);
+  }
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative h-8 w-8 rounded-full"
-          aria-label={`Open profile menu for ${displayName}`}
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end">
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
+      <div onMouseEnter={openMenu} onMouseLeave={scheduleClose}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="relative h-10 w-10 rounded-full"
+            aria-label={`Open profile menu for ${displayName}`}
+          >
+            <Avatar className="h-9 w-9 border border-primary/15">
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+      </div>
+      <DropdownMenuContent
+        className="w-64"
+        align="end"
+        onMouseEnter={openMenu}
+        onMouseLeave={scheduleClose}
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-1.5">
             <p className="text-sm leading-none font-medium">{displayName}</p>
@@ -85,15 +107,6 @@ export function ProfileDropdown({ role }: { role: DashboardRole }) {
             ) : null}
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
-          <Link href="/logout">
-            Sign out
-            <DropdownMenuShortcut className="text-current">
-              ⇧⌘Q
-            </DropdownMenuShortcut>
-          </Link>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

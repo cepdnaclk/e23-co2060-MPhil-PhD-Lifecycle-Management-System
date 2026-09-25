@@ -8,6 +8,7 @@ import { Menu, X } from "lucide-react";
 
 import styles from "@/app/home-page.module.css";
 import { BrandRibbons } from "@/components/layout/brand-ribbons";
+import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
 import logoImage from "../../../images/logo.png";
 
 export function HomeNavigation() {
@@ -34,7 +35,7 @@ export function HomeNavigation() {
   };
 
   return (
-    <header className={styles.siteHeader}>
+    <ScrollAwareHeader className={styles.siteHeader} pinned={isMenuOpen}>
       <nav className={styles.navbar} aria-label="Primary navigation">
         <Link className={styles.brand} href="/" aria-label="PGSMS home">
           <Image src={logoImage} alt="" width={42} height={42} priority />
@@ -79,6 +80,6 @@ export function HomeNavigation() {
         </div>
       </nav>
       <BrandRibbons placement="header" />
-    </header>
+    </ScrollAwareHeader>
   );
 }

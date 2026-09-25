@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { BrandRibbons } from "@/components/layout/brand-ribbons";
+import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
 import logoImage from "../../../images/logo.png";
 
 import styles from "./public-page-navigation.module.css";
@@ -23,7 +24,7 @@ export function PublicPageNavigation({
   primaryLabel,
 }: PublicPageNavigationProps) {
   return (
-    <header className={styles.siteHeader}>
+    <ScrollAwareHeader className={styles.siteHeader}>
       <nav className={styles.navbar} aria-label={ariaLabel}>
         <Link className={styles.brand} href="/" aria-label="PGSMS home">
           <Image src={logoImage} alt="" width={42} height={42} priority />
@@ -45,6 +46,6 @@ export function PublicPageNavigation({
         </div>
       </nav>
       <BrandRibbons placement="header" />
-    </header>
+    </ScrollAwareHeader>
   );
 }

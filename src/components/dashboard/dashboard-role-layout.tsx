@@ -22,31 +22,32 @@ import {
   CalendarDays,
   ClipboardCheck,
   RotateCcw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { DashboardNotificationsMenu } from "@/components/dashboard/dashboard-notifications-menu";
 import { BrandRibbons } from "@/components/layout/brand-ribbons";
-import { Header } from "@/components/layout/header";
+import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
 import { SimpleSiteFooter } from "@/components/layout/simple-site-footer";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { buildDashboardPageMeta } from "@/lib/dashboard/page-meta";
 import type { DashboardRole } from "@/types/dashboard";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 
 type DashboardRoleLayoutProps = {
   role: DashboardRole;
@@ -67,15 +68,18 @@ export function DashboardRoleLayout({
 
   const navItems = getNavItems(role);
   const overviewHref = `/dashboard/${role}`;
-  const currentPageLabel =
-    navItems.find((item) => isActive(item.href))?.label ?? "Overview";
-  const pageHeading = pathname === overviewHref ? heading : currentPageLabel;
 
   return (
     <SidebarProvider
       data-dashboard-shell
-      className="bg-sidebar"
-      style={{ "--sidebar-width": "17rem" } as CSSProperties}
+      defaultOpen={false}
+      className="relative flex-col bg-background"
+      style={
+        {
+          "--sidebar-width": "16rem",
+          "--sidebar-width-icon": "3.25rem",
+        } as CSSProperties
+      }
     >
       <a
         href="#dashboard-content"
@@ -83,43 +87,88 @@ export function DashboardRoleLayout({
       >
         Skip to dashboard content
       </a>
-      <Sidebar
-        variant="inset"
-        className="[&>[data-sidebar=sidebar]]:border [&>[data-sidebar=sidebar]]:border-sidebar-border"
-      >
-        <SidebarHeader className="border-b border-sidebar-border p-3">
+      <ScrollAwareHeader className="fixed inset-x-0 top-0 z-50 bg-background/95 shadow-[0_8px_28px_rgba(62,28,24,0.07)] backdrop-blur-xl">
+        <nav
+          className="mx-auto flex min-h-[4.5rem] w-[min(100%_-_2rem,90rem)] items-center gap-3"
+          aria-label="Dashboard header"
+        >
           <Link
             href={overviewHref}
-            className="flex items-center gap-3 rounded-lg px-2 py-2 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="PGSMS dashboard overview"
           >
             <Image
               src="/uni-logo.png"
               alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 object-contain"
+              width={42}
+              height={42}
+              className="h-[2.6rem] w-[2.6rem] shrink-0 object-contain"
               priority
             />
-            <div className="min-w-0 leading-tight">
-              <p className="font-semibold tracking-[-0.02em] text-sidebar-foreground">PGSMS</p>
-              <p className="truncate text-xs text-sidebar-foreground/75">
-                {heading}
-              </p>
-            </div>
+            <span className="grid min-w-0 gap-0.5 leading-none">
+              <strong className="text-[0.96rem] tracking-[0.04em]">PGSMS</strong>
+              <small className="truncate text-[0.68rem] text-muted-foreground">
+                Computer Engineering
+              </small>
+            </span>
           </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup className="px-3 py-4">
+
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <SidebarTrigger
+              className="h-10 w-10 rounded-full md:hidden"
+              aria-label="Open dashboard navigation"
+            />
+            <DashboardNotificationsMenu
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                  aria-label="Notifications"
+                  title="Notifications"
+                >
+                  <Bell className="h-[1.15rem] w-[1.15rem]" />
+                </Button>
+              }
+            />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full"
+            >
+              <Link href="/logout" aria-label="Sign out" title="Sign out">
+                <LogOut className="h-[1.15rem] w-[1.15rem]" />
+              </Link>
+            </Button>
+            <ProfileDropdown role={role} />
+          </div>
+        </nav>
+        <BrandRibbons placement="header" />
+      </ScrollAwareHeader>
+
+      <Sidebar
+        variant="floating"
+        collapsible="icon"
+        className="!inset-y-auto !top-1/2 !h-[min(72svh,42rem)] -translate-y-1/2 !p-0 !pl-3 !pr-2 [&>[data-sidebar=sidebar]]:rounded-2xl [&>[data-sidebar=sidebar]]:border-primary/15 [&>[data-sidebar=sidebar]]:shadow-[0_20px_55px_rgba(58,32,28,0.16)]"
+      >
+        <SidebarContent className="dashboard-sidebar-scroll py-2 group-data-[collapsible=icon]:overflow-y-auto">
+          <SidebarTrigger
+            className="ml-auto mr-2 mt-1 h-9 w-9 rounded-full md:hidden"
+            aria-label="Close dashboard navigation"
+          />
+          <SidebarGroup className="px-2 py-2">
             <SidebarGroupLabel className="px-3 font-semibold">
-              Workspace
+              {heading}
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1">
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(overviewHref)}
-                    className="h-10 gap-3 rounded-lg px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                    tooltip="Overview"
+                    className="h-11 gap-3 rounded-xl px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
                   >
                     <Link
                       href={overviewHref}
@@ -135,7 +184,8 @@ export function DashboardRoleLayout({
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.href)}
-                      className="h-10 gap-3 rounded-lg px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
+                      tooltip={item.label}
+                      className="h-11 gap-3 rounded-xl px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
                     >
                       <Link
                         href={item.href}
@@ -151,50 +201,25 @@ export function DashboardRoleLayout({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-sidebar-border p-3">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DashboardNotificationsMenu
-                trigger={
-                  <SidebarMenuButton
-                    tooltip="Notifications"
-                    className="h-10 gap-3 rounded-lg px-3"
-                  >
-                    <Bell />
-                    <span>Notifications</span>
-                  </SidebarMenuButton>
-                }
-              />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild className="h-10 gap-3 rounded-lg px-3">
-                <Link href="/logout"><LogOut /> <span>Sign Out</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
+        <SidebarTrigger
+          className="absolute -right-3 top-1/2 z-20 hidden h-9 w-7 -translate-y-1/2 rounded-lg border border-primary/20 bg-background text-primary shadow-[0_6px_18px_rgba(58,32,28,0.16)] hover:bg-primary hover:text-primary-foreground md:inline-flex"
+          aria-label="Expand or collapse dashboard navigation"
+          title="Expand or collapse navigation"
+          icon={
+            <>
+              <ChevronLeft className="group-data-[state=collapsed]:hidden" />
+              <ChevronRight className="hidden group-data-[state=collapsed]:block" />
+            </>
+          }
+        />
       </Sidebar>
-      <SidebarInset className="overflow-hidden bg-background">
-        <div className="sticky top-0 z-50">
-          <Header className="border-b border-border/80 bg-background/95">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger variant="outline" className="h-9 w-9" />
-              <Separator orientation="vertical" className="mx-2 h-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-sm font-semibold tracking-[-0.01em] sm:text-base">
-                {pageHeading}
-              </h1>
-            </div>
-            <div className="ml-auto flex items-center">
-              <ProfileDropdown role={role} />
-            </div>
-          </Header>
-          <BrandRibbons placement="header" />
-        </div>
+      <DashboardSidebarScrim />
+      <SidebarInset
+        id="dashboard-content"
+        tabIndex={-1}
+        className="min-h-svh w-full overflow-visible bg-background pt-20 outline-none"
+      >
         <div
-          id="dashboard-content"
-          tabIndex={-1}
           className="mx-auto w-full max-w-[94rem] flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
         >
           {children}
@@ -202,6 +227,24 @@ export function DashboardRoleLayout({
         <SimpleSiteFooter className="mt-auto" />
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+function DashboardSidebarScrim() {
+  const { isMobile, state, toggleSidebar } = useSidebar();
+  const isExpanded = !isMobile && state === "expanded";
+
+  return (
+    <button
+      type="button"
+      data-dashboard-sidebar-scrim
+      aria-label="Collapse dashboard navigation"
+      disabled={!isExpanded}
+      onClick={toggleSidebar}
+      className={`fixed inset-x-0 bottom-0 top-20 z-[9] hidden bg-primary/[0.14] backdrop-blur-[1.5px] transition-opacity duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 motion-reduce:transition-none md:block ${
+        isExpanded ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    />
   );
 }
 

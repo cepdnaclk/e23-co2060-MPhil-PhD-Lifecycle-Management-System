@@ -337,6 +337,18 @@ Key configuration categories in `.env`:
 * **Email & Session:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SESSION_COOKIE_NAME`
 * **Monitoring:** `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`
 
+For a Vercel deployment backed by Supabase, `DATABASE_URL` must use the
+Supavisor **transaction-mode** endpoint on port `6543`, not the session-mode
+endpoint on port `5432`. Start with one Prisma connection per serverless
+instance:
+
+```text
+postgresql://USER:PASSWORD@HOST:6543/postgres?sslmode=require&pgbouncer=true&connection_limit=1
+```
+
+Keep database credentials in Vercel environment variables; never commit the
+completed connection string.
+
 ---
 
 ## Testing and Quality Assurance

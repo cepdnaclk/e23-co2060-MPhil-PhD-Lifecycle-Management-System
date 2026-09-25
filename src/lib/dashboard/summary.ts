@@ -251,7 +251,7 @@ async function buildStudentSummary(
     activeEthicsApprovals,
     overdueReports,
     openThesisMilestones,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.registration.count({
       where: {
         studentId: student.id,
@@ -372,7 +372,7 @@ async function buildSupervisorSummary(
     submittedProgressReports,
     graduatedStudents,
   ] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.supervisorAssignment.count({
         where: { supervisorId: supervisor.id },
       }),
@@ -479,7 +479,7 @@ async function buildExaminerSummary(
   }
 
   const [assignedTheses, scheduledVivas, pendingCorrections, activeExaminations] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.thesisExaminerAssignment.count({
         where: { examinerId: examiner.id },
       }),
@@ -583,6 +583,8 @@ async function buildExaminerSummary(
 }
 
 async function buildAdminSummary(): Promise<DashboardSummary> {
+  // Keep the metrics on one pooled connection. Parallel count queries can
+  // exhaust a small serverless database pool before the dashboard renders.
   const [
     activeStaffAccounts,
     pendingApplications,
@@ -592,7 +594,7 @@ async function buildAdminSummary(): Promise<DashboardSummary> {
     overdueProgressReports,
     studentsUnderReview,
   ] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.user.count({
         where: {
           role: {
@@ -721,7 +723,7 @@ async function buildHodSummary(): Promise<DashboardSummary> {
     pendingExaminerConfirmations,
     orderedCorrections,
     pendingCompletions,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.application.count({
       where: {
         isArchived: false,
