@@ -3,43 +3,26 @@ import { NextResponse } from "next/server";
 import {
   ApplicationSubmissionError,
   deleteUploadedApplicationDocument,
-  uploadApplicationDocument,
 } from "@/lib/applications/submission";
+import { createServerErrorResponse } from "@/lib/http/errors";
 
-export async function POST(request: Request) {
-  const formData = await request.formData();
-  const draftId = formData.get("draftId");
-  const draftToken = formData.get("draftToken");
-  const file = formData.get("file");
-
-  try {
-    const uploadedDocument = await uploadApplicationDocument({
-      draftId: typeof draftId === "string" ? draftId : "",
-      draftToken: typeof draftToken === "string" ? draftToken : "",
-      file,
-    });
-
-    return NextResponse.json(uploadedDocument, { status: 201 });
-  } catch (error) {
-    if (error instanceof ApplicationSubmissionError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-
-    return NextResponse.json(
-      { error: "Unable to upload the document." },
-      { status: 500 },
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      error:
+        "Direct document uploads are required. Refresh the application page and try again.",
+    },
+    { status: 410 },
+  );
 }
 
 export async function DELETE(request: Request) {
-  const body = (await request.json()) as {
-    draftId?: string;
-    draftToken?: string;
-    storagePath?: string;
-  };
-
   try {
+    const body = (await request.json()) as {
+      draftId?: string;
+      draftToken?: string;
+      storagePath?: string;
+    };
     await deleteUploadedApplicationDocument({
       draftId: body.draftId ?? "",
       draftToken: body.draftToken ?? "",
@@ -52,9 +35,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
 
-    return NextResponse.json(
-      { error: "Unable to remove the document." },
-      { status: 500 },
-    );
+    return createServerErrorResponse({
+      error,
+      message: "Unable to remove the document.",
+      route: "/api/applications/upload",
+      method: "DELETE",
+    });
   }
 }

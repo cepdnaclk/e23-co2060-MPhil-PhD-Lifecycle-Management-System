@@ -5,14 +5,14 @@
   "packageManager": "npm@11.12.1",
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "prisma generate && next build --webpack",
+    "build": "npm run validate:env && prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit --incremental false",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:validate": "prisma validate",
-    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:deploy": "node scripts/deploy-migrations.mjs",
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:check": "node scripts/check-migration-policy.mjs",
     "database:reset": "node scripts/reset-sample-database.mjs",
@@ -27,7 +27,8 @@
     "test:e2e:external": "node scripts/run-external-e2e.mjs",
     "test:e2e:lifecycle": "node scripts/run-lifecycle-e2e.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high",
-    "audit:all": "npm audit --audit-level=high"
+    "audit:all": "npm audit --audit-level=high",
+    "validate:env": "node scripts/validate-environment.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

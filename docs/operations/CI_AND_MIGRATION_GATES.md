@@ -125,6 +125,23 @@ Before any populated-environment deployment:
 4. Record row counts, invariant checks, timing, backup identifier, restore timing, and named approval.
 5. Update the policy record only after preservation and recovery evidence is accepted.
 
+`npm run prisma:migrate:deploy` is a target-aware wrapper. It permits a truly
+empty database so disposable CI provisioning remains automatic. If a populated
+target has any pending migration marked `productionDeploymentBlocked`, the
+command refuses to call Prisma unless `PGSMS_MIGRATION_APPROVAL_FILE` points to
+a reviewed JSON artifact that:
+
+- identifies the exact database, schema, and credential-free endpoint fingerprint;
+- lists exactly every pending blocked migration and its policy checksum;
+- records the approver, verified backup, and rehearsal evidence; and
+- has a valid approval window of no more than seven days that has not expired.
+
+Start from
+`docs/operations/MIGRATION_DEPLOYMENT_APPROVAL.example.json`, store the completed
+artifact in the protected release record, and have it reviewed with the release.
+The approval file contains no database credentials and is not a replacement for
+the backup, rehearsal, or change approval itself.
+
 ## 7. Deployment and recovery sequence
 
 1. Confirm all required hosted checks pass for the exact commit.
