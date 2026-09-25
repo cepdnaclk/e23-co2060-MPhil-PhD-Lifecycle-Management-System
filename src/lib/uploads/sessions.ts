@@ -277,7 +277,7 @@ export async function verifyUploadSessionForFinalize(
             actualSizeBytes: verified.sizeBytes,
             actualSha256: verified.checksumSha256,
             status: UploadFileStatus.VERIFIED,
-            malwareScanStatus: MalwareScanStatus.CLEAN,
+            malwareScanStatus: verified.malwareScanStatus,
             verifiedAt: new Date(),
             rejectionReason: null,
           },

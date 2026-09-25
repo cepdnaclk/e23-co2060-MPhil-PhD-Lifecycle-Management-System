@@ -58,6 +58,18 @@ describe("environment validation", () => {
     );
   });
 
+  it("reports the temporary unscanned upload mode explicitly", () => {
+    const result = validateEnvironment(
+      { ...hostedEnvironment, ALLOW_UNSCANNED_UPLOADS: "true" },
+      { validateHostedServer: true },
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toContainEqual(
+      expect.stringMatching(/uploaded files are not malware-scanned/i),
+    );
+  });
+
   it("rejects a partial malware-scanner configuration", () => {
     const result = validateEnvironment(
       { ...hostedEnvironment, MALWARE_SCANNER_URL: "https://scanner.example.test" },

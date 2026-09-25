@@ -177,6 +177,7 @@ describe("public application direct uploads", () => {
       mimeType: "application/pdf",
       sizeBytes: 1024,
       checksumSha256: "checksum",
+      malwareScanStatus: "PENDING",
     });
 
     const result = await verifyApplicationDocument({
@@ -190,6 +191,11 @@ describe("public application direct uploads", () => {
       mimeType: "application/pdf",
       sizeBytes: 1024,
     });
+    expect(prisma.stagedUploadFile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ malwareScanStatus: "PENDING" }),
+      }),
+    );
     expect(prisma.stagedUploadFile.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: UploadFileStatus.VERIFIED }),

@@ -353,8 +353,13 @@ completed connection string.
 Public application documents are uploaded directly from the browser to a
 short-lived Supabase signed URL and then verified by the application server.
 Production fails closed before issuing an upload URL when the authenticated
-HTTPS malware scanner is not configured. `FILE_SCAN_MODE=structural` is for
-local development and tests only; it is intentionally ignored in production.
+HTTPS malware scanner is not configured. For temporary demonstrations with
+synthetic documents, set `ALLOW_UNSCANNED_UPLOADS=true` in the Vercel deployment
+and leave `MALWARE_SCANNER_URL` and `MALWARE_SCANNER_TOKEN` unset. The application
+still checks size, type, checksum, and ZIP structure, but does not scan for
+malware. Such files retain a `PENDING` malware scan status. Remove the bypass
+and provision a scanner before accepting real student documents.
+`FILE_SCAN_MODE=structural` remains local/test-only.
 
 ---
 

@@ -5,7 +5,6 @@ import {
   ApplicationStatus,
   DocumentVerificationStatus,
   DocumentType,
-  MalwareScanStatus,
   RegistrationStatus,
   UploadFileStatus,
   UploadSessionStatus,
@@ -283,7 +282,7 @@ export async function verifyApplicationDocument(
         actualSizeBytes: verified.sizeBytes,
         actualSha256: verified.checksumSha256,
         status: UploadFileStatus.VERIFIED,
-        malwareScanStatus: MalwareScanStatus.CLEAN,
+        malwareScanStatus: verified.malwareScanStatus,
         verifiedAt: new Date(),
       },
     });
@@ -467,6 +466,7 @@ export async function createApplicationSubmission(
               mimeType: file.actualMimeType as "application/pdf" | "application/zip",
               sizeBytes: file.actualSizeBytes,
               checksumSha256: file.actualSha256,
+              malwareScanStatus: file.malwareScanStatus,
             }
           : await verifyStagedUploadFile(file);
       verifiedFiles.push(verified);
@@ -477,7 +477,7 @@ export async function createApplicationSubmission(
           actualSizeBytes: verified.sizeBytes,
           actualSha256: verified.checksumSha256,
           status: UploadFileStatus.VERIFIED,
-          malwareScanStatus: MalwareScanStatus.CLEAN,
+          malwareScanStatus: verified.malwareScanStatus,
           verifiedAt: new Date(),
         },
       });

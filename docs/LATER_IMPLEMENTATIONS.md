@@ -10,8 +10,10 @@
   `MALWARE_SCANNER_TOKEN` in Vercel Preview and Production. The scanner must
   accept raw file bytes and return `{ "clean": true }`. Do not send student or
   research documents to a public multi-engine service without an approved data
-  processing decision. Until this is completed, production document uploads
-  intentionally return `503 Service Unavailable` before issuing a signed URL.
+  processing decision. The temporary `ALLOW_UNSCANNED_UPLOADS=true` demo mode
+  must then be removed, and all records with `malwareScanStatus=PENDING` must
+  be scanned or quarantined before they are treated as safe. Without either a
+  scanner or the explicit demo mode, production uploads return `503`.
 - [ ] **Validate the direct-upload flow in protected staging.** Test valid PDF
   and ZIP files below and above Vercel's 4.5 MB Function payload boundary,
   invalid signatures, unsafe archives, scanner rejection and timeout, deletion,

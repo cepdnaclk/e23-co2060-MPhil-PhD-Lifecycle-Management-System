@@ -119,6 +119,7 @@ describe("thesis staged submission route", () => {
             mimeType: "application/pdf",
             sizeBytes: 1024,
             checksumSha256: "a".repeat(64),
+            malwareScanStatus: "PENDING",
           },
         ],
       },

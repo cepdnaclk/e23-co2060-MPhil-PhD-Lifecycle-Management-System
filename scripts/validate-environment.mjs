@@ -87,13 +87,17 @@ export function validateEnvironment(
 
   const scannerUrl = environment.MALWARE_SCANNER_URL?.trim();
   const scannerToken = environment.MALWARE_SCANNER_TOKEN?.trim();
+  const allowUnscannedUploads =
+    environment.ALLOW_UNSCANNED_UPLOADS === "true";
   if (Boolean(scannerUrl) !== Boolean(scannerToken)) {
     errors.push(
       "MALWARE_SCANNER_URL and MALWARE_SCANNER_TOKEN must be configured together.",
     );
   } else if (!scannerUrl && validateHostedServer) {
     warnings.push(
-      "Malware scanning is deferred; production document uploads will return 503.",
+      allowUnscannedUploads
+        ? "Temporary unscanned upload mode is enabled; uploaded files are not malware-scanned."
+        : "Malware scanning is deferred; production document uploads will return 503.",
     );
   } else if (scannerUrl) {
     requireUrl(environment, "MALWARE_SCANNER_URL", ["https:"], errors);
