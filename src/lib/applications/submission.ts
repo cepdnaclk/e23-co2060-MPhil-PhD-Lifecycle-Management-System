@@ -39,14 +39,15 @@ import {
   generateUploadSignedUrl,
   getStorageObjectOwnerId,
   normalizeStoragePath,
+  sanitizeFileName,
   StorageAccessError,
-  uploadBufferToStorage,
 } from "@/lib/storage";
 import {
   PublicDraftCapabilityError,
   requirePublicApplicationDraft,
 } from "@/lib/uploads/capabilities";
 import {
+  assertUploadVerificationConfigured,
   UploadVerificationError,
   verifyStagedUploadFile,
   type VerifiedUploadFile,
@@ -56,23 +57,26 @@ import {
   applicationDocumentDeleteRequestSchema,
   applicationSubmissionSchema,
   applicationUploadRequestSchema,
+  applicationUploadVerificationRequestSchema,
   ApplicationDocumentDeleteRequest,
   ApplicationSubmissionInput,
   ApplicationUploadRequest,
+  ApplicationUploadVerificationRequest,
 } from "@/lib/applications/schemas";
 
 export {
   applicationDocumentDeleteRequestSchema,
   applicationSubmissionSchema,
   applicationUploadRequestSchema,
+  applicationUploadVerificationRequestSchema,
 };
 
 export class ApplicationSubmissionError extends Error {
-  status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500;
+  status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500 | 503;
 
   constructor(
     message: string,
-    status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500 = 400,
+    status: 400 | 403 | 404 | 409 | 410 | 413 | 429 | 500 | 503 = 400,
   ) {
     super(message);
     this.name = "ApplicationSubmissionError";
@@ -118,14 +122,23 @@ export async function createApplicationUploadUrl(
     );
   }
 
+  let stagedFileId: string | null = null;
+
   try {
     const draft = await requirePublicApplicationDraft(
       parsed.data.draftId,
       parsed.data.draftToken,
     );
+    if (draft.files.length >= 10) {
+      throw new ApplicationSubmissionError(
+        "A maximum of 10 supporting documents can be uploaded.",
+        409,
+      );
+    }
+    assertUploadVerificationConfigured();
     const fileId = randomUUID();
     const storagePath = normalizeStoragePath(
-      `applications/${draft.id}/staged/${fileId}/${parsed.data.fileName}`,
+      `applications/${draft.id}/staged/${fileId}/${sanitizeFileName(parsed.data.fileName)}`,
     );
     assertApplicationAttachmentConstraints({
       contentType: parsed.data.contentType,
@@ -143,6 +156,7 @@ export async function createApplicationUploadUrl(
         storagePath,
       },
     });
+    stagedFileId = fileId;
     const signedUrl = await generateUploadSignedUrl(
       storagePath,
       parsed.data.contentType,
@@ -154,55 +168,113 @@ export async function createApplicationUploadUrl(
       expiresInMinutes: 15,
     };
   } catch (error) {
+    if (stagedFileId) {
+      await prisma.stagedUploadFile.deleteMany({
+        where: { id: stagedFileId, documentId: null },
+      });
+    }
+    if (error instanceof ApplicationSubmissionError) {
+      throw error;
+    }
     if (error instanceof PublicDraftCapabilityError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
     if (error instanceof StorageAccessError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }
+    if (error instanceof UploadVerificationError) {
+      throw new ApplicationSubmissionError(
+        "Document safety scanning is temporarily unavailable. Please try again later.",
+        503,
+      );
+    }
 
     throw error;
   }
 }
 
-export async function uploadApplicationDocument(input: {
-  draftId: string;
-  draftToken: string;
-  file: FormDataEntryValue | null;
+async function discardFailedApplicationUpload(input: {
+  stagedFileId: string;
+  storagePath: string;
 }) {
-  const file = input.file;
+  const cleanupResults = await Promise.allSettled([
+    deleteFile(input.storagePath),
+    prisma.stagedUploadFile.deleteMany({
+      where: { id: input.stagedFileId, documentId: null },
+    }),
+  ]);
 
-  if (!(file instanceof File)) {
-    throw new ApplicationSubmissionError("A PDF or ZIP document is required.", 400);
+  for (const result of cleanupResults) {
+    if (result.status === "rejected") {
+      console.error("Failed to clean up a rejected application upload.", {
+        stagedFileId: input.stagedFileId,
+        error:
+          result.reason instanceof Error
+            ? result.reason.message
+            : "Unknown cleanup error",
+      });
+    }
   }
+}
+
+export async function verifyApplicationDocument(
+  input: ApplicationUploadVerificationRequest,
+) {
+  const parsed = applicationUploadVerificationRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new ApplicationSubmissionError(
+      parsed.error.issues[0]?.message ?? "Invalid upload verification request.",
+      400,
+    );
+  }
+
+  let stagedFile: Awaited<
+    ReturnType<typeof requirePublicApplicationDraft>
+  >["files"][number] | null = null;
 
   try {
     const draft = await requirePublicApplicationDraft(
-      input.draftId,
-      input.draftToken,
+      parsed.data.draftId,
+      parsed.data.draftToken,
     );
-    const fileId = randomUUID();
-    const storagePath = normalizeStoragePath(
-      `applications/${draft.id}/staged/${fileId}/${file.name}`,
-    );
-    assertApplicationAttachmentConstraints({
-      contentType: file.type,
-      fileSizeBytes: file.size,
-      path: storagePath,
-    });
-    const stagedFile = await prisma.stagedUploadFile.create({
-      data: {
-        id: fileId,
-        uploadSessionId: draft.id,
-        ordinal: draft.files.length,
-        fileName: file.name,
-        expectedMimeType: file.type,
-        expectedSizeBytes: file.size,
-        storagePath,
-      },
-    });
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadBufferToStorage(storagePath, buffer, file.type);
+    const storagePath = normalizeStoragePath(parsed.data.storagePath);
+
+    if (getStorageObjectOwnerId(storagePath) !== draft.id) {
+      throw new ApplicationSubmissionError(
+        "Document verification denied for this draft.",
+        403,
+      );
+    }
+
+    stagedFile =
+      draft.files.find((candidate) => candidate.storagePath === storagePath) ??
+      null;
+    if (!stagedFile || stagedFile.documentId) {
+      throw new ApplicationSubmissionError(
+        "The staged application document was not found.",
+        404,
+      );
+    }
+
+    if (
+      stagedFile.status === UploadFileStatus.VERIFIED &&
+      stagedFile.actualMimeType &&
+      stagedFile.actualSizeBytes
+    ) {
+      return {
+        storagePath: stagedFile.storagePath,
+        fileName: stagedFile.fileName,
+        mimeType: stagedFile.actualMimeType,
+        sizeBytes: stagedFile.actualSizeBytes,
+      };
+    }
+    if (stagedFile.status !== UploadFileStatus.PENDING) {
+      throw new ApplicationSubmissionError(
+        "This document upload can no longer be verified. Upload the file again.",
+        409,
+      );
+    }
+
     const verified = await verifyStagedUploadFile(stagedFile);
     await prisma.stagedUploadFile.update({
       where: { id: stagedFile.id },
@@ -217,12 +289,24 @@ export async function uploadApplicationDocument(input: {
     });
 
     return {
-      storagePath,
-      fileName: file.name,
+      storagePath: stagedFile.storagePath,
+      fileName: stagedFile.fileName,
       mimeType: verified.mimeType,
       sizeBytes: verified.sizeBytes,
     };
   } catch (error) {
+    if (
+      stagedFile &&
+      !(error instanceof ApplicationSubmissionError)
+    ) {
+      await discardFailedApplicationUpload({
+        stagedFileId: stagedFile.id,
+        storagePath: stagedFile.storagePath,
+      });
+    }
+    if (error instanceof ApplicationSubmissionError) {
+      throw error;
+    }
     if (error instanceof PublicDraftCapabilityError) {
       throw new ApplicationSubmissionError(error.message, error.status);
     }

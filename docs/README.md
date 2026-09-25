@@ -126,6 +126,7 @@ See the main [project README](../README.md) for setup instructions and the compl
 ## Project Documentation
 
 - [Master System Audit and Progress Register](./PGLMS_MASTER_SYSTEM_AUDIT_AND_PROGRESS_REGISTER.md)
+- [Later Implementations](./LATER_IMPLEMENTATIONS.md)
 - [Workflow Implementation Report](./WORKFLOW_REPORT.md)
 - [Project Overview](../PROJECT_OVERVIEW.md)
 - [Repository documentation index](./)
