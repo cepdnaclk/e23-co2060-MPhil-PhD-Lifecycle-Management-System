@@ -4,6 +4,13 @@ import { expect, test } from "@playwright/test";
 test("public application page has no serious or critical accessibility violations", async ({
   page,
 }) => {
+  await page.route("**/api/public/supervisors", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ supervisors: [] }),
+    });
+  });
   const response = await page.goto("/apply");
 
   expect(response).not.toBeNull();
