@@ -510,7 +510,11 @@ export async function createApplicationSubmission(
         where: {
           applicantEmail: parsed.data.applicantEmail,
           status: {
-            in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW],
+            in: [
+              ApplicationStatus.SUBMITTED,
+              ApplicationStatus.UNDER_REVIEW,
+              ApplicationStatus.ADMITTED,
+            ],
           },
           isArchived: false,
         },
@@ -760,7 +764,7 @@ export async function executeApprovedAdmission(
 
   if (existingUser) {
     throw new ApplicationSubmissionError(
-      "A user account already exists for this applicant email address.",
+      "This email is already linked to an existing account. Admission cannot create a second Student account; use a different applicant email or resolve the existing account before retrying.",
       409,
     );
   }

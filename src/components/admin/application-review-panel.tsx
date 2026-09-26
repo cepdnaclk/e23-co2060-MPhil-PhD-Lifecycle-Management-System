@@ -164,6 +164,7 @@ export function ApplicationReviewPanel({ applicationId }: { applicationId: strin
       setShowConfirmModal({ show: false, type: null });
       router.refresh();
     } catch (err) {
+      setShowConfirmModal({ show: false, type: null });
       setError(err instanceof Error ? err.message : "An error occurred updating the status.");
     } finally {
       setIsUpdating(false);

@@ -5,7 +5,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -70,7 +70,7 @@ describe("HodExaminationDecisionPanel", () => {
 });
 
 describe("HodApplicationDecisionPanel", () => {
-  it("keeps decisions disabled until at least one assigned review is complete", () => {
+  it("enables decisions after consent when no proposal reviews are assigned", () => {
     render(
       <HodApplicationDecisionPanel
         applications={[
@@ -89,11 +89,43 @@ describe("HodApplicationDecisionPanel", () => {
     );
 
     expect(screen.getByText("Reviews 0/0")).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: "Department decision reason" }), {
+      target: { value: "The academic basis supports endorsement." },
+    });
+
+    expect(screen.getByRole("button", { name: "APPROVED" })).toBeEnabled();
+    expect(
+      screen.queryByText(/Assign at least one Examiner proposal review/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps decisions disabled while an assigned proposal review is incomplete", () => {
+    render(
+      <HodApplicationDecisionPanel
+        applications={[
+          {
+            id: "application-1",
+            applicantName: "Applicant One",
+            programType: "MPHIL",
+            studyMode: "FULL_TIME",
+            proposalTitle: "Reliable Research Systems",
+            supervisorConsentStatus: "CONSENTED",
+            completedReviews: 0,
+            totalReviews: 1,
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Department decision reason" }), {
+      target: { value: "The academic basis supports endorsement." },
+    });
+
+    expect(screen.getByRole("button", { name: "APPROVED" })).toBeDisabled();
     expect(
       screen.getByText(
-        "Assign at least one Examiner proposal review before recording a decision.",
+        "All assigned Examiner proposal reviews must be completed before recording a decision.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "APPROVED" })).toBeDisabled();
   });
 });

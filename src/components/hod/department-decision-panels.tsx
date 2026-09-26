@@ -98,7 +98,6 @@ export function HodApplicationDecisionPanel({
       />
       {applications.length === 0 ? <p className="text-muted-foreground">No applications await a decision.</p> : applications.map((application) => {
         const reviewsReady =
-          application.totalReviews > 0 &&
           application.completedReviews === application.totalReviews;
         const ready =
           application.supervisorConsentStatus === "CONSENTED" && reviewsReady;
@@ -144,9 +143,7 @@ export function HodApplicationDecisionPanel({
                 <p id={`application-decision-help-${application.id}`} className="text-xs text-muted-foreground">
                   {application.supervisorConsentStatus !== "CONSENTED"
                     ? "Supervisor consent is required before a decision can be recorded."
-                    : application.totalReviews === 0
-                      ? "Assign at least one Examiner proposal review before recording a decision."
-                      : "All assigned Examiner proposal reviews must be completed before recording a decision."}
+                    : "All assigned Examiner proposal reviews must be completed before recording a decision."}
                 </p>
               ) : null}
             </CardContent>

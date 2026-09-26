@@ -211,6 +211,46 @@ describe("application submission utilities", () => {
     expect(createFirebaseAuthUser).not.toHaveBeenCalled();
   });
 
+  it("explains when an approved admission conflicts with an existing account", async () => {
+    vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
+      id: "admin-profile-1",
+      userId: "admin-user-1",
+    } as never);
+    vi.mocked(prisma.application.findUnique).mockResolvedValue({
+      id: "application-admit-conflict",
+      applicantName: "Existing Student",
+      applicantEmail: "existing@example.com",
+      programType: ProgramType.MPHIL,
+      studyMode: StudyMode.FULL_TIME,
+      departmentDecision: DepartmentDecision.APPROVED,
+      studentId: null,
+      proposedSupervisorId: "sup-profile-1",
+      proposedSupervisorUserId: "sup-user-1",
+    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "existing-user-1",
+    } as never);
+
+    await expect(
+      executeApprovedAdmission(
+        "application-admit-conflict",
+        {
+          uid: "firebase-admin",
+          userId: "admin-user-1",
+          firebaseUid: "firebase-admin",
+          role: UserRole.ADMINISTRATOR,
+        },
+      ),
+    ).rejects.toMatchObject({
+      status: 409,
+      message:
+        "This email is already linked to an existing account. Admission cannot create a second Student account; use a different applicant email or resolve the existing account before retrying.",
+    });
+
+    expect(createFirebaseAuthUser).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it("executes HOD-approved admission with one registration and milestones", async () => {
     vi.mocked(prisma.administrator.findUnique).mockResolvedValue({
       id: "admin-profile-1",

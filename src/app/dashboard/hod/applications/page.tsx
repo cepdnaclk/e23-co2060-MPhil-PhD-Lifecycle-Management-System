@@ -27,7 +27,7 @@ export default async function HodApplicationsPage() {
 
   return (
     <div className="space-y-6 p-4 pt-6 md:p-8">
-      <div><h2 className="text-3xl font-bold tracking-tight">Admission decisions</h2><p className="mt-2 text-muted-foreground">Decide after supervisor consent and all assigned Examiner reviews are complete.</p></div>
+      <div><h2 className="text-3xl font-bold tracking-tight">Admission decisions</h2><p className="mt-2 text-muted-foreground">Decide after supervisor consent and, when reviews are assigned, after all of them are complete.</p></div>
       <HodApplicationDecisionPanel applications={applications.map((application) => ({
         ...application,
         programType: application.programType,
