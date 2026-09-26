@@ -161,7 +161,12 @@ describe("Department application workflow boundaries", () => {
     });
   });
 
-  it("requires at least one current Examiner proposal review before an HOD decision", async () => {
+  it("allows an HOD decision after consent when no proposal reviews are assigned", async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: "application-1",
+      departmentDecision: DepartmentDecision.APPROVED,
+    });
+
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) =>
       callback({
         application: {
@@ -171,22 +176,31 @@ describe("Department application workflow boundaries", () => {
             supervisorConsentStatus: SupervisorConsentStatus.CONSENTED,
             proposalReviewerAssignments: [],
           }),
+          update,
         },
+        lifecycleAuditEvent: {
+          create: vi.fn().mockResolvedValue({ id: "audit-1" }),
+        },
+        outboxMessage: { create: vi.fn() },
       } as never),
     );
 
-    await expect(
-      recordHodAdmissionDecision(
-        "application-1",
-        {
-          decision: DepartmentDecision.APPROVED,
-          reason: "The application satisfies all Department requirements.",
-        },
-        hodAuth,
-      ),
-    ).rejects.toMatchObject({
-      status: 409,
-      message: "At least one completed Examiner proposal review is required.",
+    await recordHodAdmissionDecision(
+      "application-1",
+      {
+        decision: DepartmentDecision.APPROVED,
+        reason: "The application satisfies all Department requirements.",
+      },
+      hodAuth,
+    );
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "application-1" },
+      data: expect.objectContaining({
+        departmentDecision: DepartmentDecision.APPROVED,
+        hodDecisionByUserId: hodAuth.userId,
+        hodDecisionReason: "The application satisfies all Department requirements.",
+      }),
     });
   });
 

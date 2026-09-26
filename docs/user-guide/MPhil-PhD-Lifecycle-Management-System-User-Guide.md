@@ -844,8 +844,9 @@ Examiner assignments are bound to an exact thesis version and document manifest.
 ### 22.3 An application cannot proceed to HOD decision
 
 **Symptom:** The HOD decision action is unavailable.  
-**Likely cause:** Proposed-Supervisor consent is incomplete, no Examiner is assigned, or at least one current-version review is incomplete.  
-**Resolution:** Complete each prerequisite in order and refresh **Admission Decisions**.
+**Likely cause:** Proposed-Supervisor consent is incomplete, or at least one assigned current-version review is incomplete.
+
+**Resolution:** Record Supervisor consent, complete any reviews that have been assigned, and refresh **Admission Decisions**.
 
 ### 22.4 A file upload fails
 

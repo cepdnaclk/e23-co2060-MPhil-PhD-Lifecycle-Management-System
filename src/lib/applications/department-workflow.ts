@@ -338,13 +338,6 @@ export async function recordHodAdmissionDecision(
       );
     }
 
-    if (application.proposalReviewerAssignments.length === 0) {
-      throw new DepartmentApplicationError(
-        "At least one completed Examiner proposal review is required.",
-        409,
-      );
-    }
-
     if (
       application.proposalReviewerAssignments.some(
         (assignment) => assignment.reviewer.role !== UserRole.EXAMINER,
