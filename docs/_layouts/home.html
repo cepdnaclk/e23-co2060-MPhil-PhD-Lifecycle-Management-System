@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Postgraduate Student Management System at the Faculty of Engineering, University of Peradeniya.">
+    <title>{{ page.title | escape }}</title>
+    <link rel="icon" href="{{ '/assets/images/logo.png' | relative_url }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ '/assets/css/project.css' | relative_url }}">
+  </head>
+  <body id="top">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#top" aria-label="PGSMS home">
+          <img src="{{ '/assets/images/logo.png' | relative_url }}" alt="" width="48" height="48">
+          <span><strong>PGSMS</strong><small>Computer Engineering</small></span>
+        </a>
+        <nav class="site-nav" aria-label="Project sections">
+          <a href="#overview">Overview</a>
+          <a href="#interface-overview">Interface</a>
+          <a href="#architecture">Architecture</a>
+          <a href="#project-team">Team</a>
+          <a class="nav-source" href="https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System">GitHub <span aria-hidden="true">↗</span></a>
+        </nav>
+      </div>
+      <div class="brand-ribbons" aria-hidden="true"><span></span><span></span></div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow">University of Peradeniya · Faculty of Engineering</p>
+            <h1 id="hero-title">Postgraduate Student <em>Management System.</em></h1>
+            <p class="hero-description">One connected place for MPhil and PhD applications, research milestones, academic decisions, and programme completion.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#overview">Explore the project <span aria-hidden="true">↗</span></a>
+              <a class="button button-secondary" href="#interface-overview">See the interface</a>
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="hero-frame">
+              <div class="frame-bar" aria-hidden="true"><span></span><span></span><span></span><small>pgsms / dashboard</small></div>
+              <img src="{{ '/assets/images/screenshots/admin_dashboard.png' | relative_url }}" alt="PGSMS administration dashboard showing candidate and application information">
+            </div>
+            <p>Designed around the complete postgraduate research journey.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="content-shell">
+        <div class="section-rail" aria-hidden="true"><span>01 / Project overview</span><span>PGSMS · CO2060</span></div>
+        <article class="project-content">{{ content }}</article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <p class="footer-kicker">Department of Computer Engineering</p>
+          <strong>Postgraduate Student Management System</strong>
+          <p>Faculty of Engineering, University of Peradeniya</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/cepdnaclk/e23-co2060-MPhil-PhD-Lifecycle-Management-System">Source repository ↗</a>
+          <a href="https://www.ce.pdn.ac.lk/">Department website ↗</a>
+          <a href="#top">Back to top ↑</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
