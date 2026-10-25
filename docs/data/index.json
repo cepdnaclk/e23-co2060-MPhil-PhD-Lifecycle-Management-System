@@ -32,6 +32,6 @@
         "Postgraduate",
         "Web"
     ],
-    "image": "../images/thumbnail.png",
-    "thumbnail": "../images/thumbnail.png"
+    "image": "cover_page.jpg",
+    "thumbnail": "thumbnail.jpg"
 }
