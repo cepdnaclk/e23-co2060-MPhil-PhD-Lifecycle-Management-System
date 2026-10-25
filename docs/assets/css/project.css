@@ -64,6 +64,7 @@ img { max-width: 100%; }
 .project-content h3 { margin: 2.5rem 0 .7rem; color: var(--wine-dark); font-size: 1.25rem; line-height: 1.3; }
 .project-content p, .project-content li { color: #414247; font-size: .93rem; line-height: 1.85; }
 .project-content p { max-width: 52rem; }
+.project-content p:has(> img:only-child) { max-width: none; margin: 0; }
 .project-content ul { padding-left: 1.35rem; }
 .project-content li { padding-left: .2rem; margin: .28rem 0; }
 .project-content li::marker { color: var(--wine); }
